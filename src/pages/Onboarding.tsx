@@ -40,7 +40,7 @@ export default function Onboarding() {
       await db.updateProfile(profile.id, { ...form, onboarding_completo: true });
       await refreshProfile();
       toast.success("Perfil salvo com sucesso!");
-      navigate("/daily");
+      navigate("/home");
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
