@@ -84,6 +84,18 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    id: "estoque",
+    label: "Estoque Inteligente",
+    icon: Boxes,
+    children: [
+      { to: "/stock", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/stock/products", label: "Catálogo", icon: Package },
+      { to: "/stock/movements", label: "Movimentações", icon: ArrowDownToLine },
+      { to: "/stock/journey", label: "Jornada da Peça", icon: TrendingDown },
+      { to: "/stock/equipment", label: "Equipamentos", icon: Wrench },
+    ],
+  },
+  {
     id: "financeiro",
     label: "Financeiro",
     icon: DollarSign,
