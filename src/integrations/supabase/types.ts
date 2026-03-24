@@ -110,6 +110,143 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_parts: {
+        Row: {
+          created_at: string | null
+          data_entrada: string | null
+          descricao: string
+          equipamento_origem: string
+          id: string
+          localizacao: string | null
+          notas: string | null
+          previsao_conclusao: string | null
+          status: string
+          tecnico_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_entrada?: string | null
+          descricao?: string
+          equipamento_origem?: string
+          id?: string
+          localizacao?: string | null
+          notas?: string | null
+          previsao_conclusao?: string | null
+          status?: string
+          tecnico_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_entrada?: string | null
+          descricao?: string
+          equipamento_origem?: string
+          id?: string
+          localizacao?: string | null
+          notas?: string | null
+          previsao_conclusao?: string | null
+          status?: string
+          tecnico_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lead_interactions: {
+        Row: {
+          audio_url: string | null
+          conteudo: string
+          created_at: string | null
+          id: string
+          lead_id: string
+          tipo: string
+          transcricao_audio: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          tipo?: string
+          transcricao_audio?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          tipo?: string
+          transcricao_audio?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          empresa: string | null
+          id: string
+          nome: string
+          notas: string | null
+          origem: string | null
+          responsavel_id: string | null
+          status: string
+          telefone: string | null
+          ultimo_contato: string | null
+          updated_at: string | null
+          user_id: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          origem?: string | null
+          responsavel_id?: string | null
+          status?: string
+          telefone?: string | null
+          ultimo_contato?: string | null
+          updated_at?: string | null
+          user_id: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          origem?: string | null
+          responsavel_id?: string | null
+          status?: string
+          telefone?: string | null
+          ultimo_contato?: string | null
+          updated_at?: string | null
+          user_id?: string
+          valor_estimado?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -166,6 +303,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      proposals: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          lead_id: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+          user_id: string
+          validade_dias: number | null
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+          user_id: string
+          validade_dias?: number | null
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string
+          validade_dias?: number | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       repetitive_processes: {
         Row: {
@@ -340,6 +524,101 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_order_activities: {
+        Row: {
+          concluida: boolean | null
+          created_at: string | null
+          descricao: string
+          id: string
+          user_id: string
+          work_order_id: string
+        }
+        Insert: {
+          concluida?: boolean | null
+          created_at?: string | null
+          descricao: string
+          id?: string
+          user_id: string
+          work_order_id: string
+        }
+        Update: {
+          concluida?: boolean | null
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          user_id?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_activities_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_orders: {
+        Row: {
+          assinatura_url: string | null
+          audio_url: string | null
+          cliente: string
+          created_at: string | null
+          descricao: string | null
+          equipamento: string
+          id: string
+          numero_os: string
+          observacoes_ia: string | null
+          sla_horas: number | null
+          status: string
+          tecnico_id: string | null
+          tempo_gasto_min: number | null
+          transcricao_audio: string | null
+          updated_at: string | null
+          urgencia: string | null
+          user_id: string
+        }
+        Insert: {
+          assinatura_url?: string | null
+          audio_url?: string | null
+          cliente?: string
+          created_at?: string | null
+          descricao?: string | null
+          equipamento?: string
+          id?: string
+          numero_os?: string
+          observacoes_ia?: string | null
+          sla_horas?: number | null
+          status?: string
+          tecnico_id?: string | null
+          tempo_gasto_min?: number | null
+          transcricao_audio?: string | null
+          updated_at?: string | null
+          urgencia?: string | null
+          user_id: string
+        }
+        Update: {
+          assinatura_url?: string | null
+          audio_url?: string | null
+          cliente?: string
+          created_at?: string | null
+          descricao?: string | null
+          equipamento?: string
+          id?: string
+          numero_os?: string
+          observacoes_ia?: string | null
+          sla_horas?: number | null
+          status?: string
+          tecnico_id?: string | null
+          tempo_gasto_min?: number | null
+          transcricao_audio?: string | null
+          updated_at?: string | null
+          urgencia?: string | null
           user_id?: string
         }
         Relationships: []
