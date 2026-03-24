@@ -52,8 +52,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6 animate-slide-up">
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl hexa-gradient flex items-center justify-center mx-auto mb-4">
-            <Hexagon className="w-8 h-8 text-primary-foreground" />
+          <div className="w-20 h-20 mx-auto mb-4">
+            <img src={logo} alt="Hexamedical" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold">Hexamedical</h1>
           <p className="text-sm text-muted-foreground">Coleta de Processos & Feedback</p>
