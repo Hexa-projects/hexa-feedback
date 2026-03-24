@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -12,9 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Hash, Send, Users, Loader2, Plus, MessageSquare, Search, User,
-  Lock, Globe, Settings, UserPlus, AtSign, Smile, Paperclip, ChevronDown
+  Lock, Globe, Settings, UserPlus, AtSign, Smile, Paperclip, ChevronDown,
+  Mic, Square, Play, Pause, X
 } from "lucide-react";
 import { toast } from "sonner";
+
+const SUPABASE_URL = "https://fevmcjnaeuxydmxmkarw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldm1jam5hZXV4eWRteG1rYXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjM1MDcsImV4cCI6MjA4OTkzOTUwN30.oHTGDmdVb2kXj0HR8GJWjGBeuCjDY0w3x4aJ-qJIT-4";
 
 interface Channel {
   id: string;
