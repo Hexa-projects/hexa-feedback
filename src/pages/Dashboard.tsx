@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/supabase-store";
 import { SETORES } from "@/types/forms";
-import AppLayout from "@/components/AppLayout";
+import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -167,10 +167,10 @@ export default function Dashboard() {
     { icon: Lightbulb, label: "Sugestões", value: filtered.suggestions.length, color: "text-hexa-yellow" },
   ];
 
-  if (loading) return <AppLayout><p className="text-center text-muted-foreground py-12">Carregando dashboard...</p></AppLayout>;
+  if (loading) return <HexaLayout><p className="text-center text-muted-foreground py-12">Carregando dashboard...</p></HexaLayout>;
 
   return (
-    <AppLayout>
+    <HexaLayout>
       <div className="space-y-6 animate-slide-up">
         {/* Header + Filters */}
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -380,6 +380,6 @@ export default function Dashboard() {
           ) : <p className="text-sm text-muted-foreground text-center py-12">Sem dados</p>}
         </div>
       </div>
-    </AppLayout>
+    </HexaLayout>
   );
 }

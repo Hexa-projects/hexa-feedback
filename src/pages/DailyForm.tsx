@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/supabase-store";
 import { SETORES, FERRAMENTAS } from "@/types/forms";
-import AppLayout from "@/components/AppLayout";
+import HexaLayout from "@/components/HexaLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
 import { Button } from "@/components/ui/button";
@@ -68,10 +68,10 @@ export default function DailyForm() {
     setSent(false);
   };
 
-  if (sent) return <AppLayout><SuccessMessage onNew={reset} /></AppLayout>;
+  if (sent) return <HexaLayout><SuccessMessage onNew={reset} /></HexaLayout>;
 
   return (
-    <AppLayout>
+    <HexaLayout>
       <div className="space-y-6 animate-slide-up">
         <div>
           <h1 className="text-2xl font-bold">Meu Dia a Dia</h1>
@@ -135,6 +135,6 @@ export default function DailyForm() {
           {saving ? "Enviando..." : "Enviar"}
         </Button>
       </div>
-    </AppLayout>
+    </HexaLayout>
   );
 }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/supabase-store";
 import { IMPACTOS, URGENCIAS } from "@/types/forms";
-import AppLayout from "@/components/AppLayout";
+import HexaLayout from "@/components/HexaLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
 import AILapidacao from "@/components/AILapidacao";
@@ -88,11 +88,11 @@ export default function Bottlenecks() {
     setShowLapidacao(false);
   };
 
-  if (sent) return <AppLayout><SuccessMessage onNew={reset} /></AppLayout>;
+  if (sent) return <HexaLayout><SuccessMessage onNew={reset} /></HexaLayout>;
 
   if (showLapidacao) {
     return (
-      <AppLayout>
+      <HexaLayout>
         <div className="space-y-6 animate-slide-up">
           <div>
             <h1 className="text-2xl font-bold">Aprofundamento — Gargalo</h1>
@@ -108,12 +108,12 @@ export default function Bottlenecks() {
             Pular lapidação
           </Button>
         </div>
-      </AppLayout>
+      </HexaLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <HexaLayout>
       <div className="space-y-6 animate-slide-up">
         <div>
           <h1 className="text-2xl font-bold">Gargalos e Problemas</h1>
@@ -176,6 +176,6 @@ export default function Bottlenecks() {
           {saving ? "Enviando..." : "Enviar"}
         </Button>
       </div>
-    </AppLayout>
+    </HexaLayout>
   );
 }

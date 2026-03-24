@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/supabase-store";
-import AppLayout from "@/components/AppLayout";
+import HexaLayout from "@/components/HexaLayout";
 import { ClipboardList, Repeat, AlertTriangle, Lightbulb, Wrench } from "lucide-react";
 
 export default function HistoryPage() {
@@ -42,10 +42,10 @@ export default function HistoryPage() {
   };
   const labels = { daily: "Dia a Dia", tool: "Ferramenta", process: "Processo", bottleneck: "Gargalo", suggestion: "Sugestão" };
 
-  if (loading) return <AppLayout><p className="text-center text-muted-foreground py-12">Carregando...</p></AppLayout>;
+  if (loading) return <HexaLayout><p className="text-center text-muted-foreground py-12">Carregando...</p></HexaLayout>;
 
   return (
-    <AppLayout>
+    <HexaLayout>
       <div className="space-y-6 animate-slide-up">
         <h1 className="text-2xl font-bold">Meu Histórico</h1>
 
@@ -78,6 +78,6 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </HexaLayout>
   );
 }
