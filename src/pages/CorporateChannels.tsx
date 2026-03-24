@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -12,9 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Hash, Send, Users, Loader2, Plus, MessageSquare, Search, User,
-  Lock, Globe, Settings, UserPlus, AtSign, Smile, Paperclip, ChevronDown
+  Lock, Globe, Settings, UserPlus, AtSign, Smile, Paperclip, ChevronDown,
+  Mic, Square, Play, Pause, X
 } from "lucide-react";
 import { toast } from "sonner";
+
+const SUPABASE_URL = "https://fevmcjnaeuxydmxmkarw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldm1jam5hZXV4eWRteG1rYXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjM1MDcsImV4cCI6MjA4OTkzOTUwN30.oHTGDmdVb2kXj0HR8GJWjGBeuCjDY0w3x4aJ-qJIT-4";
 
 interface Channel {
   id: string;
@@ -33,7 +37,53 @@ interface Message {
   is_ai: boolean;
   created_at: string;
   parent_id: string | null;
+  tipo: string | null;
+  anexo_url: string | null;
   profiles?: { nome: string } | null;
+}
+
+// Inline audio player for voice messages
+function AudioPlayer({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) { audioRef.current.pause(); } else { audioRef.current.play(); }
+    setPlaying(!playing);
+  };
+
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 max-w-xs">
+      <audio
+        ref={audioRef}
+        src={src}
+        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+        onTimeUpdate={() => {
+          const a = audioRef.current;
+          if (a) setProgress(a.duration ? (a.currentTime / a.duration) * 100 : 0);
+        }}
+        onEnded={() => { setPlaying(false); setProgress(0); }}
+      />
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={toggle}>
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+      </Button>
+      <div className="flex-1 min-w-[80px]">
+        <div className="h-1.5 bg-border rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full transition-all duration-100" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{fmt(duration)}</span>
+    </div>
+  );
 }
 
 interface ProfileEntry {
@@ -62,7 +112,13 @@ export default function CorporateChannels() {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [newChannel, setNewChannel] = useState({ nome: "", descricao: "", tipo: "publico", setor: "" });
   const [creating, setCreating] = useState(false);
-  const [onlineCount] = useState(Math.floor(Math.random() * 8) + 3); // Simulated
+  const [onlineCount] = useState(Math.floor(Math.random() * 8) + 3);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadChannels(); loadProfiles(); }, []);
@@ -119,7 +175,7 @@ export default function CorporateChannels() {
   const loadMessages = async (channelId: string) => {
     const { data } = await supabase
       .from("channel_messages" as any)
-      .select("id, channel_id, user_id, content, is_ai, created_at, parent_id")
+      .select("id, channel_id, user_id, content, is_ai, created_at, parent_id, tipo, anexo_url")
       .eq("channel_id", channelId)
       .order("created_at", { ascending: true })
       .limit(200);
@@ -149,11 +205,112 @@ export default function CorporateChannels() {
       channel_id: activeChannel,
       user_id: user.id,
       content: input.trim(),
+      tipo: "texto",
     } as any);
     if (error) toast.error("Erro ao enviar mensagem");
     setInput("");
     setSending(false);
   };
+
+  // ── Audio recording ──
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      const mr = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
+      });
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (recTimerRef.current) clearInterval(recTimerRef.current);
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        sendAudioMessage(blob);
+      };
+      mr.start(250);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
+    } catch {
+      toast.error("Não foi possível acessar o microfone.");
+    }
+  }, [activeChannel, user]);
+
+  const stopRecording = useCallback(() => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  }, []);
+
+  const cancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      mediaRecorderRef.current.stop();
+    }
+    if (recTimerRef.current) clearInterval(recTimerRef.current);
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingDuration(0);
+  }, []);
+
+  const sendAudioMessage = async (blob: Blob) => {
+    if (!activeChannel || !user) return;
+    setTranscribing(true);
+
+    try {
+      // 1) Transcribe via ElevenLabs
+      const formData = new FormData();
+      formData.append("audio", blob, "recording.webm");
+
+      const transcribeRes = await fetch(`${SUPABASE_URL}/functions/v1/elevenlabs-transcribe`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        body: formData,
+      });
+
+      let transcription = "";
+      if (transcribeRes.ok) {
+        const data = await transcribeRes.json();
+        transcription = data.text || "";
+      }
+
+      // 2) Upload audio to storage
+      const fileName = `channels/${activeChannel}/${Date.now()}.webm`;
+      const { data: uploadData } = await supabase.storage.from("audio-messages").upload(fileName, blob, {
+        contentType: "audio/webm",
+      });
+
+      let audioUrl = "";
+      if (uploadData?.path) {
+        const { data: urlData } = supabase.storage.from("audio-messages").getPublicUrl(uploadData.path);
+        audioUrl = urlData.publicUrl;
+      }
+
+      // 3) Save message with audio URL + transcription
+      const content = transcription
+        ? `🎤 Áudio: ${transcription}`
+        : "🎤 Mensagem de áudio";
+
+      const { error } = await supabase.from("channel_messages" as any).insert({
+        channel_id: activeChannel,
+        user_id: user.id,
+        content,
+        tipo: "audio",
+        anexo_url: audioUrl || null,
+      } as any);
+
+      if (error) toast.error("Erro ao enviar áudio");
+      else toast.success("Áudio enviado!");
+    } catch (err: any) {
+      toast.error("Erro ao processar áudio: " + err.message);
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const fmtDur = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   const createChannel = async () => {
     if (!newChannel.nome.trim() || !user) return;
@@ -465,7 +622,16 @@ export default function CorporateChannels() {
                                 </span>
                               </div>
                             )}
-                            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                            {m.tipo === "audio" && m.anexo_url ? (
+                              <div className="space-y-1">
+                                <AudioPlayer src={m.anexo_url} />
+                                {m.content && !m.content.startsWith("🎤 Mensagem de áudio") && (
+                                  <p className="text-xs text-muted-foreground italic pl-1">{m.content.replace("🎤 Áudio: ", "")}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                            )}
                           </div>
                         </div>
                       );
@@ -480,33 +646,69 @@ export default function CorporateChannels() {
           {/* Input area */}
           {(activeChannel || dmTargetId) && (
             <div className="border-t p-4 bg-card">
-              <div className="relative flex items-end gap-2 bg-muted/40 rounded-xl border px-3 py-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
-                <Input
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder={tab === "diretas" && dmTarget
-                    ? `Mensagem para ${dmTarget.nome.split(" ")[0]}...`
-                    : `Escreva em ${activeChannelData?.nome || "canal"}...`
-                  }
-                  className="border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-sm"
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                  }}
-                />
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Anexar">
-                    <Paperclip className="w-4 h-4" />
+              {/* Transcribing state */}
+              {transcribing && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 px-1">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <span>Transcrevendo e enviando áudio...</span>
+                </div>
+              )}
+
+              {/* Recording state */}
+              {isRecording ? (
+                <div className="flex items-center gap-3 bg-destructive/8 rounded-xl border border-destructive/20 px-4 py-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-destructive">
+                    <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+                    Gravando {fmtDur(recordingDuration)}
+                  </span>
+                  <div className="flex-1" />
+                  <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-muted-foreground" onClick={cancelRecording}>
+                    <X className="w-3.5 h-3.5" /> Cancelar
                   </Button>
-                  <Button
-                    onClick={sendMessage}
-                    disabled={sending || !input.trim()}
-                    size="icon"
-                    className="h-8 w-8 rounded-lg"
-                  >
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <Button size="sm" className="h-8 text-xs gap-1.5" onClick={stopRecording}>
+                    <Square className="w-3 h-3" /> Enviar
                   </Button>
                 </div>
-              </div>
+              ) : (
+                <div className="relative flex items-end gap-2 bg-muted/40 rounded-xl border px-3 py-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                  <Input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    placeholder={tab === "diretas" && dmTarget
+                      ? `Mensagem para ${dmTarget.nome.split(" ")[0]}...`
+                      : `Escreva em ${activeChannelData?.nome || "canal"}...`
+                    }
+                    className="border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-sm"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    }}
+                    disabled={transcribing}
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Gravar áudio"
+                      onClick={startRecording}
+                      disabled={transcribing}
+                    >
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Anexar">
+                      <Paperclip className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={sendMessage}
+                      disabled={sending || !input.trim() || transcribing}
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                    >
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
