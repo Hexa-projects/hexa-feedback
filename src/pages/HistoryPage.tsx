@@ -1,23 +1,36 @@
-import { store } from "@/lib/store";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import AppLayout from "@/components/AppLayout";
 import { ClipboardList, Repeat, AlertTriangle, Lightbulb, Wrench } from "lucide-react";
 
 export default function HistoryPage() {
-  const user = store.getCurrentUser();
-  const stats = store.getStats();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<{
+    daily: any[]; processes: any[]; bottlenecks: any[]; suggestions: any[]; tools: any[];
+  }>({ daily: [], processes: [], bottlenecks: [], suggestions: [], tools: [] });
 
-  const myDaily = stats.daily.filter(d => d.userId === user?.id);
-  const myProcesses = stats.processes.filter(p => p.userId === user?.id);
-  const myBottlenecks = stats.bottlenecks.filter(b => b.userId === user?.id);
-  const mySuggestions = stats.suggestions.filter(s => s.userId === user?.id);
-  const myTools = stats.toolMappings.filter(t => t.userId === user?.id);
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      db.getDailyForms(user.id),
+      db.getProcesses(user.id),
+      db.getBottlenecks(user.id),
+      db.getSuggestions(user.id),
+      db.getToolMappings(user.id),
+    ]).then(([daily, processes, bottlenecks, suggestions, tools]) => {
+      setData({ daily, processes, bottlenecks, suggestions, tools });
+      setLoading(false);
+    });
+  }, [user]);
 
   const allItems = [
-    ...myDaily.map(d => ({ type: "daily" as const, date: d.createdAt, title: d.atividadesPrincipais.slice(0, 80) })),
-    ...myTools.map(t => ({ type: "tool" as const, date: t.createdAt, title: `${t.nomeFerramentaOuPlanilha} — ${t.categoria}` })),
-    ...myProcesses.map(p => ({ type: "process" as const, date: p.createdAt, title: p.processo })),
-    ...myBottlenecks.map(b => ({ type: "bottleneck" as const, date: b.createdAt, title: b.descricao.slice(0, 80) })),
-    ...mySuggestions.map(s => ({ type: "suggestion" as const, date: s.createdAt, title: s.ideia.slice(0, 80) })),
+    ...data.daily.map(d => ({ type: "daily" as const, date: d.created_at, title: (d.atividades_principais || "").slice(0, 80) })),
+    ...data.tools.map(t => ({ type: "tool" as const, date: t.created_at, title: `${t.nome_ferramenta} — ${t.categoria}` })),
+    ...data.processes.map(p => ({ type: "process" as const, date: p.created_at, title: p.processo })),
+    ...data.bottlenecks.map(b => ({ type: "bottleneck" as const, date: b.created_at, title: (b.descricao || "").slice(0, 80) })),
+    ...data.suggestions.map(s => ({ type: "suggestion" as const, date: s.created_at, title: (s.ideia || "").slice(0, 80) })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const icons = {
@@ -27,8 +40,9 @@ export default function HistoryPage() {
     bottleneck: <AlertTriangle className="w-4 h-4 text-hexa-orange" />,
     suggestion: <Lightbulb className="w-4 h-4 text-hexa-yellow" />,
   };
-
   const labels = { daily: "Dia a Dia", tool: "Ferramenta", process: "Processo", bottleneck: "Gargalo", suggestion: "Sugestão" };
+
+  if (loading) return <AppLayout><p className="text-center text-muted-foreground py-12">Carregando...</p></AppLayout>;
 
   return (
     <AppLayout>
@@ -36,7 +50,7 @@ export default function HistoryPage() {
         <h1 className="text-2xl font-bold">Meu Histórico</h1>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {([["daily", myDaily.length], ["tool", myTools.length], ["process", myProcesses.length], ["bottleneck", myBottlenecks.length], ["suggestion", mySuggestions.length]] as const).map(([type, count]) => (
+          {([["daily", data.daily.length], ["tool", data.tools.length], ["process", data.processes.length], ["bottleneck", data.bottlenecks.length], ["suggestion", data.suggestions.length]] as const).map(([type, count]) => (
             <div key={type} className="hexa-card p-4 text-center">
               <div className="flex justify-center mb-2">{icons[type]}</div>
               <p className="text-2xl font-bold">{count}</p>

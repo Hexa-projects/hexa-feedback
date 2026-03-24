@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import { SETORES, FERRAMENTAS } from "@/types/forms";
-import type { DailyFormData } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
@@ -11,13 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 export default function DailyForm() {
-  const user = store.getCurrentUser();
+  const { user, profile } = useAuth();
   const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    setor: user?.setor || "Administrativo",
-    funcao: user?.funcao || "",
+    setor: profile?.setor || "Administrativo",
+    funcao: profile?.funcao || "",
     atividadesPrincipais: "",
     ferramentas: [] as string[],
     tempoMedioPorAtividade: "",
@@ -37,20 +39,31 @@ export default function DailyForm() {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) return;
-    const data: DailyFormData = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      ...form,
-      createdAt: new Date().toISOString(),
-    };
-    store.saveDailyForm(data);
-    setSent(true);
+    setSaving(true);
+    try {
+      await db.saveDailyForm({
+        user_id: user.id,
+        setor: form.setor,
+        funcao: form.funcao,
+        atividades_principais: form.atividadesPrincipais,
+        ferramentas: form.ferramentas,
+        tempo_medio_por_atividade: form.tempoMedioPorAtividade,
+        maior_consumo_tempo: form.maiorConsumoTempo,
+        impedimentos: form.impedimentos,
+      });
+      setSent(true);
+      toast.success("Enviado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
-    setForm({ setor: user?.setor || "Administrativo", funcao: user?.funcao || "", atividadesPrincipais: "", ferramentas: [], tempoMedioPorAtividade: "", maiorConsumoTempo: "", impedimentos: "" });
+    setForm({ setor: profile?.setor || "Administrativo", funcao: profile?.funcao || "", atividadesPrincipais: "", ferramentas: [], tempoMedioPorAtividade: "", maiorConsumoTempo: "", impedimentos: "" });
     setSent(false);
   };
 
@@ -69,7 +82,7 @@ export default function DailyForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Setor</Label>
-              <Select value={form.setor} onValueChange={v => setForm(p => ({ ...p, setor: v as typeof p.setor }))}>
+              <Select value={form.setor} onValueChange={v => setForm(p => ({ ...p, setor: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
@@ -113,8 +126,8 @@ export default function DailyForm() {
           </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 4}>
-          Enviar
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 4 || saving}>
+          {saving ? "Enviando..." : "Enviar"}
         </Button>
       </div>
     </AppLayout>

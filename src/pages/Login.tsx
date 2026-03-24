@@ -1,50 +1,41 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import logo from "@/assets/logo.png";
-import type { UserProfile } from "@/types/forms";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
-  const [role, setRole] = useState<"admin" | "gestor" | "colaborador">("colaborador");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const handleLogin = () => {
-    if (!nome.trim()) { setError("Informe seu nome"); return; }
-    const user = store.login(nome.trim());
-    if (!user) { setError("Usuário não encontrado. Cadastre-se primeiro."); return; }
-    store.setCurrentUser(user);
-    navigate(user.onboardingCompleto ? "/daily" : "/onboarding");
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) { setError("Preencha e-mail e senha"); return; }
+    setLoading(true);
+    setError("");
+    const { error: err } = await signIn(email.trim(), password);
+    setLoading(false);
+    if (err) { setError(err.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : err.message); return; }
+    navigate("/daily");
   };
 
-  const handleRegister = () => {
-    if (!nome.trim()) { setError("Informe seu nome"); return; }
-    const existing = store.login(nome.trim());
-    if (existing) { setError("Usuário já existe. Faça login."); return; }
-    const user: UserProfile = {
-      id: crypto.randomUUID(),
-      nome: nome.trim(),
-      setor: "Administrativo",
-      funcao: "",
-      unidade: "",
-      resumoDiaDia: "",
-      responsabilidades: "",
-      qualidades: "",
-      pontosMelhoria: "",
-      tempoCasa: "",
-      role,
-      onboardingCompleto: false,
-      createdAt: new Date().toISOString(),
-    };
-    store.saveUser(user);
-    store.setCurrentUser(user);
-    navigate("/onboarding");
+  const handleRegister = async () => {
+    if (!email.trim() || !password.trim() || !nome.trim()) { setError("Preencha todos os campos"); return; }
+    if (password.length < 6) { setError("Senha deve ter no mínimo 6 caracteres"); return; }
+    setLoading(true);
+    setError("");
+    const { error: err } = await signUp(email.trim(), password, nome.trim());
+    setLoading(false);
+    if (err) { setError(err.message); return; }
+    setSuccessMsg("Cadastro realizado! Verifique seu e-mail para confirmar ou faça login.");
   };
 
   return (
@@ -60,38 +51,37 @@ export default function Login() {
 
         <div className="hexa-card p-6 space-y-4">
           <div className="flex gap-2">
-            <Button variant={mode === "login" ? "default" : "outline"} size="sm" className="flex-1" onClick={() => { setMode("login"); setError(""); }}>
+            <Button variant={mode === "login" ? "default" : "outline"} size="sm" className="flex-1" onClick={() => { setMode("login"); setError(""); setSuccessMsg(""); }}>
               Entrar
             </Button>
-            <Button variant={mode === "register" ? "default" : "outline"} size="sm" className="flex-1" onClick={() => { setMode("register"); setError(""); }}>
+            <Button variant={mode === "register" ? "default" : "outline"} size="sm" className="flex-1" onClick={() => { setMode("register"); setError(""); setSuccessMsg(""); }}>
               Cadastrar
             </Button>
           </div>
 
           <div className="space-y-3">
-            <div>
-              <Label>Nome completo</Label>
-              <Input value={nome} onChange={e => { setNome(e.target.value); setError(""); }} placeholder="Seu nome" />
-            </div>
-
             {mode === "register" && (
               <div>
-                <Label>Perfil de acesso</Label>
-                <Select value={role} onValueChange={(v: any) => setRole(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="colaborador">Colaborador</SelectItem>
-                    <SelectItem value="gestor">Gestor</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Nome completo</Label>
+                <Input value={nome} onChange={e => { setNome(e.target.value); setError(""); }} placeholder="Seu nome" />
               </div>
             )}
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div>
+              <Label>E-mail</Label>
+              <Input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} placeholder="seu@email.com" />
+            </div>
 
-            <Button className="w-full" onClick={mode === "login" ? handleLogin : handleRegister}>
-              {mode === "login" ? "Entrar" : "Cadastrar e continuar"}
+            <div>
+              <Label>Senha</Label>
+              <Input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} placeholder="Mínimo 6 caracteres" />
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {successMsg && <p className="text-sm text-primary">{successMsg}</p>}
+
+            <Button className="w-full" onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading}>
+              {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Cadastrar"}
             </Button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import { SETORES, type Setor } from "@/types/forms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,30 +9,39 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import FormProgress from "@/components/FormProgress";
+import { toast } from "sonner";
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const user = store.getCurrentUser();
+  const { profile, refreshProfile } = useAuth();
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    setor: user?.setor || ("Administrativo" as Setor),
-    funcao: user?.funcao || "",
-    unidade: user?.unidade || "",
-    resumoDiaDia: user?.resumoDiaDia || "",
-    responsabilidades: user?.responsabilidades || "",
-    qualidades: user?.qualidades || "",
-    pontosMelhoria: user?.pontosMelhoria || "",
-    tempoCasa: user?.tempoCasa || "",
+    setor: profile?.setor || "Administrativo",
+    funcao: profile?.funcao || "",
+    unidade: profile?.unidade || "",
+    resumo_dia_dia: profile?.resumo_dia_dia || "",
+    responsabilidades: profile?.responsabilidades || "",
+    qualidades: profile?.qualidades || "",
+    pontos_melhoria: profile?.pontos_melhoria || "",
+    tempo_casa: profile?.tempo_casa || "",
   });
 
   const fields = Object.values(form);
   const filled = fields.filter(v => v.trim()).length;
 
-  const handleSubmit = () => {
-    if (!user) return;
-    const updated = { ...user, ...form, onboardingCompleto: true };
-    store.saveUser(updated);
-    store.setCurrentUser(updated);
-    navigate("/daily");
+  const handleSubmit = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      await db.updateProfile(profile.id, { ...form, onboarding_completo: true });
+      await refreshProfile();
+      toast.success("Perfil salvo com sucesso!");
+      navigate("/daily");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const u = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
@@ -65,14 +75,14 @@ export default function Onboarding() {
             </div>
             <div>
               <Label>Tempo de casa</Label>
-              <Input value={form.tempoCasa} onChange={e => u("tempoCasa", e.target.value)} placeholder="Ex: 2 anos e 3 meses" />
+              <Input value={form.tempo_casa} onChange={e => u("tempo_casa", e.target.value)} placeholder="Ex: 2 anos e 3 meses" />
             </div>
           </div>
 
           <div className="form-section">
             <div>
               <Label>Resumo do que você faz no dia a dia</Label>
-              <Textarea value={form.resumoDiaDia} onChange={e => u("resumoDiaDia", e.target.value)} placeholder="Descreva brevemente suas atividades..." rows={3} />
+              <Textarea value={form.resumo_dia_dia} onChange={e => u("resumo_dia_dia", e.target.value)} placeholder="Descreva brevemente suas atividades..." rows={3} />
             </div>
             <div>
               <Label>Principais responsabilidades</Label>
@@ -87,13 +97,13 @@ export default function Onboarding() {
             </div>
             <div>
               <Label>Pontos que gostaria de melhorar</Label>
-              <Textarea value={form.pontosMelhoria} onChange={e => u("pontosMelhoria", e.target.value)} placeholder="O que pode ser aprimorado..." rows={2} />
+              <Textarea value={form.pontos_melhoria} onChange={e => u("pontos_melhoria", e.target.value)} placeholder="O que pode ser aprimorado..." rows={2} />
             </div>
           </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 5}>
-          Salvar e continuar
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 5 || saving}>
+          {saving ? "Salvando..." : "Salvar e continuar"}
         </Button>
       </div>
     </div>
