@@ -436,6 +436,78 @@ export type Database = {
         }
         Relationships: []
       }
+      openclaw_event_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          data: Json
+          delivered_at: string | null
+          event_id: string
+          event_type: string
+          id: string
+          last_error: string | null
+          max_attempts: number
+          meta: Json | null
+          next_retry_at: string | null
+          priority: string
+          status: string
+          tags: string[] | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          data?: Json
+          delivered_at?: string | null
+          event_id?: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          meta?: Json | null
+          next_retry_at?: string | null
+          priority?: string
+          status?: string
+          tags?: string[] | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          data?: Json
+          delivered_at?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          meta?: Json | null
+          next_retry_at?: string | null
+          priority?: string
+          status?: string
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
+      openclaw_sync_status: {
+        Row: {
+          id: string
+          metric_name: string
+          metric_value: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          metric_name: string
+          metric_value?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          metric_name?: string
+          metric_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
