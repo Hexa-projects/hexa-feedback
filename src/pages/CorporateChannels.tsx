@@ -622,7 +622,16 @@ export default function CorporateChannels() {
                                 </span>
                               </div>
                             )}
-                            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                            {m.tipo === "audio" && m.anexo_url ? (
+                              <div className="space-y-1">
+                                <AudioPlayer src={m.anexo_url} />
+                                {m.content && !m.content.startsWith("🎤 Mensagem de áudio") && (
+                                  <p className="text-xs text-muted-foreground italic pl-1">{m.content.replace("🎤 Áudio: ", "")}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                            )}
                           </div>
                         </div>
                       );
