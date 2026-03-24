@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 const URGENCIA_COLORS: Record<string, string> = {
   "Baixa": "bg-hexa-green/10 text-hexa-green",
