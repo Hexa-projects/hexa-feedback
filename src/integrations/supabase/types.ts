@@ -14,6 +14,127 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_agents: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          domain: string
+          fontes_autorizadas: string[] | null
+          id: string
+          metricas: Json | null
+          modelo: string | null
+          nome: string
+          system_prompt: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          domain?: string
+          fontes_autorizadas?: string[] | null
+          id?: string
+          metricas?: Json | null
+          modelo?: string | null
+          nome: string
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          domain?: string
+          fontes_autorizadas?: string[] | null
+          id?: string
+          metricas?: Json | null
+          modelo?: string | null
+          nome?: string
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_chat_messages: {
+        Row: {
+          agent_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_messages_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_feedback: {
+        Row: {
+          comentario: string | null
+          created_at: string | null
+          id: string
+          impacto_real: string | null
+          insight_id: string | null
+          precisao_score: number | null
+          resultado: string
+          user_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          created_at?: string | null
+          id?: string
+          impacto_real?: string | null
+          insight_id?: string | null
+          precisao_score?: number | null
+          resultado?: string
+          user_id: string
+        }
+        Update: {
+          comentario?: string | null
+          created_at?: string | null
+          id?: string
+          impacto_real?: string | null
+          insight_id?: string | null
+          precisao_score?: number | null
+          resultado?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_feedback_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "focus_ai_insights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       autonomy_rules: {
         Row: {
           acao: string
@@ -104,6 +225,99 @@ export type Database = {
           transcricao_audio?: string | null
           urgencia?: Database["public"]["Enums"]["urgencia"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      channel_messages: {
+        Row: {
+          anexo_url: string | null
+          channel_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_ai: boolean | null
+          metadata: Json | null
+          parent_id: string | null
+          tipo: string | null
+          user_id: string
+        }
+        Insert: {
+          anexo_url?: string | null
+          channel_id: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_ai?: boolean | null
+          metadata?: Json | null
+          parent_id?: string | null
+          tipo?: string | null
+          user_id: string
+        }
+        Update: {
+          anexo_url?: string | null
+          channel_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_ai?: boolean | null
+          metadata?: Json | null
+          parent_id?: string | null
+          tipo?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "channel_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corporate_channels: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          setor: string | null
+          slug: string
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          setor?: string | null
+          slug: string
+          tipo?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          setor?: string | null
+          slug?: string
+          tipo?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
