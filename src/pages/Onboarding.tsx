@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import FormProgress from "@/components/FormProgress";
+import AudioRecorder from "@/components/AudioRecorder";
 import { toast } from "sonner";
 
 export default function Onboarding() {
@@ -83,13 +84,15 @@ export default function Onboarding() {
           </div>
 
           <div className="form-section">
-            <div>
+           <div>
               <Label>Resumo do que você faz no dia a dia</Label>
               <Textarea value={form.resumo_dia_dia} onChange={e => u("resumo_dia_dia", e.target.value)} placeholder="Descreva brevemente suas atividades..." rows={3} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("resumo_dia_dia", form.resumo_dia_dia ? form.resumo_dia_dia + "\n" + text : text)} />
             </div>
             <div>
               <Label>Principais responsabilidades</Label>
               <Textarea value={form.responsabilidades} onChange={e => u("responsabilidades", e.target.value)} placeholder="Liste suas responsabilidades..." rows={3} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("responsabilidades", form.responsabilidades ? form.responsabilidades + "\n" + text : text)} />
             </div>
           </div>
 
@@ -97,10 +100,12 @@ export default function Onboarding() {
             <div>
               <Label>Suas qualidades principais no trabalho</Label>
               <Textarea value={form.qualidades} onChange={e => u("qualidades", e.target.value)} placeholder="O que você faz de melhor..." rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("qualidades", form.qualidades ? form.qualidades + "\n" + text : text)} />
             </div>
             <div>
               <Label>Pontos que gostaria de melhorar</Label>
               <Textarea value={form.pontos_melhoria} onChange={e => u("pontos_melhoria", e.target.value)} placeholder="O que pode ser aprimorado..." rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("pontos_melhoria", form.pontos_melhoria ? form.pontos_melhoria + "\n" + text : text)} />
             </div>
           </div>
 
@@ -108,14 +113,17 @@ export default function Onboarding() {
             <div>
               <Label>Quem participa das decisões na sua área? (gestor, pares, diretoria)</Label>
               <Textarea value={form.decisores} onChange={e => u("decisores", e.target.value)} placeholder="Ex: Meu gestor direto e o diretor técnico" rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("decisores", form.decisores ? form.decisores + "\n" + text : text)} />
             </div>
             <div>
               <Label>Ferramentas críticas que você usa todos os dias</Label>
               <Textarea value={form.ferramentas_criticas} onChange={e => u("ferramentas_criticas", e.target.value)} placeholder="Ex: Excel de OS, ERP Totvs, WhatsApp do setor..." rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("ferramentas_criticas", form.ferramentas_criticas ? form.ferramentas_criticas + "\n" + text : text)} />
             </div>
             <div>
               <Label>Principal gargalo que você percebe na sua área</Label>
               <Textarea value={form.principal_gargalo} onChange={e => u("principal_gargalo", e.target.value)} placeholder="O que mais trava ou atrasa o trabalho do seu setor?" rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("principal_gargalo", form.principal_gargalo ? form.principal_gargalo + "\n" + text : text)} />
             </div>
           </div>
         </div>
