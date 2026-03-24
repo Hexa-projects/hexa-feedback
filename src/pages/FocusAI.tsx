@@ -17,6 +17,7 @@ import {
   Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle, Crown
 } from "lucide-react";
 import CoCEODashboard from "@/components/CoCEODashboard";
+import WebhookOpsDashboard from "@/components/WebhookOpsDashboard";
 import OpenClawSyncPanel from "@/components/OpenClawSyncPanel";
 import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
 import { toast } from "sonner";
