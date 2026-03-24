@@ -24,7 +24,7 @@ export default function Login() {
     const { error: err } = await signIn(email.trim(), password);
     setLoading(false);
     if (err) { setError(err.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : err.message); return; }
-    navigate("/daily");
+    navigate("/home");
   };
 
   const handleRegister = async () => {
