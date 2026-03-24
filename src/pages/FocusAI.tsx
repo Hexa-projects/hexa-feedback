@@ -288,6 +288,11 @@ export default function FocusAI() {
             <TabsTrigger value="autonomy" className="text-xs">Autonomia</TabsTrigger>
           </TabsList>
 
+          {/* Co-CEO Dashboard */}
+          <TabsContent value="coceo">
+            <CoCEODashboard />
+          </TabsContent>
+
           {/* OpenClaw */}
           <TabsContent value="openclaw">
             <Card>
