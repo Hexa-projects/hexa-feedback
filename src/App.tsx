@@ -26,6 +26,9 @@ import FocusAI from "./pages/FocusAI";
 import Dashboard from "./pages/Dashboard";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+import AIChat from "./pages/AIChat";
+import CorporateChannels from "./pages/CorporateChannels";
+import AgentsDashboard from "./pages/AgentsDashboard";
 
 const queryClient = new QueryClient();
 
