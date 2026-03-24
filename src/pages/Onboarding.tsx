@@ -113,14 +113,17 @@ export default function Onboarding() {
             <div>
               <Label>Quem participa das decisões na sua área? (gestor, pares, diretoria)</Label>
               <Textarea value={form.decisores} onChange={e => u("decisores", e.target.value)} placeholder="Ex: Meu gestor direto e o diretor técnico" rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("decisores", form.decisores ? form.decisores + "\n" + text : text)} />
             </div>
             <div>
               <Label>Ferramentas críticas que você usa todos os dias</Label>
               <Textarea value={form.ferramentas_criticas} onChange={e => u("ferramentas_criticas", e.target.value)} placeholder="Ex: Excel de OS, ERP Totvs, WhatsApp do setor..." rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("ferramentas_criticas", form.ferramentas_criticas ? form.ferramentas_criticas + "\n" + text : text)} />
             </div>
             <div>
               <Label>Principal gargalo que você percebe na sua área</Label>
               <Textarea value={form.principal_gargalo} onChange={e => u("principal_gargalo", e.target.value)} placeholder="O que mais trava ou atrasa o trabalho do seu setor?" rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("principal_gargalo", form.principal_gargalo ? form.principal_gargalo + "\n" + text : text)} />
             </div>
           </div>
         </div>
