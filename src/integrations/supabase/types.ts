@@ -440,6 +440,66 @@ export type Database = {
           },
         ]
       }
+      channel_tasks: {
+        Row: {
+          assigned_to: string | null
+          channel_id: string
+          created_at: string | null
+          created_by: string
+          descricao: string | null
+          id: string
+          message_id: string | null
+          prazo: string | null
+          prioridade: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel_id: string
+          created_at?: string | null
+          created_by: string
+          descricao?: string | null
+          id?: string
+          message_id?: string | null
+          prazo?: string | null
+          prioridade?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          channel_id?: string
+          created_at?: string | null
+          created_by?: string
+          descricao?: string | null
+          id?: string
+          message_id?: string | null
+          prazo?: string | null
+          prioridade?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_tasks_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_tasks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "channel_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corporate_channels: {
         Row: {
           ativo: boolean | null
