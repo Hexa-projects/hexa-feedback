@@ -29,6 +29,7 @@ import NotFound from "./pages/NotFound";
 import AIChat from "./pages/AIChat";
 import CorporateChannels from "./pages/CorporateChannels";
 import AgentsDashboard from "./pages/AgentsDashboard";
+import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient();
 
