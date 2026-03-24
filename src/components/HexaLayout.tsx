@@ -5,7 +5,7 @@ import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
-  MessageCircle, Bot, Hash
+  MessageCircle, Bot, Hash, BookOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
