@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { store } from "@/lib/store";
 import {
   LayoutDashboard, ClipboardList, Repeat, AlertTriangle,
-  Lightbulb, History, LogOut, Menu, X, Hexagon, User
+  Lightbulb, History, LogOut, Menu, X, User
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const NAV = [
   { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
@@ -33,7 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <header className="lg:hidden hexa-gradient text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <Hexagon className="w-6 h-6" />
+          <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
           <span className="font-bold text-lg">Hexamedical</span>
         </div>
         <button onClick={() => setOpen(!open)} className="p-1">
@@ -46,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="lg:hidden fixed inset-0 z-40 bg-foreground/50" onClick={() => setOpen(false)}>
           <nav className="w-72 h-full hexa-gradient text-sidebar-foreground p-6 space-y-2 animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-8">
-              <Hexagon className="w-7 h-7 text-sidebar-primary" />
+              <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
               <span className="font-bold text-xl">Hexamedical</span>
             </div>
             {user && (
@@ -79,7 +80,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex flex-col w-64 hexa-gradient text-sidebar-foreground min-h-screen sticky top-0 p-5">
           <div className="flex items-center gap-2 mb-8">
-            <Hexagon className="w-7 h-7 text-sidebar-primary" />
+            <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
             <span className="font-bold text-xl">Hexamedical</span>
           </div>
           {user && (
