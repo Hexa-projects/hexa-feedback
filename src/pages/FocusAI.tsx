@@ -295,6 +295,11 @@ export default function FocusAI() {
             <CoCEODashboard />
           </TabsContent>
 
+          {/* Webhook Operations Dashboard */}
+          <TabsContent value="ops">
+            <WebhookOpsDashboard />
+          </TabsContent>
+
           {/* OpenClaw */}
           <TabsContent value="openclaw">
             <Card>
