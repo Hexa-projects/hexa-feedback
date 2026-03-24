@@ -6,120 +6,274 @@ import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
-  MessageCircle, Bot, Hash, BookOpen
+  MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import hexaLogo from "@/assets/hexaos-logo.png";
 
-interface NavItem {
+interface NavChild {
+  to: string;
+  label: string;
+  icon: any;
+  wip?: boolean;
+}
+
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: any;
+  roles?: string[];
+  children: NavChild[];
+}
+
+interface NavSingle {
+  id: string;
   to: string;
   label: string;
   icon: any;
   roles?: string[];
-  children?: NavItem[];
+  highlight?: boolean;
 }
 
-const NAV: NavItem[] = [
-  { to: "/home", label: "Home", icon: Home },
-  { to: "/crm", label: "CRM & Vendas", icon: Users },
-  { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
-  { to: "/os", label: "Manutenção & OS", icon: Wrench },
-  { to: "/lab", label: "Laboratório de Peças", icon: FlaskConical },
-  { to: "/finance", label: "Financeiro", icon: DollarSign },
-  { to: "/chat-ia", label: "Chat IA", icon: MessageCircle },
-  { to: "/canais", label: "Canal Corporativo", icon: Hash },
+type NavItem = NavGroup | NavSingle;
+
+const isGroup = (item: NavItem): item is NavGroup => "children" in item;
+
+const NAV_ITEMS: NavItem[] = [
   {
-    to: "#feedback", label: "Relatórios & Feedback", icon: BarChart3,
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
     children: [
-      { to: "/reports", label: "Dashboard Geral", icon: BarChart3 },
+      { to: "/home", label: "Visão Geral", icon: Home },
+      { to: "/reports", label: "Relatórios & BI", icon: BarChart3 },
+    ],
+  },
+  {
+    id: "comercial",
+    label: "Comercial",
+    icon: Target,
+    roles: ["admin", "gestor", "colaborador"],
+    children: [
+      { to: "/crm", label: "Leads", icon: Users },
+      { to: "/crm/kanban", label: "Funil Kanban", icon: BarChart3 },
+      { to: "/proposals", label: "Propostas", icon: FileText, wip: true },
+      { to: "/contracts", label: "Contratos", icon: Briefcase, wip: true },
+    ],
+  },
+  {
+    id: "operacoes",
+    label: "Operações",
+    icon: Wrench,
+    children: [
+      { to: "/os", label: "Ordens de Serviço", icon: ClipboardList },
+      { to: "/schedule", label: "Agenda Técnica", icon: Calendar, wip: true },
+      { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
+    ],
+  },
+  {
+    id: "laboratorio",
+    label: "Laboratório",
+    icon: FlaskConical,
+    children: [
+      { to: "/lab", label: "Peças em Reparo", icon: Wrench },
+      { to: "/lab/stock", label: "Estoque", icon: Package, wip: true },
+      { to: "/lab/new", label: "Registrar Peça", icon: FlaskConical },
+    ],
+  },
+  {
+    id: "financeiro",
+    label: "Financeiro",
+    icon: DollarSign,
+    roles: ["admin", "gestor"],
+    children: [
+      { to: "/finance", label: "Receita", icon: DollarSign },
+      { to: "/finance/costs", label: "Custos", icon: TrendingDown, wip: true },
+      { to: "/finance/overdue", label: "Inadimplência", icon: AlertTriangle, wip: true },
+      { to: "/finance/cashflow", label: "Fluxo de Caixa", icon: Wallet, wip: true },
+    ],
+  },
+  {
+    id: "comunicacao",
+    label: "Comunicação",
+    icon: MessageCircle,
+    children: [
+      { to: "/canais", label: "Canal Corporativo", icon: Hash },
+      { to: "/chat-ia", label: "Chat IA", icon: Bot },
+    ],
+  },
+  {
+    id: "feedback",
+    label: "Feedback & Processos",
+    icon: ClipboardList,
+    children: [
       { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
-      { to: "/tools", label: "Ferramentas & Planilhas", icon: Wrench },
       { to: "/processes", label: "Processos Repetitivos", icon: Repeat },
       { to: "/bottlenecks", label: "Gargalos", icon: AlertTriangle },
       { to: "/suggestions", label: "Sugestões", icon: Lightbulb },
+      { to: "/tools", label: "Ferramentas & Planilhas", icon: Wrench },
       { to: "/history", label: "Histórico", icon: History },
     ],
   },
-  { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
-  { to: "/agentes", label: "Agentes IA", icon: Bot, roles: ["admin"] },
-  { to: "/api-docs", label: "API & Webhooks", icon: BookOpen, roles: ["admin"] },
-  { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
+  {
+    id: "ia",
+    label: "IA & Automação",
+    icon: Brain,
+    roles: ["admin"],
+    children: [
+      { to: "/focus-ai", label: "Focus AI", icon: Brain },
+      { to: "/agentes", label: "Agentes IA", icon: Bot },
+      { to: "/automations", label: "Automações", icon: Zap, wip: true },
+      { to: "/api-docs", label: "API & Webhooks", icon: BookOpen },
+    ],
+  },
+  {
+    id: "settings",
+    to: "/settings",
+    label: "Configurações",
+    icon: Settings,
+    roles: ["admin"],
+  },
 ];
 
-const FEEDBACK_ROUTES = ["/reports", "/daily", "/tools", "/processes", "/bottlenecks", "/suggestions", "/history", "/dashboard"];
+// Role-based group visibility mapping
+const ROLE_GROUPS: Record<string, string[]> = {
+  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback", "ia", "settings"],
+  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback"],
+  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "comunicacao", "feedback"],
+};
+
+// Setor-specific visibility overrides
+const SETOR_GROUPS: Record<string, string[]> = {
+  Comercial: ["dashboard", "comercial", "comunicacao", "feedback"],
+  "Técnico": ["dashboard", "operacoes", "laboratorio", "comunicacao", "feedback"],
+  "Laboratório": ["dashboard", "laboratorio", "comunicacao", "feedback"],
+  Financeiro: ["dashboard", "financeiro", "comunicacao", "feedback"],
+  "Logística": ["dashboard", "operacoes", "comunicacao", "feedback"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback", "ia", "settings"],
+};
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
 
-  const isFeedbackRoute = FEEDBACK_ROUTES.some(r => location.pathname.startsWith(r));
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(isFeedbackRoute);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    // Auto-open the group that contains the current route
+    const initial: Record<string, boolean> = {};
+    for (const item of NAV_ITEMS) {
+      if (isGroup(item) && item.children.some(c => location.pathname.startsWith(c.to))) {
+        initial[item.id] = true;
+      }
+    }
+    return initial;
+  });
 
-  const visibleNav = NAV.filter(n => !n.roles || n.roles.includes(role));
-  const isActive = (path: string) => path !== "#feedback" && location.pathname.startsWith(path);
+  const toggleGroup = (id: string) =>
+    setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // Filter nav items by role + setor
+  const setor = profile?.setor;
+  const allowedByRole = ROLE_GROUPS[role] || ROLE_GROUPS.colaborador;
+  const allowedBySetor = setor ? SETOR_GROUPS[setor] : undefined;
+  
+  const visibleNav = NAV_ITEMS.filter(item => {
+    // Admin always sees everything
+    if (role === "admin") return true;
+    // Check role-based groups
+    if (!allowedByRole.includes(item.id)) return false;
+    // For non-admin, also check setor if available
+    if (allowedBySetor && !allowedBySetor.includes(item.id)) return false;
+    return true;
+  });
 
   const handleLogout = async () => {
     await signOut();
     navigate("/");
   };
 
-  const renderNavItem = (n: NavItem) => {
-    if (n.children) {
-      const isGroupActive = n.children.some(c => location.pathname.startsWith(c.to));
+  const isChildActive = (to: string) => {
+    if (to === "/home") return location.pathname === "/home";
+    return location.pathname.startsWith(to);
+  };
+
+  const renderNavItem = (item: NavItem) => {
+    if (!isGroup(item)) {
+      // Single item (e.g. Settings)
+      const active = location.pathname.startsWith(item.to);
       return (
-        <div key={n.to}>
-          <button
-            onClick={() => setFeedbackOpen(!feedbackOpen)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              isGroupActive
-                ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-            }`}
-          >
-            <n.icon className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-left">{n.label}</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${feedbackOpen ? "rotate-180" : ""}`} />
-          </button>
-          {feedbackOpen && (
-            <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
-              {n.children.filter(c => !c.roles || c.roles.includes(role)).map(c => (
-                <Link
-                  key={c.to}
-                  to={c.to}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
-                    location.pathname === c.to
-                      ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                      : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  }`}
-                >
-                  <c.icon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{c.label}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+        <Link
+          key={item.id}
+          to={item.to}
+          onClick={() => setSidebarOpen(false)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+            active
+              ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          }`}
+        >
+          <item.icon className="w-4 h-4 shrink-0" />
+          <span>{item.label}</span>
+        </Link>
       );
     }
 
+    // Group with children
+    const isAnyChildActive = item.children.some(c => isChildActive(c.to));
+    const isOpen = openGroups[item.id] ?? false;
+    const isHighlighted = item.id === "ia";
+
     return (
-      <Link
-        key={n.to}
-        to={n.to}
-        onClick={() => setSidebarOpen(false)}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-          isActive(n.to)
-            ? "bg-sidebar-accent text-sidebar-primary font-medium"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-        }`}
-      >
-        <n.icon className="w-4 h-4 shrink-0" />
-        <span>{n.label}</span>
-      </Link>
+      <div key={item.id}>
+        <button
+          onClick={() => toggleGroup(item.id)}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+            isAnyChildActive
+              ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+              : isHighlighted
+              ? "text-hexa-amber hover:bg-sidebar-accent/50"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          }`}
+        >
+          <item.icon className={`w-4 h-4 shrink-0 ${isHighlighted ? "text-hexa-amber" : ""}`} />
+          <span className="flex-1 text-left">{item.label}</span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {isOpen && (
+          <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
+            {item.children.map(child => (
+              <Link
+                key={child.to}
+                to={child.wip ? "#" : child.to}
+                onClick={(e) => {
+                  if (child.wip) { e.preventDefault(); return; }
+                  setSidebarOpen(false);
+                }}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+                  child.wip
+                    ? "text-sidebar-foreground/30 cursor-default"
+                    : isChildActive(child.to)
+                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                }`}
+              >
+                <child.icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1">{child.label}</span>
+                {child.wip && (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-sidebar-border/40 text-sidebar-foreground/40">
+                    Em breve
+                  </Badge>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -134,11 +288,10 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
         </div>
       </div>
 
-      {/* Divider */}
       <div className="mx-4 mb-2 h-px bg-sidebar-border/60" />
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto scrollbar-thin">
         {visibleNav.map(renderNavItem)}
       </nav>
 
