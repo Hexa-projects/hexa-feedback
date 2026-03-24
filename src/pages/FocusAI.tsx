@@ -14,8 +14,9 @@ import { Slider } from "@/components/ui/slider";
 import {
   Brain, Plug, Cpu, MessageSquare, Shield, Zap, Eye,
   CheckCircle2, XCircle, RefreshCw, Play, Settings2,
-  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff
+  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle
 } from "lucide-react";
+import OpenClawSyncPanel from "@/components/OpenClawSyncPanel";
 import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
 import { toast } from "sonner";
 
@@ -274,8 +275,9 @@ export default function FocusAI() {
 
         {/* Tabs */}
         <Tabs defaultValue="openclaw" className="space-y-4">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-7 h-auto">
+          <TabsList className="grid grid-cols-4 lg:grid-cols-8 h-auto">
             <TabsTrigger value="openclaw" className="text-xs">OpenClaw</TabsTrigger>
+            <TabsTrigger value="sync" className="text-xs">Sync</TabsTrigger>
             <TabsTrigger value="llm" className="text-xs">LLM</TabsTrigger>
             <TabsTrigger value="prompt" className="text-xs">Prompt Base</TabsTrigger>
             <TabsTrigger value="skills" className="text-xs">Skills</TabsTrigger>
@@ -340,6 +342,11 @@ export default function FocusAI() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Sync Panel */}
+          <TabsContent value="sync">
+            <OpenClawSyncPanel />
           </TabsContent>
 
           {/* LLM */}
