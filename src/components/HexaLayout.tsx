@@ -19,6 +19,7 @@ const NAV = [
   { to: "/reports", label: "Relatórios & Dashboards", icon: BarChart3 },
   // Legacy feedback module
   { to: "/daily", label: "Feedback", icon: LayoutDashboard, roles: ["admin", "gestor", "colaborador"] },
+  { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
   { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
 ];
 
