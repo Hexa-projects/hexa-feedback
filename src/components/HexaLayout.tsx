@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
-  ChevronDown
+  ChevronDown, Brain
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ const NAV = [
   { to: "/reports", label: "Relatórios & Dashboards", icon: BarChart3 },
   // Legacy feedback module
   { to: "/daily", label: "Feedback", icon: LayoutDashboard, roles: ["admin", "gestor", "colaborador"] },
+  { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
   { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
 ];
 

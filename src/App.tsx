@@ -22,6 +22,7 @@ import ToolsMapping from "./pages/ToolsMapping";
 import Bottlenecks from "./pages/Bottlenecks";
 import Suggestions from "./pages/Suggestions";
 import HistoryPage from "./pages/HistoryPage";
+import FocusAI from "./pages/FocusAI";
 import Dashboard from "./pages/Dashboard";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
@@ -64,6 +65,7 @@ const AppRoutes = () => (
       <Route path="/projects" element={<PrivateRoute><PlaceholderPage title="Projetos & Implantação" /></PrivateRoute>} />
       <Route path="/finance" element={<PrivateRoute><PlaceholderPage title="Financeiro" /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><PlaceholderPage title="Configurações" /></PrivateRoute>} />
+      <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
 
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

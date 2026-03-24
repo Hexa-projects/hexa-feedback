@@ -110,6 +110,195 @@ export type Database = {
         }
         Relationships: []
       }
+      focus_ai_config: {
+        Row: {
+          guardrail_aprovacao_humana: boolean | null
+          guardrail_custo_mensal: number | null
+          guardrail_max_mensagens_dia: number | null
+          id: string
+          llm_api_key: string | null
+          llm_limite_custo_mensal: number | null
+          llm_max_tokens: number | null
+          llm_modelo: string | null
+          llm_temperatura: number | null
+          memoria_ativa: boolean | null
+          openclaw_api_key: string | null
+          openclaw_ativo: boolean | null
+          openclaw_env: string | null
+          openclaw_url: string | null
+          prompt_identidade: string | null
+          prompt_objetivo: string | null
+          prompt_restricoes: string | null
+          prompt_tom_voz: string | null
+          rag_fonte: string | null
+          rag_provedor_embeddings: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          guardrail_aprovacao_humana?: boolean | null
+          guardrail_custo_mensal?: number | null
+          guardrail_max_mensagens_dia?: number | null
+          id?: string
+          llm_api_key?: string | null
+          llm_limite_custo_mensal?: number | null
+          llm_max_tokens?: number | null
+          llm_modelo?: string | null
+          llm_temperatura?: number | null
+          memoria_ativa?: boolean | null
+          openclaw_api_key?: string | null
+          openclaw_ativo?: boolean | null
+          openclaw_env?: string | null
+          openclaw_url?: string | null
+          prompt_identidade?: string | null
+          prompt_objetivo?: string | null
+          prompt_restricoes?: string | null
+          prompt_tom_voz?: string | null
+          rag_fonte?: string | null
+          rag_provedor_embeddings?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          guardrail_aprovacao_humana?: boolean | null
+          guardrail_custo_mensal?: number | null
+          guardrail_max_mensagens_dia?: number | null
+          id?: string
+          llm_api_key?: string | null
+          llm_limite_custo_mensal?: number | null
+          llm_max_tokens?: number | null
+          llm_modelo?: string | null
+          llm_temperatura?: number | null
+          memoria_ativa?: boolean | null
+          openclaw_api_key?: string | null
+          openclaw_ativo?: boolean | null
+          openclaw_env?: string | null
+          openclaw_url?: string | null
+          prompt_identidade?: string | null
+          prompt_objetivo?: string | null
+          prompt_restricoes?: string | null
+          prompt_tom_voz?: string | null
+          rag_fonte?: string | null
+          rag_provedor_embeddings?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      focus_ai_insights: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          prioridade: string | null
+          status: string | null
+          tipo: string | null
+          titulo: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          prioridade?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          prioridade?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      focus_ai_logs: {
+        Row: {
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          mensagem: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          mensagem: string
+          tipo?: string
+        }
+        Update: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          mensagem?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      focus_ai_routines: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          frequencia: string | null
+          id: string
+          nome: string
+          ultima_execucao: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          frequencia?: string | null
+          id?: string
+          nome: string
+          ultima_execucao?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          frequencia?: string | null
+          id?: string
+          nome?: string
+          ultima_execucao?: string | null
+        }
+        Relationships: []
+      }
+      focus_ai_skills: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          status: string | null
+          updated_at: string | null
+          versao: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          status?: string | null
+          updated_at?: string | null
+          versao?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          status?: string | null
+          updated_at?: string | null
+          versao?: string | null
+        }
+        Relationships: []
+      }
       lab_parts: {
         Row: {
           created_at: string | null
