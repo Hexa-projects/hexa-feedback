@@ -160,12 +160,12 @@ const ROLE_GROUPS: Record<string, string[]> = {
 // Setor-specific visibility overrides
 const SETOR_GROUPS: Record<string, string[]> = {
   Comercial: ["dashboard", "comercial", "comunicacao", "feedback"],
-  "Técnico": ["dashboard", "operacoes", "laboratorio", "comunicacao", "feedback"],
-  "Laboratório": ["dashboard", "laboratorio", "comunicacao", "feedback"],
+  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "comunicacao", "feedback"],
+  "Laboratório": ["dashboard", "laboratorio", "estoque", "comunicacao", "feedback"],
   Financeiro: ["dashboard", "financeiro", "comunicacao", "feedback"],
-  "Logística": ["dashboard", "operacoes", "comunicacao", "feedback"],
-  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback", "ia", "settings"],
+  "Logística": ["dashboard", "operacoes", "estoque", "comunicacao", "feedback"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback", "ia", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
