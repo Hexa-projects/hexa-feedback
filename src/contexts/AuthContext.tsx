@@ -13,6 +13,9 @@ interface Profile {
   qualidades: string;
   pontos_melhoria: string;
   tempo_casa: string;
+  decisores: string;
+  ferramentas_criticas: string;
+  principal_gargalo: string;
   onboarding_completo: boolean;
 }
 
