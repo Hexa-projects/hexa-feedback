@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, ClipboardList, Repeat, AlertTriangle,
-  Lightbulb, History, LogOut, Menu, X, User, Wrench
+  Lightbulb, History, LogOut, Menu, X, User, Wrench, Home
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const NAV = [
+  { to: "/home", label: "← Voltar ao HexaOS", icon: Home },
   { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
   { to: "/tools", label: "Ferramentas & Planilhas", icon: Wrench },
   { to: "/processes", label: "Processos Repetitivos", icon: Repeat },
