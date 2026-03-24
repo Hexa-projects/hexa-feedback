@@ -205,11 +205,112 @@ export default function CorporateChannels() {
       channel_id: activeChannel,
       user_id: user.id,
       content: input.trim(),
+      tipo: "texto",
     } as any);
     if (error) toast.error("Erro ao enviar mensagem");
     setInput("");
     setSending(false);
   };
+
+  // ── Audio recording ──
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      const mr = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
+      });
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (recTimerRef.current) clearInterval(recTimerRef.current);
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        sendAudioMessage(blob);
+      };
+      mr.start(250);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
+    } catch {
+      toast.error("Não foi possível acessar o microfone.");
+    }
+  }, [activeChannel, user]);
+
+  const stopRecording = useCallback(() => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  }, []);
+
+  const cancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      mediaRecorderRef.current.stop();
+    }
+    if (recTimerRef.current) clearInterval(recTimerRef.current);
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingDuration(0);
+  }, []);
+
+  const sendAudioMessage = async (blob: Blob) => {
+    if (!activeChannel || !user) return;
+    setTranscribing(true);
+
+    try {
+      // 1) Transcribe via ElevenLabs
+      const formData = new FormData();
+      formData.append("audio", blob, "recording.webm");
+
+      const transcribeRes = await fetch(`${SUPABASE_URL}/functions/v1/elevenlabs-transcribe`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        body: formData,
+      });
+
+      let transcription = "";
+      if (transcribeRes.ok) {
+        const data = await transcribeRes.json();
+        transcription = data.text || "";
+      }
+
+      // 2) Upload audio to storage
+      const fileName = `channels/${activeChannel}/${Date.now()}.webm`;
+      const { data: uploadData } = await supabase.storage.from("audio-messages").upload(fileName, blob, {
+        contentType: "audio/webm",
+      });
+
+      let audioUrl = "";
+      if (uploadData?.path) {
+        const { data: urlData } = supabase.storage.from("audio-messages").getPublicUrl(uploadData.path);
+        audioUrl = urlData.publicUrl;
+      }
+
+      // 3) Save message with audio URL + transcription
+      const content = transcription
+        ? `🎤 Áudio: ${transcription}`
+        : "🎤 Mensagem de áudio";
+
+      const { error } = await supabase.from("channel_messages" as any).insert({
+        channel_id: activeChannel,
+        user_id: user.id,
+        content,
+        tipo: "audio",
+        anexo_url: audioUrl || null,
+      } as any);
+
+      if (error) toast.error("Erro ao enviar áudio");
+      else toast.success("Áudio enviado!");
+    } catch (err: any) {
+      toast.error("Erro ao processar áudio: " + err.message);
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const fmtDur = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   const createChannel = async () => {
     if (!newChannel.nome.trim() || !user) return;
