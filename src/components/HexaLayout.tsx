@@ -4,41 +4,121 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
-  ChevronDown, Brain
+  ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const NAV = [
+interface NavItem {
+  to: string;
+  label: string;
+  icon: any;
+  roles?: string[];
+  children?: NavItem[];
+}
+
+const NAV: NavItem[] = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/crm", label: "CRM & Vendas", icon: Users },
   { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
   { to: "/os", label: "Manutenção & OS", icon: Wrench },
   { to: "/lab", label: "Laboratório de Peças", icon: FlaskConical },
   { to: "/finance", label: "Financeiro", icon: DollarSign },
-  { to: "/reports", label: "Relatórios & Dashboards", icon: BarChart3 },
-  // Legacy feedback module
-  { to: "/daily", label: "Feedback", icon: LayoutDashboard, roles: ["admin", "gestor", "colaborador"] },
+  {
+    to: "#feedback", label: "Relatórios & Feedback", icon: BarChart3,
+    children: [
+      { to: "/reports", label: "Dashboard Geral", icon: BarChart3 },
+      { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
+      { to: "/tools", label: "Ferramentas & Planilhas", icon: Wrench },
+      { to: "/processes", label: "Processos Repetitivos", icon: Repeat },
+      { to: "/bottlenecks", label: "Gargalos", icon: AlertTriangle },
+      { to: "/suggestions", label: "Sugestões", icon: Lightbulb },
+      { to: "/history", label: "Histórico", icon: History },
+    ],
+  },
   { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
   { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
 ];
 
+const FEEDBACK_ROUTES = ["/reports", "/daily", "/tools", "/processes", "/bottlenecks", "/suggestions", "/history", "/dashboard"];
+
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
 
+  const isFeedbackRoute = FEEDBACK_ROUTES.some(r => location.pathname.startsWith(r));
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(isFeedbackRoute);
+
   const visibleNav = NAV.filter(n => !n.roles || n.roles.includes(role));
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string) => path !== "#feedback" && location.pathname.startsWith(path);
 
   const handleLogout = async () => {
     await signOut();
     navigate("/");
   };
 
-  const SidebarContent = () => (
+  const renderNavItem = (n: NavItem) => {
+    // Dropdown group
+    if (n.children) {
+      const isGroupActive = n.children.some(c => location.pathname.startsWith(c.to));
+      return (
+        <div key={n.to}>
+          <button
+            onClick={() => setFeedbackOpen(!feedbackOpen)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+              isGroupActive
+                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            }`}
+          >
+            <n.icon className="w-4 h-4 shrink-0" />
+            <span className="flex-1 text-left">{n.label}</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${feedbackOpen ? "rotate-180" : ""}`} />
+          </button>
+          {feedbackOpen && (
+            <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
+              {n.children.filter(c => !c.roles || c.roles.includes(role)).map(c => (
+                <Link
+                  key={c.to}
+                  to={c.to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+                    location.pathname === c.to
+                      ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                      : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  }`}
+                >
+                  <c.icon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{c.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Normal link
+    return (
+      <Link
+        key={n.to}
+        to={n.to}
+        onClick={() => setSidebarOpen(false)}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+          isActive(n.to)
+            ? "bg-sidebar-accent text-sidebar-primary font-medium"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        }`}
+      >
+        <n.icon className="w-4 h-4 shrink-0" />
+        <span>{n.label}</span>
+      </Link>
+    );
+  };
+
+  const SidebarInner = () => (
     <>
       {/* Logo */}
       <div className="p-5 flex items-center gap-3">
@@ -50,21 +130,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {visibleNav.map(n => (
-          <Link
-            key={n.to}
-            to={n.to}
-            onClick={() => setSidebarOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              isActive(n.to)
-                ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-            }`}
-          >
-            <n.icon className="w-4 h-4 shrink-0" />
-            <span>{n.label}</span>
-          </Link>
-        ))}
+        {visibleNav.map(renderNavItem)}
       </nav>
 
       {/* User section */}
@@ -91,7 +157,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen bg-background flex">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 hexa-gradient min-h-screen sticky top-0 border-r border-sidebar-border">
-        <SidebarContent />
+        <SidebarInner />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -103,7 +169,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SidebarContent />
+            <SidebarInner />
           </div>
           <div className="flex-1 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
         </div>
@@ -111,20 +177,16 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header */}
         <header className="sticky top-0 z-40 bg-card border-b px-4 lg:px-6 h-14 flex items-center gap-3">
           <button className="lg:hidden p-1.5" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
-
-          {/* Search */}
           <div className="flex-1 max-w-md">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Buscar..." className="pl-9 h-9 bg-muted/50 border-0" />
             </div>
           </div>
-
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-4 h-4" />
@@ -139,7 +201,6 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 p-4 lg:p-6">
           {children}
         </main>
