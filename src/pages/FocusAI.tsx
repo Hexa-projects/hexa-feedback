@@ -14,8 +14,9 @@ import { Slider } from "@/components/ui/slider";
 import {
   Brain, Plug, Cpu, MessageSquare, Shield, Zap, Eye,
   CheckCircle2, XCircle, RefreshCw, Play, Settings2,
-  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle
+  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle, Crown
 } from "lucide-react";
+import CoCEODashboard from "@/components/CoCEODashboard";
 import OpenClawSyncPanel from "@/components/OpenClawSyncPanel";
 import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
 import { toast } from "sonner";
