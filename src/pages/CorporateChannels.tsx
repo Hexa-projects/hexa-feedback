@@ -37,7 +37,53 @@ interface Message {
   is_ai: boolean;
   created_at: string;
   parent_id: string | null;
+  tipo: string | null;
+  anexo_url: string | null;
   profiles?: { nome: string } | null;
+}
+
+// Inline audio player for voice messages
+function AudioPlayer({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) { audioRef.current.pause(); } else { audioRef.current.play(); }
+    setPlaying(!playing);
+  };
+
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 max-w-xs">
+      <audio
+        ref={audioRef}
+        src={src}
+        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+        onTimeUpdate={() => {
+          const a = audioRef.current;
+          if (a) setProgress(a.duration ? (a.currentTime / a.duration) * 100 : 0);
+        }}
+        onEnded={() => { setPlaying(false); setProgress(0); }}
+      />
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={toggle}>
+        {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+      </Button>
+      <div className="flex-1 min-w-[80px]">
+        <div className="h-1.5 bg-border rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full transition-all duration-100" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{fmt(duration)}</span>
+    </div>
+  );
 }
 
 interface ProfileEntry {
