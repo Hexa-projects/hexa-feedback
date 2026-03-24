@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      autonomy_rules: {
+        Row: {
+          acao: string
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          domain: string
+          id: string
+          limite_diario: number | null
+          nivel: string
+          permitido: boolean | null
+          requer_aprovacao: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          acao: string
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          domain?: string
+          id?: string
+          limite_diario?: number | null
+          nivel?: string
+          permitido?: boolean | null
+          requer_aprovacao?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          acao?: string
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          domain?: string
+          id?: string
+          limite_diario?: number | null
+          nivel?: string
+          permitido?: boolean | null
+          requer_aprovacao?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bottlenecks: {
         Row: {
           audio_url: string | null
@@ -110,6 +152,51 @@ export type Database = {
         }
         Relationships: []
       }
+      data_catalog: {
+        Row: {
+          business_description: string | null
+          column_count: number | null
+          columns_info: Json | null
+          domain: string | null
+          foreign_keys: Json | null
+          id: string
+          last_updated: string | null
+          quality_score: number | null
+          row_count: number | null
+          schema_name: string | null
+          table_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_description?: string | null
+          column_count?: number | null
+          columns_info?: Json | null
+          domain?: string | null
+          foreign_keys?: Json | null
+          id?: string
+          last_updated?: string | null
+          quality_score?: number | null
+          row_count?: number | null
+          schema_name?: string | null
+          table_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_description?: string | null
+          column_count?: number | null
+          columns_info?: Json | null
+          domain?: string | null
+          foreign_keys?: Json | null
+          id?: string
+          last_updated?: string | null
+          quality_score?: number | null
+          row_count?: number | null
+          schema_name?: string | null
+          table_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       focus_ai_config: {
         Row: {
           guardrail_aprovacao_humana: boolean | null
@@ -187,28 +274,55 @@ export type Database = {
       }
       focus_ai_insights: {
         Row: {
+          acao_recomendada: string | null
+          causa_provavel: string | null
           created_at: string | null
+          criterio_sucesso: string | null
           descricao: string | null
+          domain: string | null
+          evidencia_dados: Json | null
           id: string
+          impacto_estimado: string | null
+          nivel_autonomia: string | null
+          prazo_sugerido: string | null
           prioridade: string | null
+          responsavel_sugerido: string | null
           status: string | null
           tipo: string | null
           titulo: string
         }
         Insert: {
+          acao_recomendada?: string | null
+          causa_provavel?: string | null
           created_at?: string | null
+          criterio_sucesso?: string | null
           descricao?: string | null
+          domain?: string | null
+          evidencia_dados?: Json | null
           id?: string
+          impacto_estimado?: string | null
+          nivel_autonomia?: string | null
+          prazo_sugerido?: string | null
           prioridade?: string | null
+          responsavel_sugerido?: string | null
           status?: string | null
           tipo?: string | null
           titulo: string
         }
         Update: {
+          acao_recomendada?: string | null
+          causa_provavel?: string | null
           created_at?: string | null
+          criterio_sucesso?: string | null
           descricao?: string | null
+          domain?: string | null
+          evidencia_dados?: Json | null
           id?: string
+          impacto_estimado?: string | null
+          nivel_autonomia?: string | null
+          prazo_sugerido?: string | null
           prioridade?: string | null
+          responsavel_sugerido?: string | null
           status?: string | null
           tipo?: string | null
           titulo?: string
@@ -442,6 +556,7 @@ export type Database = {
           created_at: string
           data: Json
           delivered_at: string | null
+          domain: string
           event_id: string
           event_type: string
           id: string
@@ -458,6 +573,7 @@ export type Database = {
           created_at?: string
           data?: Json
           delivered_at?: string | null
+          domain?: string
           event_id?: string
           event_type: string
           id?: string
@@ -474,6 +590,7 @@ export type Database = {
           created_at?: string
           data?: Json
           delivered_at?: string | null
+          domain?: string
           event_id?: string
           event_type?: string
           id?: string

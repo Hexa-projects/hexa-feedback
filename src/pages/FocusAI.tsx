@@ -14,8 +14,9 @@ import { Slider } from "@/components/ui/slider";
 import {
   Brain, Plug, Cpu, MessageSquare, Shield, Zap, Eye,
   CheckCircle2, XCircle, RefreshCw, Play, Settings2,
-  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle
+  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle, Crown
 } from "lucide-react";
+import CoCEODashboard from "@/components/CoCEODashboard";
 import OpenClawSyncPanel from "@/components/OpenClawSyncPanel";
 import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
 import { toast } from "sonner";
@@ -274,8 +275,9 @@ export default function FocusAI() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="openclaw" className="space-y-4">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8 h-auto">
+        <Tabs defaultValue="coceo" className="space-y-4">
+          <TabsList className="grid grid-cols-4 lg:grid-cols-9 h-auto">
+            <TabsTrigger value="coceo" className="text-xs gap-1"><Crown className="w-3 h-3" />Co-CEO</TabsTrigger>
             <TabsTrigger value="openclaw" className="text-xs">OpenClaw</TabsTrigger>
             <TabsTrigger value="sync" className="text-xs">Sync</TabsTrigger>
             <TabsTrigger value="llm" className="text-xs">LLM</TabsTrigger>
@@ -285,6 +287,11 @@ export default function FocusAI() {
             <TabsTrigger value="guardrails" className="text-xs">Guardrails</TabsTrigger>
             <TabsTrigger value="autonomy" className="text-xs">Autonomia</TabsTrigger>
           </TabsList>
+
+          {/* Co-CEO Dashboard */}
+          <TabsContent value="coceo">
+            <CoCEODashboard />
+          </TabsContent>
 
           {/* OpenClaw */}
           <TabsContent value="openclaw">
