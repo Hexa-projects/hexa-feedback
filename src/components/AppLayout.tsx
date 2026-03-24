@@ -34,7 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <header className="lg:hidden hexa-gradient text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <Hexagon className="w-6 h-6" />
+          <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
           <span className="font-bold text-lg">Hexamedical</span>
         </div>
         <button onClick={() => setOpen(!open)} className="p-1">
