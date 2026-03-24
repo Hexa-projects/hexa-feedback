@@ -646,33 +646,69 @@ export default function CorporateChannels() {
           {/* Input area */}
           {(activeChannel || dmTargetId) && (
             <div className="border-t p-4 bg-card">
-              <div className="relative flex items-end gap-2 bg-muted/40 rounded-xl border px-3 py-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
-                <Input
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder={tab === "diretas" && dmTarget
-                    ? `Mensagem para ${dmTarget.nome.split(" ")[0]}...`
-                    : `Escreva em ${activeChannelData?.nome || "canal"}...`
-                  }
-                  className="border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-sm"
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                  }}
-                />
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Anexar">
-                    <Paperclip className="w-4 h-4" />
+              {/* Transcribing state */}
+              {transcribing && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 px-1">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <span>Transcrevendo e enviando áudio...</span>
+                </div>
+              )}
+
+              {/* Recording state */}
+              {isRecording ? (
+                <div className="flex items-center gap-3 bg-destructive/8 rounded-xl border border-destructive/20 px-4 py-3">
+                  <span className="flex items-center gap-2 text-sm font-medium text-destructive">
+                    <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+                    Gravando {fmtDur(recordingDuration)}
+                  </span>
+                  <div className="flex-1" />
+                  <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-muted-foreground" onClick={cancelRecording}>
+                    <X className="w-3.5 h-3.5" /> Cancelar
                   </Button>
-                  <Button
-                    onClick={sendMessage}
-                    disabled={sending || !input.trim()}
-                    size="icon"
-                    className="h-8 w-8 rounded-lg"
-                  >
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <Button size="sm" className="h-8 text-xs gap-1.5" onClick={stopRecording}>
+                    <Square className="w-3 h-3" /> Enviar
                   </Button>
                 </div>
-              </div>
+              ) : (
+                <div className="relative flex items-end gap-2 bg-muted/40 rounded-xl border px-3 py-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                  <Input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    placeholder={tab === "diretas" && dmTarget
+                      ? `Mensagem para ${dmTarget.nome.split(" ")[0]}...`
+                      : `Escreva em ${activeChannelData?.nome || "canal"}...`
+                    }
+                    className="border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-sm"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    }}
+                    disabled={transcribing}
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Gravar áudio"
+                      onClick={startRecording}
+                      disabled={transcribing}
+                    >
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Anexar">
+                      <Paperclip className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={sendMessage}
+                      disabled={sending || !input.trim() || transcribing}
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                    >
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
