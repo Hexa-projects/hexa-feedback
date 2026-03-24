@@ -344,6 +344,11 @@ export default function FocusAI() {
             </Card>
           </TabsContent>
 
+          {/* Sync Panel */}
+          <TabsContent value="sync">
+            <OpenClawSyncPanel />
+          </TabsContent>
+
           {/* LLM */}
           <TabsContent value="llm">
             <Card>
