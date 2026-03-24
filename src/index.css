@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,54 +6,64 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --background: 30 15% 97%;
+    --foreground: 20 20% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 20 20% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 20 20% 12%;
 
-    --primary: 215 80% 50%;
+    --primary: 30 92% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 95%;
-    --secondary-foreground: 215 25% 20%;
+    --secondary: 30 20% 94%;
+    --secondary-foreground: 20 20% 18%;
 
-    --muted: 210 15% 93%;
-    --muted-foreground: 215 12% 50%;
+    --muted: 30 12% 92%;
+    --muted-foreground: 20 10% 48%;
 
-    --accent: 210 40% 92%;
-    --accent-foreground: 215 60% 35%;
+    --accent: 30 35% 93%;
+    --accent-foreground: 25 60% 35%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 88%;
-    --input: 210 15% 88%;
-    --ring: 215 80% 50%;
+    --border: 30 12% 88%;
+    --input: 30 12% 88%;
+    --ring: 30 92% 52%;
 
     --radius: 0.75rem;
 
-    --hexa-navy: 215 50% 18%;
-    --hexa-blue: 215 80% 50%;
-    --hexa-blue-light: 210 60% 93%;
-    --hexa-orange: 25 95% 55%;
+    /* Brand palette — derived from logo */
+    --hexa-amber: 30 92% 52%;
+    --hexa-amber-light: 36 100% 62%;
+    --hexa-amber-dark: 24 88% 42%;
+    --hexa-gold: 42 90% 55%;
+    --hexa-warm: 18 85% 48%;
+    --hexa-charcoal: 20 12% 18%;
+    --hexa-orange: 30 92% 52%;
+    --hexa-yellow: 42 90% 55%;
+    --hexa-navy: 20 14% 12%;
+    --hexa-slate: 20 8% 35%;
+
+    /* Semantic accent colors */
     --hexa-green: 152 55% 45%;
     --hexa-purple: 260 50% 55%;
-    --hexa-red: 0 72% 55%;
-    --hexa-yellow: 42 90% 55%;
+    --hexa-red: 0 72% 52%;
+    --hexa-blue: 210 70% 52%;
     --hexa-teal: 180 50% 45%;
 
-    --sidebar-background: 215 50% 15%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 210 80% 65%;
+    /* Sidebar — dark charcoal with amber accents */
+    --sidebar-background: 20 14% 12%;
+    --sidebar-foreground: 30 20% 88%;
+    --sidebar-primary: 30 92% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 40% 22%;
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 215 35% 25%;
-    --sidebar-ring: 215 80% 50%;
+    --sidebar-accent: 20 16% 18%;
+    --sidebar-accent-foreground: 30 20% 88%;
+    --sidebar-border: 20 10% 22%;
+    --sidebar-ring: 30 92% 52%;
   }
 }
 
@@ -62,8 +72,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   }
 }
 
@@ -72,7 +82,10 @@
     @apply bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200;
   }
   .hexa-gradient {
-    background: linear-gradient(180deg, hsl(215 50% 15%), hsl(215 45% 22%));
+    background: linear-gradient(180deg, hsl(20 14% 12%), hsl(20 12% 16%));
+  }
+  .hexa-gradient-brand {
+    background: linear-gradient(135deg, hsl(30 92% 52%), hsl(36 100% 62%), hsl(42 90% 55%));
   }
   .hexa-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
@@ -85,22 +98,30 @@
   }
   .progress-bar-fill {
     @apply h-full rounded-full transition-all duration-500 ease-out;
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--hexa-teal)));
+    background: linear-gradient(90deg, hsl(var(--hexa-amber)), hsl(var(--hexa-gold)));
   }
   .status-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
   }
   .status-badge-open {
-    @apply status-badge bg-blue-100 text-blue-800;
+    @apply status-badge;
+    background: hsl(30 92% 52% / 0.12);
+    color: hsl(24 88% 42%);
   }
   .status-badge-progress {
-    @apply status-badge bg-yellow-100 text-yellow-800;
+    @apply status-badge;
+    background: hsl(42 90% 55% / 0.15);
+    color: hsl(36 70% 35%);
   }
   .status-badge-done {
-    @apply status-badge bg-green-100 text-green-800;
+    @apply status-badge;
+    background: hsl(152 55% 45% / 0.12);
+    color: hsl(152 55% 35%);
   }
   .status-badge-critical {
-    @apply status-badge bg-red-100 text-red-800;
+    @apply status-badge;
+    background: hsl(0 72% 52% / 0.12);
+    color: hsl(0 72% 42%);
   }
 }
 
