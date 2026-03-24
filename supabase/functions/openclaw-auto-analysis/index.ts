@@ -248,12 +248,14 @@ serve(async (req) => {
       if (saveErr) console.error("[auto-analysis] Error saving insight:", saveErr.message);
     }
 
-    // 6. Post summary to corporate channel "geral"
-    const { data: geralChannel } = await db.from("corporate_channels")
-      .select("id")
-      .eq("slug", "geral")
-      .limit(1)
-      .single();
+    // 6. Post summary to corporate channel "#alertas-ia" (fallback to "geral")
+    let targetChannel = await db.from("corporate_channels")
+      .select("id").eq("slug", "alertas-ia").limit(1).single();
+    if (!targetChannel.data) {
+      targetChannel = await db.from("corporate_channels")
+        .select("id").eq("slug", "geral").limit(1).single();
+    }
+    const geralChannel = targetChannel.data;
 
     if (geralChannel && insights.length > 0) {
       const summaryLines = insights.map((i: any, idx: number) =>
