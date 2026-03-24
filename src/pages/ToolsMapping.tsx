@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/supabase-store";
 import { SETORES, CATEGORIAS_FERRAMENTA, FINALIDADES_FERRAMENTA, FREQUENCIAS, SATISFACAO_LEVELS } from "@/types/forms";
-import AppLayout from "@/components/AppLayout";
+import HexaLayout from "@/components/HexaLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
 import { Button } from "@/components/ui/button";
@@ -88,10 +88,10 @@ export default function ToolsMapping() {
     setSent(false);
   };
 
-  if (sent) return <AppLayout><SuccessMessage onNew={reset} /></AppLayout>;
+  if (sent) return <HexaLayout><SuccessMessage onNew={reset} /></HexaLayout>;
 
   return (
-    <AppLayout>
+    <HexaLayout>
       <div className="space-y-6 animate-slide-up">
         <div>
           <h1 className="text-2xl font-bold">Mapeamento de Ferramentas</h1>
@@ -225,6 +225,6 @@ export default function ToolsMapping() {
           {saving ? "Cadastrando..." : "Cadastrar Ferramenta"}
         </Button>
       </div>
-    </AppLayout>
+    </HexaLayout>
   );
 }
