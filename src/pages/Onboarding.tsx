@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { profile, refreshProfile } = useAuth();
+  const { profile, role, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     setor: profile?.setor || "Administrativo",
