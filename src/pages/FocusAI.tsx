@@ -17,6 +17,7 @@ import {
   Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff, ArrowUpCircle, Crown
 } from "lucide-react";
 import CoCEODashboard from "@/components/CoCEODashboard";
+import WebhookOpsDashboard from "@/components/WebhookOpsDashboard";
 import OpenClawSyncPanel from "@/components/OpenClawSyncPanel";
 import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
 import { toast } from "sonner";
@@ -276,8 +277,9 @@ export default function FocusAI() {
 
         {/* Tabs */}
         <Tabs defaultValue="coceo" className="space-y-4">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-9 h-auto">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-10 h-auto">
             <TabsTrigger value="coceo" className="text-xs gap-1"><Crown className="w-3 h-3" />Co-CEO</TabsTrigger>
+            <TabsTrigger value="ops" className="text-xs gap-1"><Zap className="w-3 h-3" />Operações</TabsTrigger>
             <TabsTrigger value="openclaw" className="text-xs">OpenClaw</TabsTrigger>
             <TabsTrigger value="sync" className="text-xs">Sync</TabsTrigger>
             <TabsTrigger value="llm" className="text-xs">LLM</TabsTrigger>
@@ -291,6 +293,11 @@ export default function FocusAI() {
           {/* Co-CEO Dashboard */}
           <TabsContent value="coceo">
             <CoCEODashboard />
+          </TabsContent>
+
+          {/* Webhook Operations Dashboard */}
+          <TabsContent value="ops">
+            <WebhookOpsDashboard />
           </TabsContent>
 
           {/* OpenClaw */}
