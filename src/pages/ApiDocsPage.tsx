@@ -159,12 +159,12 @@ export default function ApiDocsPage() {
         {/* Quick Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Globe className="w-8 h-8 text-primary" />
-              <div>
+            <CardContent className="p-4 flex items-center gap-3 min-w-0">
+              <Globe className="w-8 h-8 text-primary shrink-0" />
+              <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">Base URL</p>
-                <div className="flex items-center gap-1">
-                  <code className="text-xs font-mono font-medium">{FUNCTION_BASE}</code>
+                <div className="flex items-center gap-1 min-w-0">
+                  <code className="text-[10px] font-mono font-medium truncate block">{FUNCTION_BASE}</code>
                   <CopyButton text={FUNCTION_BASE} />
                 </div>
               </div>
