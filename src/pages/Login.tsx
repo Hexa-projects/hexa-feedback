@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import logo from "@/assets/logo.png";
 import type { UserProfile } from "@/types/forms";
-import type { UserProfile } from "@/types/forms";
 
 export default function Login() {
   const navigate = useNavigate();
