@@ -71,7 +71,7 @@
     @apply bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow duration-200;
   }
   .hexa-gradient {
-    background: linear-gradient(135deg, hsl(var(--hexa-navy)), hsl(174 62% 30%));
+    background: linear-gradient(135deg, hsl(25 50% 18%), hsl(30 90% 45%));
   }
   .hexa-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
