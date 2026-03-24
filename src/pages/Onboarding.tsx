@@ -100,10 +100,12 @@ export default function Onboarding() {
             <div>
               <Label>Suas qualidades principais no trabalho</Label>
               <Textarea value={form.qualidades} onChange={e => u("qualidades", e.target.value)} placeholder="O que você faz de melhor..." rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("qualidades", form.qualidades ? form.qualidades + "\n" + text : text)} />
             </div>
             <div>
               <Label>Pontos que gostaria de melhorar</Label>
               <Textarea value={form.pontos_melhoria} onChange={e => u("pontos_melhoria", e.target.value)} placeholder="O que pode ser aprimorado..." rows={2} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("pontos_melhoria", form.pontos_melhoria ? form.pontos_melhoria + "\n" + text : text)} />
             </div>
           </div>
 
