@@ -5,6 +5,7 @@ import { SETORES, BENEFICIOS, ESFORCOS } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
+import AILapidacao from "@/components/AILapidacao";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +17,8 @@ export default function Suggestions() {
   const { user, profile } = useAuth();
   const [sent, setSent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [showLapidacao, setShowLapidacao] = useState(false);
   const [form, setForm] = useState({
     ideia: "",
     setorImpactado: profile?.setor || "Administrativo",
@@ -29,15 +32,16 @@ export default function Suggestions() {
     if (!user) return;
     setSaving(true);
     try {
-      await db.saveSuggestion({
+      const id = await db.saveSuggestion({
         user_id: user.id,
         ideia: form.ideia,
         setor_impactado: form.setorImpactado,
         beneficio: form.beneficio,
         esforco: form.esforco,
       });
-      setSent(true);
-      toast.success("Enviado com sucesso!");
+      setSavedId(id);
+      setShowLapidacao(true);
+      toast.success("Enviado! Agora aprofunde com a IA.");
     } catch (err: any) {
       toast.error("Erro ao enviar: " + err.message);
     } finally {
@@ -45,12 +49,49 @@ export default function Suggestions() {
     }
   };
 
+  const handleLapidacaoComplete = async (perguntas: string[], respostas: string[]) => {
+    if (savedId) {
+      try {
+        await db.updateLapidacao("suggestions", savedId, perguntas, respostas);
+      } catch (err: any) {
+        toast.error("Erro ao salvar lapidação: " + err.message);
+      }
+    }
+    setSent(true);
+  };
+
+  const skipLapidacao = () => setSent(true);
+
   const reset = () => {
     setForm({ ideia: "", setorImpactado: profile?.setor || "Administrativo", beneficio: "Tempo", esforco: "Médio" });
     setSent(false);
+    setSavedId(null);
+    setShowLapidacao(false);
   };
 
   if (sent) return <AppLayout><SuccessMessage onNew={reset} /></AppLayout>;
+
+  if (showLapidacao) {
+    return (
+      <AppLayout>
+        <div className="space-y-6 animate-slide-up">
+          <div>
+            <h1 className="text-2xl font-bold">Aprofundamento — Sugestão</h1>
+            <p className="text-sm text-muted-foreground mt-1">A IA vai gerar perguntas para aprofundar sua ideia.</p>
+          </div>
+          <AILapidacao
+            tipo="sugestao"
+            conteudo={form.ideia}
+            contexto={`Setor: ${form.setorImpactado}. Benefício: ${form.beneficio}. Esforço: ${form.esforco}`}
+            onComplete={handleLapidacaoComplete}
+          />
+          <Button variant="ghost" className="w-full text-muted-foreground" onClick={skipLapidacao}>
+            Pular lapidação
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -65,10 +106,7 @@ export default function Suggestions() {
           <div>
             <Label>Ideia de melhoria</Label>
             <Textarea value={form.ideia} onChange={e => setForm(p => ({ ...p, ideia: e.target.value }))} placeholder="Descreva sua ideia..." rows={5} />
-            <AudioRecorder
-              label="Descrever por áudio"
-              onTranscription={(text) => setForm(p => ({ ...p, ideia: p.ideia ? p.ideia + "\n" + text : text }))}
-            />
+            <AudioRecorder label="Descrever por áudio" onTranscription={(text) => setForm(p => ({ ...p, ideia: p.ideia ? p.ideia + "\n" + text : text }))} />
           </div>
         </div>
 

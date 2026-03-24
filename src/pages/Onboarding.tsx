@@ -24,6 +24,9 @@ export default function Onboarding() {
     qualidades: profile?.qualidades || "",
     pontos_melhoria: profile?.pontos_melhoria || "",
     tempo_casa: profile?.tempo_casa || "",
+    decisores: (profile as any)?.decisores || "",
+    ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
+    principal_gargalo: (profile as any)?.principal_gargalo || "",
   });
 
   const fields = Object.values(form);
@@ -100,9 +103,24 @@ export default function Onboarding() {
               <Textarea value={form.pontos_melhoria} onChange={e => u("pontos_melhoria", e.target.value)} placeholder="O que pode ser aprimorado..." rows={2} />
             </div>
           </div>
+
+          <div className="form-section">
+            <div>
+              <Label>Quem participa das decisões na sua área? (gestor, pares, diretoria)</Label>
+              <Textarea value={form.decisores} onChange={e => u("decisores", e.target.value)} placeholder="Ex: Meu gestor direto e o diretor técnico" rows={2} />
+            </div>
+            <div>
+              <Label>Ferramentas críticas que você usa todos os dias</Label>
+              <Textarea value={form.ferramentas_criticas} onChange={e => u("ferramentas_criticas", e.target.value)} placeholder="Ex: Excel de OS, ERP Totvs, WhatsApp do setor..." rows={2} />
+            </div>
+            <div>
+              <Label>Principal gargalo que você percebe na sua área</Label>
+              <Textarea value={form.principal_gargalo} onChange={e => u("principal_gargalo", e.target.value)} placeholder="O que mais trava ou atrasa o trabalho do seu setor?" rows={2} />
+            </div>
+          </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 5 || saving}>
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving}>
           {saving ? "Salvando..." : "Salvar e continuar"}
         </Button>
       </div>

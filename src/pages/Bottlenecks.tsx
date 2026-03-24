@@ -5,6 +5,7 @@ import { IMPACTOS, URGENCIAS } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
+import AILapidacao from "@/components/AILapidacao";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,8 @@ export default function Bottlenecks() {
   const { user } = useAuth();
   const [sent, setSent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [showLapidacao, setShowLapidacao] = useState(false);
   const [form, setForm] = useState({
     descricao: "",
     impactos: [] as string[],
@@ -46,7 +49,7 @@ export default function Bottlenecks() {
     if (!user) return;
     setSaving(true);
     try {
-      await db.saveBottleneck({
+      const id = await db.saveBottleneck({
         user_id: user.id,
         descricao: form.descricao,
         impactos: form.impactos,
@@ -55,8 +58,9 @@ export default function Bottlenecks() {
         ja_resolveu: form.jaResolveu,
         como_resolveu: form.comoResolveu || undefined,
       });
-      setSent(true);
-      toast.success("Enviado com sucesso!");
+      setSavedId(id);
+      setShowLapidacao(true);
+      toast.success("Enviado! Agora aprofunde com a IA.");
     } catch (err: any) {
       toast.error("Erro ao enviar: " + err.message);
     } finally {
@@ -64,12 +68,49 @@ export default function Bottlenecks() {
     }
   };
 
+  const handleLapidacaoComplete = async (perguntas: string[], respostas: string[]) => {
+    if (savedId) {
+      try {
+        await db.updateLapidacao("bottlenecks", savedId, perguntas, respostas);
+      } catch (err: any) {
+        toast.error("Erro ao salvar lapidação: " + err.message);
+      }
+    }
+    setSent(true);
+  };
+
+  const skipLapidacao = () => setSent(true);
+
   const reset = () => {
     setForm({ descricao: "", impactos: [], exemploReal: "", urgencia: "Média", jaResolveu: false, comoResolveu: "" });
     setSent(false);
+    setSavedId(null);
+    setShowLapidacao(false);
   };
 
   if (sent) return <AppLayout><SuccessMessage onNew={reset} /></AppLayout>;
+
+  if (showLapidacao) {
+    return (
+      <AppLayout>
+        <div className="space-y-6 animate-slide-up">
+          <div>
+            <h1 className="text-2xl font-bold">Aprofundamento — Gargalo</h1>
+            <p className="text-sm text-muted-foreground mt-1">A IA vai gerar perguntas para esclarecer a causa raiz.</p>
+          </div>
+          <AILapidacao
+            tipo="gargalo"
+            conteudo={form.descricao}
+            contexto={`Impactos: ${form.impactos.join(", ")}. Urgência: ${form.urgencia}. Exemplo: ${form.exemploReal}`}
+            onComplete={handleLapidacaoComplete}
+          />
+          <Button variant="ghost" className="w-full text-muted-foreground" onClick={skipLapidacao}>
+            Pular lapidação
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -84,10 +125,7 @@ export default function Bottlenecks() {
           <div>
             <Label>Descreva o problema</Label>
             <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Explique o problema com detalhes..." rows={4} />
-            <AudioRecorder
-              label="Descrever por áudio"
-              onTranscription={(text) => setForm(p => ({ ...p, descricao: p.descricao ? p.descricao + "\n" + text : text }))}
-            />
+            <AudioRecorder label="Descrever por áudio" onTranscription={(text) => setForm(p => ({ ...p, descricao: p.descricao ? p.descricao + "\n" + text : text }))} />
           </div>
         </div>
 
