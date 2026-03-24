@@ -112,7 +112,13 @@ export default function CorporateChannels() {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [newChannel, setNewChannel] = useState({ nome: "", descricao: "", tipo: "publico", setor: "" });
   const [creating, setCreating] = useState(false);
-  const [onlineCount] = useState(Math.floor(Math.random() * 8) + 3); // Simulated
+  const [onlineCount] = useState(Math.floor(Math.random() * 8) + 3);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadChannels(); loadProfiles(); }, []);
