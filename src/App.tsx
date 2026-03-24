@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import DailyForm from "./pages/DailyForm";
 import RepetitiveProcesses from "./pages/RepetitiveProcesses";
+import ToolsMapping from "./pages/ToolsMapping";
 import Bottlenecks from "./pages/Bottlenecks";
 import Suggestions from "./pages/Suggestions";
 import HistoryPage from "./pages/HistoryPage";
