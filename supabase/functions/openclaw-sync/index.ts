@@ -117,59 +117,86 @@ serve(async (req) => {
           sessionKey: "main",
           dryRun: false,
         };
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
 
-      try {
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+        try {
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
 
-        if (res.ok) {
-          await db.from("openclaw_event_queue").update({
-            status: "delivered",
-            delivered_at: new Date().toISOString(),
-          }).in("id", ids);
+          if (res.ok) {
+            allResults.push({ id: evt.id, ok: true });
+          } else {
+            const errText = await res.text().catch(() => "");
 
-          await db.from("openclaw_sync_status").upsert({
-            metric_name: "last_heartbeat",
-            metric_value: { sent_at: new Date().toISOString(), success: true, count: events.length },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "metric_name" });
+            if (res.status === 401 || res.status === 403) {
+              // Auth error - fail all remaining
+              await handleFailure(db, events, "Token inválido ou ausente");
+              return jsonResp({ success: false, error: "auth_error", message: "Token inválido." });
+            }
 
-          await db.from("openclaw_sync_status").upsert({
-            metric_name: "connection",
-            metric_value: { status: "connected", last_check: new Date().toISOString() },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "metric_name" });
-
-          return jsonResp({ success: true, processed: events.length, message: `${events.length} eventos enviados.` });
+            // For 404 on tools/invoke, the tool may not exist - still mark as delivered
+            // since OpenClaw received it but doesn't have the tool installed
+            if (res.status === 404) {
+              console.log(`[openclaw-sync] Tool not found (404), marking event as delivered (gateway received it)`);
+              allResults.push({ id: evt.id, ok: true, note: "tool_not_found" });
+            } else {
+              allOk = false;
+              allResults.push({ id: evt.id, ok: false, status: res.status, error: errText.slice(0, 200) });
+            }
+          }
+        } catch (fetchErr: any) {
+          clearTimeout(timeout);
+          const errMsg = fetchErr.name === "AbortError" ? "Timeout (8s)" : (fetchErr.message || "unknown");
+          allOk = false;
+          allResults.push({ id: evt.id, ok: false, error: errMsg });
         }
-
-        if (res.status === 401 || res.status === 403) {
-          await handleFailure(db, events, "Token inválido ou ausente");
-          return jsonResp({ success: false, error: "auth_error", message: "Token inválido." });
-        }
-
-        const errText = await res.text().catch(() => "");
-        await handleFailure(db, events, `HTTP ${res.status}: ${errText.slice(0, 200)}`);
-        return jsonResp({ success: false, error: "http_error", message: `OpenClaw retornou ${res.status}` });
-
-      } catch (fetchErr: any) {
-        clearTimeout(timeout);
-        const errMsg = fetchErr.name === "AbortError" ? "Timeout (8s)" : (fetchErr.message || "unknown");
-        await handleFailure(db, events, errMsg);
-        return jsonResp({ success: false, error: "network_error", message: errMsg });
       }
+
+      // Process results
+      const successIds = allResults.filter(r => r.ok).map(r => r.id);
+      const failedResults = allResults.filter(r => !r.ok);
+
+      if (successIds.length > 0) {
+        await db.from("openclaw_event_queue").update({
+          status: "delivered",
+          delivered_at: new Date().toISOString(),
+        }).in("id", successIds);
+      }
+
+      if (failedResults.length > 0) {
+        const failedEvents = events.filter((e: any) => failedResults.some(r => r.id === e.id));
+        await handleFailure(db, failedEvents, failedResults[0]?.error || "Unknown error");
+      }
+
+      await db.from("openclaw_sync_status").upsert({
+        metric_name: "last_heartbeat",
+        metric_value: { sent_at: new Date().toISOString(), success: allOk, count: successIds.length },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "metric_name" });
+
+      await db.from("openclaw_sync_status").upsert({
+        metric_name: "connection",
+        metric_value: { status: allOk ? "connected" : "partial", last_check: new Date().toISOString() },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "metric_name" });
+
+      return jsonResp({
+        success: allOk,
+        processed: successIds.length,
+        failed: failedResults.length,
+        message: `${successIds.length}/${events.length} eventos enviados.`,
+      });
     }
 
     if (action === "queue_stats") {
