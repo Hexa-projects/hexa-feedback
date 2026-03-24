@@ -22,6 +22,7 @@ import ToolsMapping from "./pages/ToolsMapping";
 import Bottlenecks from "./pages/Bottlenecks";
 import Suggestions from "./pages/Suggestions";
 import HistoryPage from "./pages/HistoryPage";
+import FocusAI from "./pages/FocusAI";
 import Dashboard from "./pages/Dashboard";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
