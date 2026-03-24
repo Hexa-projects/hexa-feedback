@@ -69,7 +69,7 @@ export default function DailyForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Setor</Label>
-              <Select value={form.setor} onValueChange={v => setForm(p => ({ ...p, setor: v }))}>
+              <Select value={form.setor} onValueChange={v => setForm(p => ({ ...p, setor: v as typeof p.setor }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>

@@ -63,7 +63,7 @@ export default function Suggestions() {
         <div className="form-section">
           <div>
             <Label>Setor impactado</Label>
-            <Select value={form.setorImpactado} onValueChange={v => setForm(p => ({ ...p, setorImpactado: v }))}>
+            <Select value={form.setorImpactado} onValueChange={v => setForm(p => ({ ...p, setorImpactado: v as typeof p.setorImpactado }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
