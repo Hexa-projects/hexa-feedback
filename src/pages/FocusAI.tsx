@@ -134,19 +134,42 @@ export default function FocusAI() {
   const testConnection = async () => {
     setTesting(true);
     try {
-      if (!config?.openclaw_url) { toast.error("URL do OpenClaw não configurada"); return; }
+      if (!config?.openclaw_url || config.openclaw_url.trim() === "") {
+        toast.info("Preencha a URL do OpenClaw antes de testar. Exemplo: https://sua-vps.com:3100/api");
+        return;
+      }
+      if (!config.openclaw_url.startsWith("http")) {
+        toast.error("A URL deve começar com http:// ou https://");
+        return;
+      }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(config.openclaw_url + "/health", {
         headers: { Authorization: `Bearer ${config.openclaw_api_key}` },
-      }).catch(() => null);
+        signal: controller.signal,
+      }).catch((err) => {
+        if (err.name === "AbortError") {
+          toast.error("Timeout: o servidor não respondeu em 10 segundos. Verifique se o OpenClaw está rodando na URL informada.");
+        } else {
+          toast.error("Não foi possível conectar. Verifique se a URL está correta e o OpenClaw está online.");
+        }
+        return null;
+      });
+      clearTimeout(timeout);
       if (res?.ok) {
         toast.success("Conexão com OpenClaw estabelecida!");
         await supabase.from("focus_ai_logs").insert({ tipo: "sucesso", mensagem: "Teste de conexão OpenClaw: OK" });
-      } else {
-        toast.error("Falha na conexão com OpenClaw");
-        await supabase.from("focus_ai_logs").insert({ tipo: "erro", mensagem: "Teste de conexão OpenClaw: Falhou" });
+      } else if (res) {
+        const status = res.status;
+        if (status === 401 || status === 403) {
+          toast.error("API Key inválida ou sem permissão. Verifique a chave no painel do OpenClaw.");
+        } else {
+          toast.error(`OpenClaw respondeu com status ${status}. Verifique a configuração.`);
+        }
+        await supabase.from("focus_ai_logs").insert({ tipo: "erro", mensagem: `Teste de conexão OpenClaw: HTTP ${status}` });
       }
     } catch {
-      toast.error("Erro ao testar conexão");
+      toast.error("Erro inesperado ao testar conexão");
     } finally {
       setTesting(false);
     }
