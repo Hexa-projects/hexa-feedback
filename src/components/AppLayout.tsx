@@ -47,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="lg:hidden fixed inset-0 z-40 bg-foreground/50" onClick={() => setOpen(false)}>
           <nav className="w-72 h-full hexa-gradient text-sidebar-foreground p-6 space-y-2 animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-8">
-              <Hexagon className="w-7 h-7 text-sidebar-primary" />
+              <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
               <span className="font-bold text-xl">Hexamedical</span>
             </div>
             {user && (
