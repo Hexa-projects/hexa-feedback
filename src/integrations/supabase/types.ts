@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_action_requests: {
+        Row: {
+          action_type: string
+          approved_at: string | null
+          approved_by: string | null
+          autonomy_level: string | null
+          created_at: string | null
+          description: string | null
+          domain: string
+          estimated_impact: string | null
+          evidence: Json | null
+          executed_at: string | null
+          id: string
+          policy_applied: string | null
+          reason: string
+          requires_approval: boolean | null
+          result: Json | null
+          risk_level: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_type: string
+          approved_at?: string | null
+          approved_by?: string | null
+          autonomy_level?: string | null
+          created_at?: string | null
+          description?: string | null
+          domain: string
+          estimated_impact?: string | null
+          evidence?: Json | null
+          executed_at?: string | null
+          id?: string
+          policy_applied?: string | null
+          reason: string
+          requires_approval?: boolean | null
+          result?: Json | null
+          risk_level?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          autonomy_level?: string | null
+          created_at?: string | null
+          description?: string | null
+          domain?: string
+          estimated_impact?: string | null
+          evidence?: Json | null
+          executed_at?: string | null
+          id?: string
+          policy_applied?: string | null
+          reason?: string
+          requires_approval?: boolean | null
+          result?: Json | null
+          risk_level?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_agents: {
         Row: {
           ativo: boolean | null
@@ -53,6 +119,48 @@ export type Database = {
           nome?: string
           system_prompt?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_audit_trail: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string | null
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          outcome: string | null
+          policy_applied: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type?: string | null
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          outcome?: string | null
+          policy_applied?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string | null
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          outcome?: string | null
+          policy_applied?: string | null
         }
         Relationships: []
       }
@@ -131,6 +239,56 @@ export type Database = {
             columns: ["insight_id"]
             isOneToOne: false
             referencedRelation: "focus_ai_insights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_learning_feedback: {
+        Row: {
+          action_request_id: string | null
+          actual_outcome: string | null
+          created_at: string | null
+          decision: string | null
+          effectiveness_score: number | null
+          feedback_notes: string | null
+          id: string
+          insight_id: string | null
+          kpi_after: Json | null
+          kpi_before: Json | null
+          recommendation_type: string | null
+        }
+        Insert: {
+          action_request_id?: string | null
+          actual_outcome?: string | null
+          created_at?: string | null
+          decision?: string | null
+          effectiveness_score?: number | null
+          feedback_notes?: string | null
+          id?: string
+          insight_id?: string | null
+          kpi_after?: Json | null
+          kpi_before?: Json | null
+          recommendation_type?: string | null
+        }
+        Update: {
+          action_request_id?: string | null
+          actual_outcome?: string | null
+          created_at?: string | null
+          decision?: string | null
+          effectiveness_score?: number | null
+          feedback_notes?: string | null
+          id?: string
+          insight_id?: string | null
+          kpi_after?: Json | null
+          kpi_before?: Json | null
+          recommendation_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_learning_feedback_action_request_id_fkey"
+            columns: ["action_request_id"]
+            isOneToOne: false
+            referencedRelation: "ai_action_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -1117,6 +1275,111 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          actor: Json | null
+          attempts: number | null
+          created_at: string | null
+          data: Json | null
+          delivered_at: string | null
+          entity: Json | null
+          event_id: string
+          event_type: string
+          id: string
+          idempotency_hash: string | null
+          last_error: string | null
+          max_attempts: number | null
+          meta: Json | null
+          next_retry_at: string | null
+          occurred_at: string
+          priority: string | null
+          received_at: string
+          signature_valid: boolean | null
+          source: string
+          status: string | null
+          tags: string[] | null
+        }
+        Insert: {
+          actor?: Json | null
+          attempts?: number | null
+          created_at?: string | null
+          data?: Json | null
+          delivered_at?: string | null
+          entity?: Json | null
+          event_id: string
+          event_type: string
+          id?: string
+          idempotency_hash?: string | null
+          last_error?: string | null
+          max_attempts?: number | null
+          meta?: Json | null
+          next_retry_at?: string | null
+          occurred_at?: string
+          priority?: string | null
+          received_at?: string
+          signature_valid?: boolean | null
+          source: string
+          status?: string | null
+          tags?: string[] | null
+        }
+        Update: {
+          actor?: Json | null
+          attempts?: number | null
+          created_at?: string | null
+          data?: Json | null
+          delivered_at?: string | null
+          entity?: Json | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          idempotency_hash?: string | null
+          last_error?: string | null
+          max_attempts?: number | null
+          meta?: Json | null
+          next_retry_at?: string | null
+          occurred_at?: string
+          priority?: string | null
+          received_at?: string
+          signature_valid?: boolean | null
+          source?: string
+          status?: string | null
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
+      webhook_sources: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          hmac_secret: string
+          id: string
+          ip_allowlist: string[] | null
+          name: string
+          rate_limit_per_min: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          hmac_secret: string
+          id?: string
+          ip_allowlist?: string[] | null
+          name: string
+          rate_limit_per_min?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          hmac_secret?: string
+          id?: string
+          ip_allowlist?: string[] | null
+          name?: string
+          rate_limit_per_min?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
