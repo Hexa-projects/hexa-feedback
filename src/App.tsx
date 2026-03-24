@@ -80,6 +80,14 @@ const AppRoutes = () => (
       <Route path="/lab" element={<PrivateRoute><LabPartsList /></PrivateRoute>} />
       <Route path="/lab/new" element={<PrivateRoute><LabPartForm /></PrivateRoute>} />
 
+      {/* Estoque Inteligente */}
+      <Route path="/stock" element={<PrivateRoute><StockDashboard /></PrivateRoute>} />
+      <Route path="/stock/products" element={<PrivateRoute><StockProducts /></PrivateRoute>} />
+      <Route path="/stock/products/new" element={<PrivateRoute><StockProductForm /></PrivateRoute>} />
+      <Route path="/stock/movements" element={<PrivateRoute><StockMovements /></PrivateRoute>} />
+      <Route path="/stock/journey" element={<PrivateRoute><StockJourney /></PrivateRoute>} />
+      <Route path="/stock/equipment" element={<PrivateRoute><StockEquipment /></PrivateRoute>} />
+
       {/* Financeiro */}
       <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
 
