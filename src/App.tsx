@@ -30,6 +30,7 @@ import AIChat from "./pages/AIChat";
 import CorporateChannels from "./pages/CorporateChannels";
 import AgentsDashboard from "./pages/AgentsDashboard";
 import SettingsPage from "./pages/SettingsPage";
+import ApiDocsPage from "./pages/ApiDocsPage";
 
 const queryClient = new QueryClient();
 
