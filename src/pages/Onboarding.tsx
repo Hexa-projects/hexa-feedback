@@ -84,13 +84,15 @@ export default function Onboarding() {
           </div>
 
           <div className="form-section">
-            <div>
+           <div>
               <Label>Resumo do que você faz no dia a dia</Label>
               <Textarea value={form.resumo_dia_dia} onChange={e => u("resumo_dia_dia", e.target.value)} placeholder="Descreva brevemente suas atividades..." rows={3} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("resumo_dia_dia", form.resumo_dia_dia ? form.resumo_dia_dia + "\n" + text : text)} />
             </div>
             <div>
               <Label>Principais responsabilidades</Label>
               <Textarea value={form.responsabilidades} onChange={e => u("responsabilidades", e.target.value)} placeholder="Liste suas responsabilidades..." rows={3} />
+              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("responsabilidades", form.responsabilidades ? form.responsabilidades + "\n" + text : text)} />
             </div>
           </div>
 
