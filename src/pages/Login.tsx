@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Hexagon } from "lucide-react";
+import logo from "@/assets/logo.png";
+import type { UserProfile } from "@/types/forms";
 import type { UserProfile } from "@/types/forms";
 
 export default function Login() {
