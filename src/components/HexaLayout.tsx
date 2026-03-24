@@ -42,6 +42,7 @@ const NAV: NavItem[] = [
   },
   { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
   { to: "/agentes", label: "Agentes IA", icon: Bot, roles: ["admin"] },
+  { to: "/api-docs", label: "API & Webhooks", icon: BookOpen, roles: ["admin"] },
   { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
 ];
 

@@ -70,6 +70,7 @@ const AppRoutes = () => (
       <Route path="/projects" element={<PrivateRoute><PlaceholderPage title="Projetos & Implantação" /></PrivateRoute>} />
       <Route path="/finance" element={<PrivateRoute><PlaceholderPage title="Financeiro" /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+      <Route path="/api-docs" element={<PrivateRoute><ApiDocsPage /></PrivateRoute>} />
       <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
       <Route path="/chat-ia" element={<PrivateRoute><AIChat /></PrivateRoute>} />
       <Route path="/canais" element={<PrivateRoute><CorporateChannels /></PrivateRoute>} />
