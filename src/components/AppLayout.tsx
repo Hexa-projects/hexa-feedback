@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { store } from "@/lib/store";
 import {
   LayoutDashboard, ClipboardList, Repeat, AlertTriangle,
-  Lightbulb, History, LogOut, Menu, X, Hexagon, User
+  Lightbulb, History, LogOut, Menu, X, User
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const NAV = [
   { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
