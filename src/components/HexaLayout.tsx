@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  LayoutDashboard, Home, Users, Briefcase, Wrench, FlaskConical,
+  Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import hexaLogo from "@/assets/hexaos-logo.png";
 
 interface NavItem {
   to: string;
@@ -64,7 +65,6 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
   };
 
   const renderNavItem = (n: NavItem) => {
-    // Dropdown group
     if (n.children) {
       const isGroupActive = n.children.some(c => location.pathname.startsWith(c.to));
       return (
@@ -104,7 +104,6 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       );
     }
 
-    // Normal link
     return (
       <Link
         key={n.to}
@@ -126,11 +125,15 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     <>
       {/* Logo */}
       <div className="p-5 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">H</span>
+        <img src={hexaLogo} alt="HexaOS" className="w-9 h-9 object-contain" />
+        <div>
+          <span className="text-lg font-bold text-sidebar-foreground tracking-tight">Hexa</span>
+          <span className="text-lg font-bold text-sidebar-primary tracking-tight">OS</span>
         </div>
-        <span className="text-xl font-bold text-sidebar-foreground">HexaOS</span>
       </div>
+
+      {/* Divider */}
+      <div className="mx-4 mb-2 h-px bg-sidebar-border/60" />
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
@@ -141,12 +144,12 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       {profile && (
         <div className="p-3 border-t border-sidebar-border">
           <div className="flex items-center gap-2 p-2 rounded-lg">
-            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-              <User className="w-4 h-4 text-sidebar-primary" />
+            <div className="w-8 h-8 rounded-full hexa-gradient-brand flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{profile.nome}</p>
-              <p className="text-xs text-sidebar-foreground/50">{role}</p>
+              <p className="text-xs text-sidebar-foreground/50 capitalize">{role}</p>
             </div>
             <button onClick={handleLogout} className="p-1.5 rounded hover:bg-sidebar-accent" title="Sair">
               <LogOut className="w-4 h-4 text-sidebar-foreground/50" />
@@ -181,7 +184,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-40 bg-card border-b px-4 lg:px-6 h-14 flex items-center gap-3">
+        <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b px-4 lg:px-6 h-14 flex items-center gap-3">
           <button className="lg:hidden p-1.5" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -194,13 +197,13 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
             </Button>
             <div className="hidden sm:flex items-center gap-2 text-sm">
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-3.5 h-3.5 text-primary" />
+              <div className="w-7 h-7 rounded-full hexa-gradient-brand flex items-center justify-center">
+                <User className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="text-muted-foreground">{profile?.nome || "Usuário"}</span>
+              <span className="text-muted-foreground font-medium">{profile?.nome || "Usuário"}</span>
             </div>
           </div>
         </header>

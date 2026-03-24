@@ -45,7 +45,7 @@ export default function HomePage() {
 
   const summaryCards = [
     { label: "Leads Ativos", value: stats.leads, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-    { label: "OS Abertas", value: stats.osAbertas, icon: Wrench, color: "text-hexa-orange", bg: "bg-hexa-orange/10" },
+    { label: "OS Abertas", value: stats.osAbertas, icon: Wrench, color: "text-hexa-amber", bg: "bg-hexa-amber/10" },
     { label: "Peças em Reparo", value: stats.pecasReparo, icon: FlaskConical, color: "text-hexa-purple", bg: "bg-hexa-purple/10" },
     { label: "Propostas", value: stats.propostas, icon: FileText, color: "text-hexa-green", bg: "bg-hexa-green/10" },
   ];

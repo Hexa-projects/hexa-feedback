@@ -12,7 +12,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -49,14 +49,18 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         hexa: {
-          navy: "hsl(var(--hexa-navy))",
-          teal: "hsl(var(--hexa-teal))",
-          "teal-light": "hsl(var(--hexa-teal-light))",
-          orange: "hsl(var(--hexa-orange))",
+          amber: "hsl(var(--hexa-amber))",
+          "amber-light": "hsl(var(--hexa-amber-light))",
+          "amber-dark": "hsl(var(--hexa-amber-dark))",
+          gold: "hsl(var(--hexa-gold))",
+          warm: "hsl(var(--hexa-warm))",
+          charcoal: "hsl(var(--hexa-charcoal))",
+          slate: "hsl(var(--hexa-slate))",
           green: "hsl(var(--hexa-green))",
           purple: "hsl(var(--hexa-purple))",
           red: "hsl(var(--hexa-red))",
-          yellow: "hsl(var(--hexa-yellow))",
+          blue: "hsl(var(--hexa-blue))",
+          teal: "hsl(var(--hexa-teal))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

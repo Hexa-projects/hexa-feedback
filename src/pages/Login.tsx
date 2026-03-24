@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import logo from "@/assets/logo.png";
+import hexaLogo from "@/assets/hexaos-logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -39,22 +39,40 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm space-y-6 animate-slide-up">
-        <div className="text-center space-y-2">
-          <div className="w-20 h-20 mx-auto mb-4">
-            <img src={logo} alt="Hexamedical" className="w-full h-full object-contain" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(20 14% 12%) 0%, hsl(20 12% 18%) 50%, hsl(24 20% 14%) 100%)' }}>
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, hsl(30 92% 52%), transparent)' }} />
+      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-8" style={{ background: 'radial-gradient(circle, hsl(36 100% 62%), transparent)' }} />
+
+      <div className="w-full max-w-sm space-y-6 animate-slide-up relative z-10">
+        <div className="text-center space-y-3">
+          <div className="w-24 h-24 mx-auto mb-2">
+            <img src={hexaLogo} alt="HexaOS" className="w-full h-full object-contain drop-shadow-lg" />
           </div>
-          <h1 className="text-2xl font-bold">Hexamedical</h1>
-          <p className="text-sm text-muted-foreground">Coleta de Processos & Feedback</p>
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              Hexa<span style={{ color: 'hsl(30, 92%, 52%)' }}>OS</span>
+            </h1>
+            <p className="text-sm text-white/50 mt-1">Sistema Operacional Corporativo</p>
+          </div>
         </div>
 
-        <div className="hexa-card p-6 space-y-4">
+        <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-border/50">
           <div className="flex gap-2">
-            <Button variant={mode === "login" ? "default" : "outline"} size="sm" className="flex-1" onClick={() => { setMode("login"); setError(""); setSuccessMsg(""); }}>
+            <Button
+              variant={mode === "login" ? "default" : "outline"}
+              size="sm"
+              className="flex-1"
+              onClick={() => { setMode("login"); setError(""); setSuccessMsg(""); }}
+            >
               Entrar
             </Button>
-            <Button variant={mode === "register" ? "default" : "outline"} size="sm" className="flex-1" onClick={() => { setMode("register"); setError(""); setSuccessMsg(""); }}>
+            <Button
+              variant={mode === "register" ? "default" : "outline"}
+              size="sm"
+              className="flex-1"
+              onClick={() => { setMode("register"); setError(""); setSuccessMsg(""); }}
+            >
               Cadastrar
             </Button>
           </div>
@@ -86,8 +104,8 @@ export default function Login() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Base para o <strong>HexaOS</strong> e <strong>Focus AI</strong>
+        <p className="text-center text-xs text-white/30">
+          Powered by <strong className="text-white/50">Focus AI</strong>
         </p>
       </div>
     </div>
