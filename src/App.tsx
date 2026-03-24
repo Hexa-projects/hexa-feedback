@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import DailyForm from "./pages/DailyForm";
 import RepetitiveProcesses from "./pages/RepetitiveProcesses";
+import ToolsMapping from "./pages/ToolsMapping";
 import Bottlenecks from "./pages/Bottlenecks";
 import Suggestions from "./pages/Suggestions";
 import HistoryPage from "./pages/HistoryPage";
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/daily" element={<PrivateRoute><DailyForm /></PrivateRoute>} />
+          <Route path="/tools" element={<PrivateRoute><ToolsMapping /></PrivateRoute>} />
           <Route path="/processes" element={<PrivateRoute><RepetitiveProcesses /></PrivateRoute>} />
           <Route path="/bottlenecks" element={<PrivateRoute><Bottlenecks /></PrivateRoute>} />
           <Route path="/suggestions" element={<PrivateRoute><Suggestions /></PrivateRoute>} />

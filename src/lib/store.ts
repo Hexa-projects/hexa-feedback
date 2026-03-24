@@ -1,4 +1,4 @@
-import type { UserProfile, DailyFormData, RepetitiveProcess, Bottleneck, Suggestion } from "@/types/forms";
+import type { UserProfile, DailyFormData, RepetitiveProcess, Bottleneck, Suggestion, ToolMapping } from "@/types/forms";
 
 const KEY = {
   users: "hexa_users",
@@ -7,6 +7,7 @@ const KEY = {
   processes: "hexa_processes",
   bottlenecks: "hexa_bottlenecks",
   suggestions: "hexa_suggestions",
+  toolMappings: "hexa_tool_mappings",
 };
 
 function get<T>(key: string): T[] {
@@ -68,12 +69,21 @@ export const store = {
     set(KEY.suggestions, items);
   },
 
+  // Tool Mappings
+  getToolMappings: () => get<ToolMapping>(KEY.toolMappings),
+  saveToolMapping: (t: ToolMapping) => {
+    const items = get<ToolMapping>(KEY.toolMappings);
+    items.push(t);
+    set(KEY.toolMappings, items);
+  },
+
   // Stats
   getStats: () => ({
     daily: get<DailyFormData>(KEY.daily),
     processes: get<RepetitiveProcess>(KEY.processes),
     bottlenecks: get<Bottleneck>(KEY.bottlenecks),
     suggestions: get<Suggestion>(KEY.suggestions),
+    toolMappings: get<ToolMapping>(KEY.toolMappings),
   }),
 
   // Export
@@ -83,6 +93,7 @@ export const store = {
     processes: get<RepetitiveProcess>(KEY.processes),
     bottlenecks: get<Bottleneck>(KEY.bottlenecks),
     suggestions: get<Suggestion>(KEY.suggestions),
+    toolMappings: get<ToolMapping>(KEY.toolMappings),
     exportedAt: new Date().toISOString(),
   }),
 };

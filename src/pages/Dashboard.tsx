@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { store } from "@/lib/store";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Download, Users, ClipboardList, Repeat, AlertTriangle, Lightbulb } from "lucide-react";
+import { Download, Users, ClipboardList, Repeat, AlertTriangle, Lightbulb, Wrench } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = ["#2a9d8f", "#e76f51", "#264653", "#e9c46a", "#f4a261", "#606c76", "#a855f7"];
@@ -28,11 +28,21 @@ export default function Dashboard() {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [stats.bottlenecks]);
 
-  const benefitData = useMemo(() => {
+  const toolCategoryData = useMemo(() => {
     const map: Record<string, number> = {};
-    stats.suggestions.forEach(s => { map[s.beneficio] = (map[s.beneficio] || 0) + 1; });
+    stats.toolMappings.forEach(t => { map[t.categoria] = (map[t.categoria] || 0) + 1; });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [stats.toolMappings]);
+
+  const toolSatisfactionData = useMemo(() => {
+    const map: Record<string, number> = {};
+    stats.toolMappings.forEach(t => { map[t.satisfacao] = (map[t.satisfacao] || 0) + 1; });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [stats.suggestions]);
+  }, [stats.toolMappings]);
+
+  const toolsWantReplace = useMemo(() => {
+    return stats.toolMappings.filter(t => t.gostariaSubstituir);
+  }, [stats.toolMappings]);
 
   const handleExport = (format: "json" | "csv") => {
     const data = store.exportAll();
@@ -44,6 +54,7 @@ export default function Dashboard() {
     } else {
       const rows = [["Tipo", "Data", "Setor", "Conteúdo"]];
       data.daily.forEach(d => rows.push(["Dia a Dia", d.createdAt, d.setor, d.atividadesPrincipais]));
+      data.toolMappings.forEach(t => rows.push(["Ferramenta", t.createdAt, "", `${t.nomeFerramentaOuPlanilha} (${t.categoria}) - ${t.finalidade}`]));
       data.processes.forEach(p => rows.push(["Processo", p.createdAt, "", p.processo]));
       data.bottlenecks.forEach(b => rows.push(["Gargalo", b.createdAt, "", b.descricao]));
       data.suggestions.forEach(s => rows.push(["Sugestão", s.createdAt, s.setorImpactado, s.ideia]));
@@ -58,6 +69,7 @@ export default function Dashboard() {
   const cards = [
     { icon: Users, label: "Colaboradores", value: store.getUsers().length, color: "text-hexa-teal" },
     { icon: ClipboardList, label: "Registros diários", value: stats.daily.length, color: "text-hexa-navy" },
+    { icon: Wrench, label: "Ferramentas mapeadas", value: stats.toolMappings.length, color: "text-primary" },
     { icon: Repeat, label: "Processos", value: stats.processes.length, color: "text-hexa-purple" },
     { icon: AlertTriangle, label: "Gargalos", value: stats.bottlenecks.length, color: "text-hexa-orange" },
     { icon: Lightbulb, label: "Sugestões", value: stats.suggestions.length, color: "text-hexa-yellow" },
@@ -79,7 +91,7 @@ export default function Dashboard() {
         </div>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {cards.map(c => (
             <div key={c.label} className="hexa-card p-4">
               <c.icon className={`w-5 h-5 ${c.color} mb-2`} />
@@ -89,7 +101,7 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Charts */}
+        {/* Charts row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="hexa-card p-5">
             <h3 className="font-semibold mb-4">Contribuições por Setor</h3>
@@ -107,12 +119,44 @@ export default function Dashboard() {
           </div>
 
           <div className="hexa-card p-5">
+            <h3 className="font-semibold mb-4">Ferramentas por Categoria</h3>
+            {toolCategoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={toolCategoryData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 18% 88%)" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="hsl(30 90% 50%)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <p className="text-sm text-muted-foreground text-center py-12">Sem dados ainda</p>}
+          </div>
+        </div>
+
+        {/* Charts row 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="hexa-card p-5">
             <h3 className="font-semibold mb-4">Gargalos por Urgência</h3>
             {urgencyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie data={urgencyData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                     {urgencyData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <p className="text-sm text-muted-foreground text-center py-12">Sem dados ainda</p>}
+          </div>
+
+          <div className="hexa-card p-5">
+            <h3 className="font-semibold mb-4">Satisfação com Ferramentas Atuais</h3>
+            {toolSatisfactionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={toolSatisfactionData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                    {toolSatisfactionData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -141,20 +185,26 @@ export default function Dashboard() {
           ) : <p className="text-sm text-muted-foreground text-center py-8">Sem dados ainda</p>}
         </div>
 
-        {/* Suggestions by benefit */}
+        {/* Tools wanting replacement */}
         <div className="hexa-card p-5">
-          <h3 className="font-semibold mb-4">Sugestões por Benefício</h3>
-          {benefitData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={benefitData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 18% 88%)" />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                <Tooltip />
-                <Bar dataKey="value" fill="hsl(42 90% 55%)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-8">Sem dados ainda</p>}
+          <h3 className="font-semibold mb-4">🔄 Ferramentas que Querem Substituição ({toolsWantReplace.length})</h3>
+          {toolsWantReplace.length > 0 ? (
+            <div className="space-y-3">
+              {toolsWantReplace.map((t, i) => (
+                <div key={i} className="p-3 rounded-lg bg-secondary/50 border">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wrench className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm">{t.nomeFerramentaOuPlanilha}</span>
+                    <span className="hexa-badge bg-destructive/10 text-destructive">{t.satisfacao}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.problemas || "Sem problemas descritos"}</p>
+                  {t.comoSeriaIdeal && (
+                    <p className="text-xs mt-1 text-primary"><strong>Ideal:</strong> {t.comoSeriaIdeal}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-muted-foreground text-center py-8">Nenhuma ferramenta marcada para substituição ainda</p>}
         </div>
       </div>
     </AppLayout>

@@ -16,6 +16,20 @@ export const IMPACTOS = ["Tempo", "Dinheiro", "Retrabalho", "Cliente", "Erro té
 export const BENEFICIOS = ["Tempo", "Custo", "Qualidade", "Receita", "Satisfação"] as const;
 export const ESFORCOS = ["Baixo", "Médio", "Alto"] as const;
 
+export const CATEGORIAS_FERRAMENTA = [
+  "Planilha / Excel", "Sistema / ERP", "WhatsApp / Mensageiro",
+  "E-mail", "Documento Word / PDF", "Formulário / Google Forms",
+  "Caderno / Papel", "Telefone", "Software específico", "Outro"
+] as const;
+
+export const FINALIDADES_FERRAMENTA = [
+  "Controle de dados", "Comunicação", "Relatórios", "Cadastro",
+  "Orçamento / Financeiro", "Acompanhamento de tarefas", "Atendimento ao cliente",
+  "Gestão de estoque", "Agenda / Calendário", "Outro"
+] as const;
+
+export const SATISFACAO_LEVELS = ["Péssimo", "Ruim", "Regular", "Bom", "Ótimo"] as const;
+
 export interface UserProfile {
   id: string;
   nome: string;
@@ -87,5 +101,25 @@ export interface Suggestion {
   esforco: string;
   audioUrl?: string;
   transcricaoAudio?: string;
+  createdAt: string;
+}
+
+export interface ToolMapping {
+  id: string;
+  userId: string;
+  nomeFerramentaOuPlanilha: string;
+  categoria: string;
+  finalidade: string;
+  descricaoUso: string;
+  frequenciaUso: string;
+  tempoGastoSemana: string;
+  compartilhaCom: string;
+  setoresEnvolvidos: string[];
+  problemas: string;
+  satisfacao: string;
+  gostariaSubstituir: boolean;
+  comoSeriaIdeal?: string;
+  criadoPorVoce: boolean;
+  quantasPessoasUsam: string;
   createdAt: string;
 }
