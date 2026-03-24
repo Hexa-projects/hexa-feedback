@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 export default function DailyForm() {
   const { user, profile } = useAuth();
@@ -97,6 +98,10 @@ export default function DailyForm() {
         <div className="form-section">
           <Label>Atividades principais do dia</Label>
           <Textarea value={form.atividadesPrincipais} onChange={e => setForm(p => ({ ...p, atividadesPrincipais: e.target.value }))} placeholder="Descreva suas atividades hoje..." rows={4} />
+          <AudioRecorder
+            label="Descrever por áudio"
+            onTranscription={(text) => setForm(p => ({ ...p, atividadesPrincipais: p.atividadesPrincipais ? p.atividadesPrincipais + "\n" + text : text }))}
+          />
         </div>
 
         <div className="form-section">

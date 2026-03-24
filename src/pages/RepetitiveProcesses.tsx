@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 export default function RepetitiveProcesses() {
   const { user } = useAuth();
@@ -115,6 +116,14 @@ export default function RepetitiveProcesses() {
               <Textarea value={form.comoAutomatizar} onChange={e => setForm(p => ({ ...p, comoAutomatizar: e.target.value }))} placeholder="Descreva como poderia funcionar..." rows={3} />
             </div>
           )}
+        </div>
+
+        <div className="form-section">
+          <Label className="text-sm font-medium">Explicar por áudio</Label>
+          <AudioRecorder
+            label="Gravar explicação"
+            onTranscription={(text) => setForm(p => ({ ...p, comoAutomatizar: p.comoAutomatizar ? p.comoAutomatizar + "\n" + text : text, podeAutomatizar: true }))}
+          />
         </div>
 
         <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.processo.trim() || saving}>

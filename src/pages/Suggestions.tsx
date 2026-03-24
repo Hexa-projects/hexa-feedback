@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 export default function Suggestions() {
   const { user, profile } = useAuth();
@@ -64,6 +65,10 @@ export default function Suggestions() {
           <div>
             <Label>Ideia de melhoria</Label>
             <Textarea value={form.ideia} onChange={e => setForm(p => ({ ...p, ideia: e.target.value }))} placeholder="Descreva sua ideia..." rows={5} />
+            <AudioRecorder
+              label="Descrever por áudio"
+              onTranscription={(text) => setForm(p => ({ ...p, ideia: p.ideia ? p.ideia + "\n" + text : text }))}
+            />
           </div>
         </div>
 

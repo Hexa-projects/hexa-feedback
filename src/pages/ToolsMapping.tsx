@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 export default function ToolsMapping() {
   const { user } = useAuth();
@@ -129,6 +130,10 @@ export default function ToolsMapping() {
             <Label>Como você usa? Descreva o passo a passo</Label>
             <Textarea value={form.descricaoUso} onChange={e => setForm(p => ({ ...p, descricaoUso: e.target.value }))}
               placeholder="Ex: Todo dia abro a planilha, copio os dados do ERP..." rows={4} />
+            <AudioRecorder
+              label="Descrever por áudio"
+              onTranscription={(text) => setForm(p => ({ ...p, descricaoUso: p.descricaoUso ? p.descricaoUso + "\n" + text : text }))}
+            />
           </div>
         </div>
 

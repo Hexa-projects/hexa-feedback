@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 const URGENCIA_COLORS: Record<string, string> = {
   "Baixa": "bg-hexa-green/10 text-hexa-green",
@@ -83,6 +84,10 @@ export default function Bottlenecks() {
           <div>
             <Label>Descreva o problema</Label>
             <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Explique o problema com detalhes..." rows={4} />
+            <AudioRecorder
+              label="Descrever por áudio"
+              onTranscription={(text) => setForm(p => ({ ...p, descricao: p.descricao ? p.descricao + "\n" + text : text }))}
+            />
           </div>
         </div>
 
