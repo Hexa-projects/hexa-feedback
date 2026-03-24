@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
-  ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History
+  ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
+  MessageCircle, Bot, Hash
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ const NAV: NavItem[] = [
   { to: "/os", label: "Manutenção & OS", icon: Wrench },
   { to: "/lab", label: "Laboratório de Peças", icon: FlaskConical },
   { to: "/finance", label: "Financeiro", icon: DollarSign },
+  { to: "/chat-ia", label: "Chat IA", icon: MessageCircle },
+  { to: "/canais", label: "Canal Corporativo", icon: Hash },
   {
     to: "#feedback", label: "Relatórios & Feedback", icon: BarChart3,
     children: [
@@ -37,6 +40,7 @@ const NAV: NavItem[] = [
     ],
   },
   { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
+  { to: "/agentes", label: "Agentes IA", icon: Bot, roles: ["admin"] },
   { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
 ];
 

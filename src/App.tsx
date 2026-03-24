@@ -26,6 +26,9 @@ import FocusAI from "./pages/FocusAI";
 import Dashboard from "./pages/Dashboard";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+import AIChat from "./pages/AIChat";
+import CorporateChannels from "./pages/CorporateChannels";
+import AgentsDashboard from "./pages/AgentsDashboard";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +69,9 @@ const AppRoutes = () => (
       <Route path="/finance" element={<PrivateRoute><PlaceholderPage title="Financeiro" /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><PlaceholderPage title="Configurações" /></PrivateRoute>} />
       <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
+      <Route path="/chat-ia" element={<PrivateRoute><AIChat /></PrivateRoute>} />
+      <Route path="/canais" element={<PrivateRoute><CorporateChannels /></PrivateRoute>} />
+      <Route path="/agentes" element={<PrivateRoute><AgentsDashboard /></PrivateRoute>} />
 
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
