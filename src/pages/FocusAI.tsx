@@ -14,8 +14,9 @@ import { Slider } from "@/components/ui/slider";
 import {
   Brain, Plug, Cpu, MessageSquare, Shield, Zap, Eye,
   CheckCircle2, XCircle, RefreshCw, Play, Settings2,
-  Download, Upload, Calendar, Clock, AlertTriangle
+  Download, Upload, Calendar, Clock, AlertTriangle, Wifi, WifiOff
 } from "lucide-react";
+import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
 import { toast } from "sonner";
 
 interface FocusConfig {
