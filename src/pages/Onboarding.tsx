@@ -131,6 +131,29 @@ export default function Onboarding() {
         <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving}>
           {saving ? "Salvando..." : "Salvar e continuar"}
         </Button>
+
+        {role === "admin" && (
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            onClick={async () => {
+              if (!profile) return;
+              setSaving(true);
+              try {
+                await db.updateProfile(profile.id, { onboarding_completo: true });
+                await refreshProfile();
+                navigate("/home");
+              } catch (err: any) {
+                toast.error("Erro ao pular: " + err.message);
+              } finally {
+                setSaving(false);
+              }
+            }}
+            disabled={saving}
+          >
+            Preencher depois →
+          </Button>
+        )}
       </div>
     </div>
   );
