@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, ClipboardList, Repeat, AlertTriangle,
   Lightbulb, History, LogOut, Menu, X, User, Wrench
@@ -21,12 +21,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const user = store.getCurrentUser();
+  const { profile, role, signOut } = useAuth();
 
-  const visibleNav = NAV.filter(n => !n.roles || (user && n.roles.includes(user.role)));
+  const visibleNav = NAV.filter(n => !n.roles || n.roles.includes(role));
 
-  const handleLogout = () => {
-    store.setCurrentUser(null);
+  const handleLogout = async () => {
+    await signOut();
     navigate("/");
   };
 
@@ -51,12 +51,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
               <span className="font-bold text-xl">Hexamedical</span>
             </div>
-            {user && (
+            {profile && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-sidebar-accent mb-4">
                 <User className="w-4 h-4 text-sidebar-primary" />
                 <div className="text-sm">
-                  <p className="font-medium">{user.nome}</p>
-                  <p className="text-xs opacity-70">{user.setor} · {user.role}</p>
+                  <p className="font-medium">{profile.nome}</p>
+                  <p className="text-xs opacity-70">{profile.setor} · {role}</p>
                 </div>
               </div>
             )}
@@ -84,12 +84,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <img src={logo} alt="Hexamedical" className="w-8 h-8 object-contain" />
             <span className="font-bold text-xl">Hexamedical</span>
           </div>
-          {user && (
+          {profile && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-sidebar-accent mb-6">
               <User className="w-4 h-4 text-sidebar-primary" />
               <div className="text-sm">
-                <p className="font-medium">{user.nome}</p>
-                <p className="text-xs opacity-70">{user.setor} · {user.role}</p>
+                <p className="font-medium">{profile.nome}</p>
+                <p className="text-xs opacity-70">{profile.setor} · {role}</p>
               </div>
             </div>
           )}
