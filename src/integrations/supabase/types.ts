@@ -947,6 +947,60 @@ export type Database = {
         }
         Relationships: []
       }
+      installed_equipment: {
+        Row: {
+          cliente: string
+          contrato_id: string | null
+          created_at: string | null
+          data_instalacao: string | null
+          id: string
+          localizacao: string | null
+          modelo: string | null
+          nome: string
+          notas: string | null
+          proxima_manutencao: string | null
+          serial_number: string | null
+          status: string
+          ultima_manutencao: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cliente: string
+          contrato_id?: string | null
+          created_at?: string | null
+          data_instalacao?: string | null
+          id?: string
+          localizacao?: string | null
+          modelo?: string | null
+          nome: string
+          notas?: string | null
+          proxima_manutencao?: string | null
+          serial_number?: string | null
+          status?: string
+          ultima_manutencao?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cliente?: string
+          contrato_id?: string | null
+          created_at?: string | null
+          data_instalacao?: string | null
+          id?: string
+          localizacao?: string | null
+          modelo?: string | null
+          nome?: string
+          notas?: string | null
+          proxima_manutencao?: string | null
+          serial_number?: string | null
+          status?: string
+          ultima_manutencao?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lab_parts: {
         Row: {
           created_at: string | null
@@ -1445,6 +1499,180 @@ export type Database = {
           tempo_medio?: string | null
           transcricao_audio?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      stock_journeys: {
+        Row: {
+          concluido_em: string | null
+          created_at: string | null
+          etapa: string
+          etapa_anterior: string | null
+          id: string
+          iniciado_em: string | null
+          lab_part_id: string | null
+          notas: string | null
+          product_id: string
+          responsavel_id: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          concluido_em?: string | null
+          created_at?: string | null
+          etapa?: string
+          etapa_anterior?: string | null
+          id?: string
+          iniciado_em?: string | null
+          lab_part_id?: string | null
+          notas?: string | null
+          product_id: string
+          responsavel_id?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          concluido_em?: string | null
+          created_at?: string | null
+          etapa?: string
+          etapa_anterior?: string | null
+          id?: string
+          iniciado_em?: string | null
+          lab_part_id?: string | null
+          notas?: string | null
+          product_id?: string
+          responsavel_id?: string | null
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_journeys_lab_part_id_fkey"
+            columns: ["lab_part_id"]
+            isOneToOne: false
+            referencedRelation: "lab_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_journeys_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_journeys_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string | null
+          id: string
+          motivo: string | null
+          notas: string | null
+          operador_id: string
+          product_id: string
+          quantidade: number
+          referencia: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          motivo?: string | null
+          notas?: string | null
+          operador_id: string
+          product_id: string
+          quantidade?: number
+          referencia?: string | null
+          tipo?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          motivo?: string | null
+          notas?: string | null
+          operador_id?: string
+          product_id?: string
+          quantidade?: number
+          referencia?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "stock_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_products: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          custo_unitario: number | null
+          descricao: string | null
+          fornecedor: string | null
+          foto_url: string | null
+          hexa_id: string | null
+          id: string
+          localizacao: string | null
+          nome: string
+          notas: string | null
+          part_number: string | null
+          quantidade: number
+          quantidade_minima: number | null
+          serial_number: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+          validade: string | null
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string | null
+          custo_unitario?: number | null
+          descricao?: string | null
+          fornecedor?: string | null
+          foto_url?: string | null
+          hexa_id?: string | null
+          id?: string
+          localizacao?: string | null
+          nome: string
+          notas?: string | null
+          part_number?: string | null
+          quantidade?: number
+          quantidade_minima?: number | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          validade?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          custo_unitario?: number | null
+          descricao?: string | null
+          fornecedor?: string | null
+          foto_url?: string | null
+          hexa_id?: string | null
+          id?: string
+          localizacao?: string | null
+          nome?: string
+          notas?: string | null
+          part_number?: string | null
+          quantidade?: number
+          quantidade_minima?: number | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          validade?: string | null
         }
         Relationships: []
       }
