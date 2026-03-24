@@ -277,8 +277,9 @@ export default function FocusAI() {
 
         {/* Tabs */}
         <Tabs defaultValue="coceo" className="space-y-4">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-9 h-auto">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-10 h-auto">
             <TabsTrigger value="coceo" className="text-xs gap-1"><Crown className="w-3 h-3" />Co-CEO</TabsTrigger>
+            <TabsTrigger value="ops" className="text-xs gap-1"><Zap className="w-3 h-3" />Operações</TabsTrigger>
             <TabsTrigger value="openclaw" className="text-xs">OpenClaw</TabsTrigger>
             <TabsTrigger value="sync" className="text-xs">Sync</TabsTrigger>
             <TabsTrigger value="llm" className="text-xs">LLM</TabsTrigger>
