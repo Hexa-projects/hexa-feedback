@@ -16,6 +16,10 @@ import WorkOrderForm from "./pages/os/WorkOrderForm";
 import WorkOrderDetail from "./pages/os/WorkOrderDetail";
 import LabPartsList from "./pages/lab/LabPartsList";
 import LabPartForm from "./pages/lab/LabPartForm";
+import ProjectsList from "./pages/projects/ProjectsList";
+import ProjectForm from "./pages/projects/ProjectForm";
+import ProjectDetail from "./pages/projects/ProjectDetail";
+import FinanceDashboard from "./pages/finance/FinanceDashboard";
 import DailyForm from "./pages/DailyForm";
 import RepetitiveProcesses from "./pages/RepetitiveProcesses";
 import ToolsMapping from "./pages/ToolsMapping";
@@ -24,7 +28,6 @@ import Suggestions from "./pages/Suggestions";
 import HistoryPage from "./pages/HistoryPage";
 import FocusAI from "./pages/FocusAI";
 import Dashboard from "./pages/Dashboard";
-import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 import AIChat from "./pages/AIChat";
 import CorporateChannels from "./pages/CorporateChannels";
@@ -57,6 +60,11 @@ const AppRoutes = () => (
       <Route path="/crm/kanban" element={<PrivateRoute><KanbanFunnel /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
+      {/* Projetos & Implantação */}
+      <Route path="/projects" element={<PrivateRoute><ProjectsList /></PrivateRoute>} />
+      <Route path="/projects/new" element={<PrivateRoute><ProjectForm /></PrivateRoute>} />
+      <Route path="/projects/:id" element={<PrivateRoute><ProjectDetail /></PrivateRoute>} />
+
       {/* Manutenção & OS */}
       <Route path="/os" element={<PrivateRoute><WorkOrdersList /></PrivateRoute>} />
       <Route path="/os/new" element={<PrivateRoute><WorkOrderForm /></PrivateRoute>} />
@@ -66,9 +74,10 @@ const AppRoutes = () => (
       <Route path="/lab" element={<PrivateRoute><LabPartsList /></PrivateRoute>} />
       <Route path="/lab/new" element={<PrivateRoute><LabPartForm /></PrivateRoute>} />
 
-      {/* Placeholders */}
-      <Route path="/projects" element={<PrivateRoute><PlaceholderPage title="Projetos & Implantação" /></PrivateRoute>} />
-      <Route path="/finance" element={<PrivateRoute><PlaceholderPage title="Financeiro" /></PrivateRoute>} />
+      {/* Financeiro */}
+      <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
+
+      {/* AI & Tools */}
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
       <Route path="/api-docs" element={<PrivateRoute><ApiDocsPage /></PrivateRoute>} />
       <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />

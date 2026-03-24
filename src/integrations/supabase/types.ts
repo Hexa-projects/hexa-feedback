@@ -569,6 +569,54 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_records: {
+        Row: {
+          categoria: string | null
+          cliente: string | null
+          created_at: string | null
+          data_pagamento: string | null
+          data_vencimento: string | null
+          descricao: string
+          id: string
+          referencia: string | null
+          status: string
+          tipo: string
+          updated_at: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          cliente?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao: string
+          id?: string
+          referencia?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string | null
+          cliente?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao?: string
+          id?: string
+          referencia?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       focus_ai_config: {
         Row: {
           guardrail_aprovacao_humana: boolean | null
@@ -1051,6 +1099,101 @@ export type Database = {
           tempo_casa?: string | null
           unidade?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      project_tasks: {
+        Row: {
+          concluida: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          ordem: number | null
+          project_id: string
+          responsavel_id: string | null
+          titulo: string
+        }
+        Insert: {
+          concluida?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          project_id: string
+          responsavel_id?: string | null
+          titulo: string
+        }
+        Update: {
+          concluida?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          project_id?: string
+          responsavel_id?: string | null
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          cliente: string | null
+          created_at: string | null
+          data_conclusao: string | null
+          data_inicio: string | null
+          data_prevista: string | null
+          descricao: string | null
+          id: string
+          notas: string | null
+          prioridade: string | null
+          responsavel_id: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+          user_id: string
+          valor_contrato: number | null
+        }
+        Insert: {
+          cliente?: string | null
+          created_at?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          data_prevista?: string | null
+          descricao?: string | null
+          id?: string
+          notas?: string | null
+          prioridade?: string | null
+          responsavel_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+          user_id: string
+          valor_contrato?: number | null
+        }
+        Update: {
+          cliente?: string | null
+          created_at?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          data_prevista?: string | null
+          descricao?: string | null
+          id?: string
+          notas?: string | null
+          prioridade?: string | null
+          responsavel_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string
+          valor_contrato?: number | null
         }
         Relationships: []
       }
