@@ -629,6 +629,60 @@ export type Database = {
         }
         Relationships: []
       }
+      file_imports: {
+        Row: {
+          analise_estrutura: Json | null
+          analise_modulos_hexaos: string[] | null
+          analise_pode_substituir: boolean | null
+          analise_proposito: string | null
+          analise_recomendacoes: string | null
+          created_at: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string
+          id: string
+          setor: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analise_estrutura?: Json | null
+          analise_modulos_hexaos?: string[] | null
+          analise_pode_substituir?: boolean | null
+          analise_proposito?: string | null
+          analise_recomendacoes?: string | null
+          created_at?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          setor?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analise_estrutura?: Json | null
+          analise_modulos_hexaos?: string[] | null
+          analise_pode_substituir?: boolean | null
+          analise_proposito?: string | null
+          analise_recomendacoes?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          setor?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_records: {
         Row: {
           categoria: string | null
