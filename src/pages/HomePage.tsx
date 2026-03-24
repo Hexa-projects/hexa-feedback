@@ -40,7 +40,7 @@ export default function HomePage() {
     { label: "Novo Lead", icon: Plus, to: "/crm/new", color: "bg-primary" },
     { label: "Abrir OS", icon: ClipboardList, to: "/os/new", color: "bg-hexa-green" },
     { label: "Registrar Peça", icon: FlaskConical, to: "/lab/new", color: "bg-hexa-purple" },
-    { label: "Nova Proposta", icon: FileText, to: "/crm/proposals/new", color: "bg-hexa-orange" },
+    { label: "Nova Proposta", icon: FileText, to: "/crm/proposals/new", color: "bg-hexa-amber-dark" },
   ];
 
   const summaryCards = [
