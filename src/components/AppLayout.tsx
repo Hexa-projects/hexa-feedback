@@ -3,12 +3,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { store } from "@/lib/store";
 import {
   LayoutDashboard, ClipboardList, Repeat, AlertTriangle,
-  Lightbulb, History, LogOut, Menu, X, User
+  Lightbulb, History, LogOut, Menu, X, User, Wrench
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const NAV = [
   { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
+  { to: "/tools", label: "Ferramentas & Planilhas", icon: Wrench },
   { to: "/processes", label: "Processos Repetitivos", icon: Repeat },
   { to: "/bottlenecks", label: "Gargalos", icon: AlertTriangle },
   { to: "/suggestions", label: "Sugestões", icon: Lightbulb },
