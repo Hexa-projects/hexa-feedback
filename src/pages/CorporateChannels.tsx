@@ -175,7 +175,7 @@ export default function CorporateChannels() {
   const loadMessages = async (channelId: string) => {
     const { data } = await supabase
       .from("channel_messages" as any)
-      .select("id, channel_id, user_id, content, is_ai, created_at, parent_id")
+      .select("id, channel_id, user_id, content, is_ai, created_at, parent_id, tipo, anexo_url")
       .eq("channel_id", channelId)
       .order("created_at", { ascending: true })
       .limit(200);
