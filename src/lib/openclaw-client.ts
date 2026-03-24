@@ -40,20 +40,29 @@ export async function checkHealth(baseUrl: string, token?: string): Promise<Heal
     return { success: false, error: "url_invalid", message: "A URL deve começar com http:// ou https://." };
   }
 
-  const { data, error } = await supabase.functions.invoke("openclaw-proxy", {
-    body: { action: "health", base_url: normalized, token: token || "" },
-  });
+  try {
+    const { data, error } = await supabase.functions.invoke("openclaw-proxy", {
+      body: { action: "health", base_url: normalized, token: token || "" },
+    });
 
-  if (error) {
+    if (error) {
+      return {
+        success: false,
+        error: "edge_function_error",
+        message: "Erro ao chamar o proxy. Verifique se a edge function está deployada.",
+        detail: error.message,
+      };
+    }
+
+    return data as HealthCheckResult;
+  } catch (error) {
     return {
       success: false,
       error: "edge_function_error",
       message: "Erro ao chamar o proxy. Verifique se a edge function está deployada.",
-      detail: error.message,
+      detail: error instanceof Error ? error.message : "unknown",
     };
   }
-
-  return data as HealthCheckResult;
 }
 
 /**
