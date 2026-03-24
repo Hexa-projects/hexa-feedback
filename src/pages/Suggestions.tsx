@@ -65,6 +65,10 @@ export default function Suggestions() {
           <div>
             <Label>Ideia de melhoria</Label>
             <Textarea value={form.ideia} onChange={e => setForm(p => ({ ...p, ideia: e.target.value }))} placeholder="Descreva sua ideia..." rows={5} />
+            <AudioRecorder
+              label="Descrever por áudio"
+              onTranscription={(text) => setForm(p => ({ ...p, ideia: p.ideia ? p.ideia + "\n" + text : text }))}
+            />
           </div>
         </div>
 

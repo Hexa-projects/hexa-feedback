@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import AudioRecorder from "@/components/AudioRecorder";
 
 export default function ToolsMapping() {
   const { user } = useAuth();

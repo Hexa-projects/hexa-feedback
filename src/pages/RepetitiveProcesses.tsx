@@ -118,6 +118,14 @@ export default function RepetitiveProcesses() {
           )}
         </div>
 
+        <div className="form-section">
+          <Label className="text-sm font-medium">Explicar por áudio</Label>
+          <AudioRecorder
+            label="Gravar explicação"
+            onTranscription={(text) => setForm(p => ({ ...p, comoAutomatizar: p.comoAutomatizar ? p.comoAutomatizar + "\n" + text : text, podeAutomatizar: true }))}
+          />
+        </div>
+
         <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.processo.trim() || saving}>
           {saving ? "Enviando..." : "Enviar"}
         </Button>

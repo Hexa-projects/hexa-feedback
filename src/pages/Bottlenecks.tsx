@@ -84,6 +84,10 @@ export default function Bottlenecks() {
           <div>
             <Label>Descreva o problema</Label>
             <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Explique o problema com detalhes..." rows={4} />
+            <AudioRecorder
+              label="Descrever por áudio"
+              onTranscription={(text) => setForm(p => ({ ...p, descricao: p.descricao ? p.descricao + "\n" + text : text }))}
+            />
           </div>
         </div>
 
