@@ -1,18 +1,16 @@
 import { useState } from "react";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import { IMPACTOS, URGENCIAS } from "@/types/forms";
-import type { Bottleneck } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const URGENCIA_COLORS: Record<string, string> = {
   "Baixa": "bg-hexa-green/10 text-hexa-green",
@@ -22,8 +20,9 @@ const URGENCIA_COLORS: Record<string, string> = {
 };
 
 export default function Bottlenecks() {
-  const user = store.getCurrentUser();
+  const { user } = useAuth();
   const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     descricao: "",
     impactos: [] as string[],
@@ -42,16 +41,26 @@ export default function Bottlenecks() {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) return;
-    const data: Bottleneck = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      ...form,
-      createdAt: new Date().toISOString(),
-    };
-    store.saveBottleneck(data);
-    setSent(true);
+    setSaving(true);
+    try {
+      await db.saveBottleneck({
+        user_id: user.id,
+        descricao: form.descricao,
+        impactos: form.impactos,
+        exemplo_real: form.exemploReal,
+        urgencia: form.urgencia,
+        ja_resolveu: form.jaResolveu,
+        como_resolveu: form.comoResolveu || undefined,
+      });
+      setSent(true);
+      toast.success("Enviado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
@@ -120,8 +129,8 @@ export default function Bottlenecks() {
           )}
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.descricao.trim()}>
-          Enviar
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.descricao.trim() || saving}>
+          {saving ? "Enviando..." : "Enviar"}
         </Button>
       </div>
     </AppLayout>

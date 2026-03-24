@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import { SETORES, FREQUENCIAS } from "@/types/forms";
-import type { RepetitiveProcess } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
@@ -11,10 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export default function RepetitiveProcesses() {
-  const user = store.getCurrentUser();
+  const { user } = useAuth();
   const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     processo: "",
     frequencia: "Diário",
@@ -27,16 +29,27 @@ export default function RepetitiveProcesses() {
 
   const filled = [form.processo, form.tempoMedio].filter(v => v.trim()).length + 1;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) return;
-    const data: RepetitiveProcess = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      ...form,
-      createdAt: new Date().toISOString(),
-    };
-    store.saveProcess(data);
-    setSent(true);
+    setSaving(true);
+    try {
+      await db.saveProcess({
+        user_id: user.id,
+        processo: form.processo,
+        frequencia: form.frequencia,
+        tempo_medio: form.tempoMedio,
+        depende_outros: form.dependeOutros,
+        setor_dependencia: form.setorDependencia || undefined,
+        pode_automatizar: form.podeAutomatizar,
+        como_automatizar: form.comoAutomatizar || undefined,
+      });
+      setSent(true);
+      toast.success("Enviado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
@@ -104,8 +117,8 @@ export default function RepetitiveProcesses() {
           )}
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.processo.trim()}>
-          Enviar
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.processo.trim() || saving}>
+          {saving ? "Enviando..." : "Enviar"}
         </Button>
       </div>
     </AppLayout>

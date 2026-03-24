@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import { SETORES, BENEFICIOS, ESFORCOS } from "@/types/forms";
-import type { Suggestion } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
@@ -9,36 +9,43 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export default function Suggestions() {
-  const user = store.getCurrentUser();
+  const { user, profile } = useAuth();
   const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     ideia: "",
-    setorImpactado: user?.setor || "Administrativo",
+    setorImpactado: profile?.setor || "Administrativo",
     beneficio: "Tempo",
     esforco: "Médio",
   });
 
   const filled = [form.ideia].filter(v => v.trim()).length + 2;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) return;
-    const data: Suggestion = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      ideia: form.ideia,
-      setorImpactado: form.setorImpactado as any,
-      beneficio: form.beneficio,
-      esforco: form.esforco,
-      createdAt: new Date().toISOString(),
-    };
-    store.saveSuggestion(data);
-    setSent(true);
+    setSaving(true);
+    try {
+      await db.saveSuggestion({
+        user_id: user.id,
+        ideia: form.ideia,
+        setor_impactado: form.setorImpactado,
+        beneficio: form.beneficio,
+        esforco: form.esforco,
+      });
+      setSent(true);
+      toast.success("Enviado com sucesso!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
-    setForm({ ideia: "", setorImpactado: user?.setor || "Administrativo", beneficio: "Tempo", esforco: "Médio" });
+    setForm({ ideia: "", setorImpactado: profile?.setor || "Administrativo", beneficio: "Tempo", esforco: "Médio" });
     setSent(false);
   };
 
@@ -63,7 +70,7 @@ export default function Suggestions() {
         <div className="form-section">
           <div>
             <Label>Setor impactado</Label>
-            <Select value={form.setorImpactado} onValueChange={v => setForm(p => ({ ...p, setorImpactado: v as typeof p.setorImpactado }))}>
+            <Select value={form.setorImpactado} onValueChange={v => setForm(p => ({ ...p, setorImpactado: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
@@ -86,8 +93,8 @@ export default function Suggestions() {
           </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.ideia.trim()}>
-          Enviar
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.ideia.trim() || saving}>
+          {saving ? "Enviando..." : "Enviar"}
         </Button>
       </div>
     </AppLayout>

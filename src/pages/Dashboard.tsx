@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { store } from "@/lib/store";
+import { useEffect, useMemo, useState } from "react";
+import { db } from "@/lib/supabase-store";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Download, Users, ClipboardList, Repeat, AlertTriangle, Lightbulb, Wrench } from "lucide-react";
@@ -8,44 +8,54 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const COLORS = ["#2a9d8f", "#e76f51", "#264653", "#e9c46a", "#f4a261", "#606c76", "#a855f7"];
 
 export default function Dashboard() {
-  const stats = store.getStats();
+  const [stats, setStats] = useState<any>({ daily: [], processes: [], bottlenecks: [], suggestions: [], toolMappings: [] });
+  const [profilesCount, setProfilesCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([db.getStats(), db.getProfilesCount()]).then(([s, c]) => {
+      setStats(s);
+      setProfilesCount(c);
+      setLoading(false);
+    });
+  }, []);
 
   const sectorData = useMemo(() => {
     const map: Record<string, number> = {};
-    stats.daily.forEach(d => { map[d.setor] = (map[d.setor] || 0) + 1; });
+    stats.daily.forEach((d: any) => { map[d.setor] = (map[d.setor] || 0) + 1; });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [stats.daily]);
 
   const topProcesses = useMemo(() => {
     const map: Record<string, number> = {};
-    stats.processes.forEach(p => { map[p.processo] = (map[p.processo] || 0) + 1; });
+    stats.processes.forEach((p: any) => { map[p.processo] = (map[p.processo] || 0) + 1; });
     return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 10);
   }, [stats.processes]);
 
   const urgencyData = useMemo(() => {
     const map: Record<string, number> = {};
-    stats.bottlenecks.forEach(b => { map[b.urgencia] = (map[b.urgencia] || 0) + 1; });
+    stats.bottlenecks.forEach((b: any) => { map[b.urgencia] = (map[b.urgencia] || 0) + 1; });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [stats.bottlenecks]);
 
   const toolCategoryData = useMemo(() => {
     const map: Record<string, number> = {};
-    stats.toolMappings.forEach(t => { map[t.categoria] = (map[t.categoria] || 0) + 1; });
+    stats.toolMappings.forEach((t: any) => { map[t.categoria] = (map[t.categoria] || 0) + 1; });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [stats.toolMappings]);
 
   const toolSatisfactionData = useMemo(() => {
     const map: Record<string, number> = {};
-    stats.toolMappings.forEach(t => { map[t.satisfacao] = (map[t.satisfacao] || 0) + 1; });
+    stats.toolMappings.forEach((t: any) => { map[t.satisfacao] = (map[t.satisfacao] || 0) + 1; });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [stats.toolMappings]);
 
   const toolsWantReplace = useMemo(() => {
-    return stats.toolMappings.filter(t => t.gostariaSubstituir);
+    return stats.toolMappings.filter((t: any) => t.gostaria_substituir);
   }, [stats.toolMappings]);
 
   const handleExport = (format: "json" | "csv") => {
-    const data = store.exportAll();
+    const data = { ...stats, exportedAt: new Date().toISOString() };
     if (format === "json") {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -53,11 +63,11 @@ export default function Dashboard() {
       URL.revokeObjectURL(url);
     } else {
       const rows = [["Tipo", "Data", "Setor", "Conteúdo"]];
-      data.daily.forEach(d => rows.push(["Dia a Dia", d.createdAt, d.setor, d.atividadesPrincipais]));
-      data.toolMappings.forEach(t => rows.push(["Ferramenta", t.createdAt, "", `${t.nomeFerramentaOuPlanilha} (${t.categoria}) - ${t.finalidade}`]));
-      data.processes.forEach(p => rows.push(["Processo", p.createdAt, "", p.processo]));
-      data.bottlenecks.forEach(b => rows.push(["Gargalo", b.createdAt, "", b.descricao]));
-      data.suggestions.forEach(s => rows.push(["Sugestão", s.createdAt, s.setorImpactado, s.ideia]));
+      stats.daily.forEach((d: any) => rows.push(["Dia a Dia", d.created_at, d.setor, d.atividades_principais]));
+      stats.toolMappings.forEach((t: any) => rows.push(["Ferramenta", t.created_at, "", `${t.nome_ferramenta} (${t.categoria}) - ${t.finalidade}`]));
+      stats.processes.forEach((p: any) => rows.push(["Processo", p.created_at, "", p.processo]));
+      stats.bottlenecks.forEach((b: any) => rows.push(["Gargalo", b.created_at, "", b.descricao]));
+      stats.suggestions.forEach((s: any) => rows.push(["Sugestão", s.created_at, s.setor_impactado, s.ideia]));
       const csv = rows.map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -67,13 +77,15 @@ export default function Dashboard() {
   };
 
   const cards = [
-    { icon: Users, label: "Colaboradores", value: store.getUsers().length, color: "text-hexa-teal" },
+    { icon: Users, label: "Colaboradores", value: profilesCount, color: "text-hexa-teal" },
     { icon: ClipboardList, label: "Registros diários", value: stats.daily.length, color: "text-hexa-navy" },
     { icon: Wrench, label: "Ferramentas mapeadas", value: stats.toolMappings.length, color: "text-primary" },
     { icon: Repeat, label: "Processos", value: stats.processes.length, color: "text-hexa-purple" },
     { icon: AlertTriangle, label: "Gargalos", value: stats.bottlenecks.length, color: "text-hexa-orange" },
     { icon: Lightbulb, label: "Sugestões", value: stats.suggestions.length, color: "text-hexa-yellow" },
   ];
+
+  if (loading) return <AppLayout><p className="text-center text-muted-foreground py-12">Carregando dashboard...</p></AppLayout>;
 
   return (
     <AppLayout>
@@ -90,7 +102,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* KPI cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {cards.map(c => (
             <div key={c.label} className="hexa-card p-4">
@@ -101,7 +112,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Charts row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="hexa-card p-5">
             <h3 className="font-semibold mb-4">Contribuições por Setor</h3>
@@ -134,7 +144,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Charts row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="hexa-card p-5">
             <h3 className="font-semibold mb-4">Gargalos por Urgência</h3>
@@ -165,7 +174,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Top processes */}
         <div className="hexa-card p-5">
           <h3 className="font-semibold mb-4">Top Processos Repetitivos</h3>
           {topProcesses.length > 0 ? (
@@ -185,21 +193,20 @@ export default function Dashboard() {
           ) : <p className="text-sm text-muted-foreground text-center py-8">Sem dados ainda</p>}
         </div>
 
-        {/* Tools wanting replacement */}
         <div className="hexa-card p-5">
           <h3 className="font-semibold mb-4">🔄 Ferramentas que Querem Substituição ({toolsWantReplace.length})</h3>
           {toolsWantReplace.length > 0 ? (
             <div className="space-y-3">
-              {toolsWantReplace.map((t, i) => (
+              {toolsWantReplace.map((t: any, i: number) => (
                 <div key={i} className="p-3 rounded-lg bg-secondary/50 border">
                   <div className="flex items-center gap-2 mb-1">
                     <Wrench className="w-4 h-4 text-primary" />
-                    <span className="font-medium text-sm">{t.nomeFerramentaOuPlanilha}</span>
+                    <span className="font-medium text-sm">{t.nome_ferramenta}</span>
                     <span className="hexa-badge bg-destructive/10 text-destructive">{t.satisfacao}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">{t.problemas || "Sem problemas descritos"}</p>
-                  {t.comoSeriaIdeal && (
-                    <p className="text-xs mt-1 text-primary"><strong>Ideal:</strong> {t.comoSeriaIdeal}</p>
+                  {t.como_seria_ideal && (
+                    <p className="text-xs mt-1 text-primary"><strong>Ideal:</strong> {t.como_seria_ideal}</p>
                   )}
                 </div>
               ))}

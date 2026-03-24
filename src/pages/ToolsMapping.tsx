@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { store } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/supabase-store";
 import { SETORES, CATEGORIAS_FERRAMENTA, FINALIDADES_FERRAMENTA, FREQUENCIAS, SATISFACAO_LEVELS } from "@/types/forms";
-import type { ToolMapping } from "@/types/forms";
 import AppLayout from "@/components/AppLayout";
 import FormProgress from "@/components/FormProgress";
 import SuccessMessage from "@/components/SuccessMessage";
@@ -12,10 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 export default function ToolsMapping() {
-  const user = store.getCurrentUser();
+  const { user } = useAuth();
   const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nomeFerramentaOuPlanilha: "",
     categoria: "Planilha / Excel",
@@ -34,7 +36,7 @@ export default function ToolsMapping() {
   });
 
   const required = [form.nomeFerramentaOuPlanilha, form.descricaoUso, form.tempoGastoSemana];
-  const filled = required.filter(v => v.trim()).length + 3; // +3 for dropdowns with defaults
+  const filled = required.filter(v => v.trim()).length + 3;
 
   const toggleSetor = (s: string) => {
     setForm(p => ({
@@ -45,16 +47,34 @@ export default function ToolsMapping() {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) return;
-    const data: ToolMapping = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      ...form,
-      createdAt: new Date().toISOString(),
-    };
-    store.saveToolMapping(data);
-    setSent(true);
+    setSaving(true);
+    try {
+      await db.saveToolMapping({
+        user_id: user.id,
+        nome_ferramenta: form.nomeFerramentaOuPlanilha,
+        categoria: form.categoria,
+        finalidade: form.finalidade,
+        descricao_uso: form.descricaoUso,
+        frequencia_uso: form.frequenciaUso,
+        tempo_gasto_semana: form.tempoGastoSemana,
+        compartilha_com: form.compartilhaCom,
+        setores_envolvidos: form.setoresEnvolvidos,
+        problemas: form.problemas,
+        satisfacao: form.satisfacao,
+        gostaria_substituir: form.gostariaSubstituir,
+        como_seria_ideal: form.comoSeriaIdeal || undefined,
+        criado_por_voce: form.criadoPorVoce,
+        quantas_pessoas_usam: form.quantasPessoasUsam,
+      });
+      setSent(true);
+      toast.success("Ferramenta cadastrada!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reset = () => {
@@ -75,8 +95,7 @@ export default function ToolsMapping() {
         <div>
           <h1 className="text-2xl font-bold">Mapeamento de Ferramentas</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Cadastre cada planilha, sistema ou ferramenta que você usa no dia a dia. 
-            Isso nos ajuda a entender o ecossistema atual e construir o HexaOS.
+            Cadastre cada planilha, sistema ou ferramenta que você usa no dia a dia.
           </p>
         </div>
         <FormProgress current={filled} total={6} />
@@ -85,7 +104,7 @@ export default function ToolsMapping() {
           <div>
             <Label>Nome da ferramenta / planilha / sistema</Label>
             <Input value={form.nomeFerramentaOuPlanilha} onChange={e => setForm(p => ({ ...p, nomeFerramentaOuPlanilha: e.target.value }))}
-              placeholder='Ex: "Planilha de controle de OS", "ERP Totvs", "WhatsApp do setor"' />
+              placeholder='Ex: "Planilha de controle de OS", "ERP Totvs"' />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -109,7 +128,7 @@ export default function ToolsMapping() {
           <div>
             <Label>Como você usa? Descreva o passo a passo</Label>
             <Textarea value={form.descricaoUso} onChange={e => setForm(p => ({ ...p, descricaoUso: e.target.value }))}
-              placeholder="Ex: Todo dia abro a planilha, copio os dados do ERP, filtro por data, gero o relatório e envio por e-mail para o gestor..." rows={4} />
+              placeholder="Ex: Todo dia abro a planilha, copio os dados do ERP..." rows={4} />
           </div>
         </div>
 
@@ -158,7 +177,7 @@ export default function ToolsMapping() {
           <div>
             <Label>Problemas / dificuldades com essa ferramenta</Label>
             <Textarea value={form.problemas} onChange={e => setForm(p => ({ ...p, problemas: e.target.value }))}
-              placeholder="Ex: Demora para abrir, perde dados, não integra com outros sistemas, preciso copiar manualmente..." rows={3} />
+              placeholder="Ex: Demora para abrir, perde dados..." rows={3} />
           </div>
           <div>
             <Label>Nível de satisfação</Label>
@@ -197,8 +216,8 @@ export default function ToolsMapping() {
           )}
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.nomeFerramentaOuPlanilha.trim() || !form.descricaoUso.trim()}>
-          Cadastrar Ferramenta
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={!form.nomeFerramentaOuPlanilha.trim() || !form.descricaoUso.trim() || saving}>
+          {saving ? "Cadastrando..." : "Cadastrar Ferramenta"}
         </Button>
       </div>
     </AppLayout>
