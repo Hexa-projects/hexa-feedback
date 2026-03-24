@@ -135,39 +135,36 @@ export default function FocusAI() {
   const testConnection = async () => {
     setTesting(true);
     try {
-      if (!config?.openclaw_url || config.openclaw_url.trim() === "") {
-        toast.info("Preencha a URL do OpenClaw antes de testar. Exemplo: https://sua-vps.com:3100/api");
-        return;
-      }
-      if (!config.openclaw_url.startsWith("http")) {
-        toast.error("A URL deve começar com http:// ou https://");
-        return;
-      }
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(config.openclaw_url + "/health", {
-        headers: { Authorization: `Bearer ${config.openclaw_api_key}` },
-        signal: controller.signal,
-      }).catch((err) => {
-        if (err.name === "AbortError") {
-          toast.error("Timeout: o servidor não respondeu em 10 segundos. Verifique se o OpenClaw está rodando na URL informada.");
-        } else {
-          toast.error("Não foi possível conectar. Verifique se a URL está correta e o OpenClaw está online.");
-        }
-        return null;
-      });
-      clearTimeout(timeout);
-      if (res?.ok) {
-        toast.success("Conexão com OpenClaw estabelecida!");
-        await supabase.from("focus_ai_logs").insert({ tipo: "sucesso", mensagem: "Teste de conexão OpenClaw: OK" });
-      } else if (res) {
-        const status = res.status;
-        if (status === 401 || status === 403) {
-          toast.error("API Key inválida ou sem permissão. Verifique a chave no painel do OpenClaw.");
-        } else {
-          toast.error(`OpenClaw respondeu com status ${status}. Verifique a configuração.`);
-        }
-        await supabase.from("focus_ai_logs").insert({ tipo: "erro", mensagem: `Teste de conexão OpenClaw: HTTP ${status}` });
+      const result = await checkHealth(config?.openclaw_url || "", config?.openclaw_api_key || "");
+
+      if (result.success) {
+        toast.success("✅ " + result.message, { description: `Status: ${result.status} — ${JSON.stringify(result.data)}` });
+        await supabase.from("focus_ai_logs").insert({
+          tipo: "sucesso",
+          mensagem: `Teste de conexão OpenClaw: OK (${config?.openclaw_url})`,
+        });
+      } else {
+        const icons: Record<string, string> = {
+          url_missing: "📝",
+          url_invalid: "🔗",
+          auth_error: "🔑",
+          timeout: "⏱️",
+          dns_error: "🌐",
+          connection_refused: "🚫",
+          tls_error: "🔒",
+          private_network: "🏠",
+          network_error: "📡",
+          edge_function_error: "⚙️",
+        };
+        const icon = icons[result.error || ""] || "❌";
+        toast.error(`${icon} ${result.message}`, {
+          description: result.detail ? `Detalhe: ${result.detail}` : undefined,
+          duration: 8000,
+        });
+        await supabase.from("focus_ai_logs").insert({
+          tipo: "erro",
+          mensagem: `Teste OpenClaw falhou: ${result.error} — ${result.message}`,
+        });
       }
     } catch {
       toast.error("Erro inesperado ao testar conexão");
