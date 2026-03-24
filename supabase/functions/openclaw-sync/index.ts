@@ -93,22 +93,30 @@ serve(async (req) => {
       const ids = events.map((e: any) => e.id);
       await db.from("openclaw_event_queue").update({ status: "processing" }).in("id", ids);
 
-      const payload = {
-        source: "hexaos",
-        batch_id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
-        events: events.map((e: any) => ({
-          event_id: e.event_id,
-          event_type: e.event_type,
-          priority: e.priority,
-          tags: e.tags || [],
-          data: e.data,
-          meta: e.meta || {},
-          created_at: e.created_at,
-        })),
-      };
+      // OpenClaw uses POST /tools/invoke for HTTP API
+      const endpoint = `${baseUrl}/tools/invoke`;
 
-      const endpoint = `${baseUrl}/api/v1/ingest`;
+      // Send each event as a tool invocation
+      const allResults: any[] = [];
+      let allOk = true;
+
+      for (const evt of events) {
+        const payload = {
+          tool: "memory_store",
+          action: "json",
+          args: {
+            source: "hexaos",
+            event_id: evt.event_id,
+            event_type: evt.event_type,
+            priority: evt.priority,
+            tags: evt.tags || [],
+            data: evt.data,
+            meta: evt.meta || {},
+            created_at: evt.created_at,
+          },
+          sessionKey: "main",
+          dryRun: false,
+        };
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
 
