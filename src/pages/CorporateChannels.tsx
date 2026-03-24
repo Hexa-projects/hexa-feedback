@@ -12,8 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Hash, Send, Users, Loader2, Plus, MessageSquare, Search, User,
-  Lock, Globe, Settings, UserPlus, AtSign, Smile, Paperclip, ChevronDown,
-  Mic, Square, Play, Pause, X
+  Lock, Globe, Mic, Square, Play, Pause, X, Paperclip, CheckSquare,
+  AlertTriangle, Image as ImageIcon, FileText, Download, ListTodo
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,7 +42,22 @@ interface Message {
   profiles?: { nome: string } | null;
 }
 
-// Inline audio player for voice messages
+interface ChannelTask {
+  id: string;
+  titulo: string;
+  status: string;
+  assigned_to: string | null;
+  prioridade: string;
+  created_at: string;
+}
+
+interface ProfileEntry {
+  id: string;
+  nome: string;
+  setor: string;
+  funcao: string | null;
+}
+
 function AudioPlayer({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -51,15 +66,11 @@ function AudioPlayer({ src }: { src: string }) {
 
   const toggle = () => {
     if (!audioRef.current) return;
-    if (playing) { audioRef.current.pause(); } else { audioRef.current.play(); }
+    if (playing) audioRef.current.pause(); else audioRef.current.play();
     setPlaying(!playing);
   };
 
-  const fmt = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 
   return (
     <div className="flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 max-w-xs">
@@ -86,14 +97,37 @@ function AudioPlayer({ src }: { src: string }) {
   );
 }
 
-interface ProfileEntry {
-  id: string;
-  nome: string;
-  setor: string;
-  funcao: string | null;
+function AttachmentPreview({ url, tipo }: { url: string; tipo?: string | null }) {
+  const isImage = url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) || tipo === "imagem";
+  const isPdf = url.match(/\.pdf$/i) || tipo === "pdf";
+
+  if (isImage) {
+    return (
+      <div className="mt-1 max-w-xs">
+        <img src={url} alt="Anexo" className="rounded-lg border max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(url, "_blank")} />
+      </div>
+    );
+  }
+  if (isPdf) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 max-w-xs hover:bg-muted transition-colors">
+        <FileText className="w-5 h-5 text-destructive" />
+        <span className="text-sm truncate flex-1">Documento PDF</span>
+        <Download className="w-4 h-4 text-muted-foreground" />
+      </a>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 max-w-xs hover:bg-muted transition-colors">
+      <Paperclip className="w-4 h-4 text-muted-foreground" />
+      <span className="text-sm truncate flex-1">Arquivo anexo</span>
+      <Download className="w-4 h-4 text-muted-foreground" />
+    </a>
+  );
 }
 
 type Tab = "canais" | "diretas";
+type SidePanel = "none" | "tasks";
 
 export default function CorporateChannels() {
   const { user, profile, role } = useAuth();
@@ -113,18 +147,35 @@ export default function CorporateChannels() {
   const [newChannel, setNewChannel] = useState({ nome: "", descricao: "", tipo: "publico", setor: "" });
   const [creating, setCreating] = useState(false);
   const [onlineCount] = useState(Math.floor(Math.random() * 8) + 3);
+
+  // Audio recording
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [transcribing, setTranscribing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // File upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Tasks
+  const [sidePanel, setSidePanel] = useState<SidePanel>("none");
+  const [tasks, setTasks] = useState<ChannelTask[]>([]);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [taskFromMsg, setTaskFromMsg] = useState<Message | null>(null);
+  const [newTask, setNewTask] = useState({ titulo: "", descricao: "", assigned_to: "", prioridade: "media" });
+
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadChannels(); loadProfiles(); }, []);
 
   useEffect(() => {
-    if (tab === "canais" && activeChannel) loadMessages(activeChannel);
+    if (tab === "canais" && activeChannel) {
+      loadMessages(activeChannel);
+      loadTasks(activeChannel);
+    }
   }, [activeChannel, tab]);
 
   useEffect(() => {
@@ -160,8 +211,7 @@ export default function CorporateChannels() {
       .from("corporate_channels" as any)
       .select("id, nome, slug, descricao, tipo, setor")
       .eq("ativo", true)
-      .order("tipo")
-      .order("nome");
+      .order("tipo").order("nome");
     const ch = (data || []) as unknown as Channel[];
     setChannels(ch);
     if (ch.length > 0 && !activeChannel) setActiveChannel(ch[0].id);
@@ -177,17 +227,21 @@ export default function CorporateChannels() {
       .from("channel_messages" as any)
       .select("id, channel_id, user_id, content, is_ai, created_at, parent_id, tipo, anexo_url")
       .eq("channel_id", channelId)
-      .order("created_at", { ascending: true })
-      .limit(200);
+      .order("created_at", { ascending: true }).limit(200);
     const msgs = (data || []) as unknown as Message[];
     await enrichProfiles(msgs);
     setMessages(msgs);
   };
 
-  const loadDMMessages = async () => {
-    // DMs use a pseudo-channel. For now we'll use channel_messages with a DM pattern
-    // In a real implementation, DMs would be in a separate table or use a composite channel
-    setDmMessages([]);
+  const loadDMMessages = async () => { setDmMessages([]); };
+
+  const loadTasks = async (channelId: string) => {
+    const { data } = await supabase
+      .from("channel_tasks" as any)
+      .select("id, titulo, status, assigned_to, prioridade, created_at")
+      .eq("channel_id", channelId)
+      .order("created_at", { ascending: false }).limit(50);
+    setTasks((data || []) as unknown as ChannelTask[]);
   };
 
   const enrichProfiles = async (msgs: Message[]) => {
@@ -202,22 +256,52 @@ export default function CorporateChannels() {
     if (!input.trim() || !activeChannel || !user || sending) return;
     setSending(true);
     const { error } = await supabase.from("channel_messages" as any).insert({
-      channel_id: activeChannel,
-      user_id: user.id,
-      content: input.trim(),
-      tipo: "texto",
+      channel_id: activeChannel, user_id: user.id, content: input.trim(), tipo: "texto",
     } as any);
     if (error) toast.error("Erro ao enviar mensagem");
     setInput("");
     setSending(false);
   };
 
-  // ── Audio recording ──
+  // File upload handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeChannel || !user) return;
+    setUploading(true);
+
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `channels/${activeChannel}/${Date.now()}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("attachments").upload(path, file, { contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(uploadData.path);
+      const isImage = file.type.startsWith("image/");
+      const isPdf = file.type === "application/pdf";
+
+      await supabase.from("channel_messages" as any).insert({
+        channel_id: activeChannel,
+        user_id: user.id,
+        content: isImage ? `📷 ${file.name}` : `📎 ${file.name}`,
+        tipo: isImage ? "imagem" : isPdf ? "pdf" : "arquivo",
+        anexo_url: urlData.publicUrl,
+      } as any);
+
+      toast.success("Arquivo enviado!");
+    } catch (err: any) {
+      toast.error("Erro ao enviar arquivo: " + err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Audio recording
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
       const mr = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
       });
@@ -227,22 +311,16 @@ export default function CorporateChannels() {
       mr.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
         if (recTimerRef.current) clearInterval(recTimerRef.current);
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        sendAudioMessage(blob);
+        sendAudioMessage(new Blob(audioChunksRef.current, { type: "audio/webm" }));
       };
       mr.start(250);
       setIsRecording(true);
       setRecordingDuration(0);
       recTimerRef.current = setInterval(() => setRecordingDuration(d => d + 1), 1000);
-    } catch {
-      toast.error("Não foi possível acessar o microfone.");
-    }
+    } catch { toast.error("Não foi possível acessar o microfone."); }
   }, [activeChannel, user]);
 
-  const stopRecording = useCallback(() => {
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  }, []);
+  const stopRecording = useCallback(() => { mediaRecorderRef.current?.stop(); setIsRecording(false); }, []);
 
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -258,75 +336,88 @@ export default function CorporateChannels() {
   const sendAudioMessage = async (blob: Blob) => {
     if (!activeChannel || !user) return;
     setTranscribing(true);
-
     try {
-      // 1) Transcribe via ElevenLabs
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
-
       const transcribeRes = await fetch(`${SUPABASE_URL}/functions/v1/elevenlabs-transcribe`, {
         method: "POST",
         headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
         body: formData,
       });
-
       let transcription = "";
       if (transcribeRes.ok) {
         const data = await transcribeRes.json();
         transcription = data.text || "";
       }
 
-      // 2) Upload audio to storage
       const fileName = `channels/${activeChannel}/${Date.now()}.webm`;
-      const { data: uploadData } = await supabase.storage.from("audio-messages").upload(fileName, blob, {
-        contentType: "audio/webm",
-      });
-
+      const { data: uploadData } = await supabase.storage.from("audio-messages").upload(fileName, blob, { contentType: "audio/webm" });
       let audioUrl = "";
       if (uploadData?.path) {
         const { data: urlData } = supabase.storage.from("audio-messages").getPublicUrl(uploadData.path);
         audioUrl = urlData.publicUrl;
       }
 
-      // 3) Save message with audio URL + transcription
-      const content = transcription
-        ? `🎤 Áudio: ${transcription}`
-        : "🎤 Mensagem de áudio";
-
-      const { error } = await supabase.from("channel_messages" as any).insert({
-        channel_id: activeChannel,
-        user_id: user.id,
-        content,
-        tipo: "audio",
-        anexo_url: audioUrl || null,
+      const content = transcription ? `🎤 Áudio: ${transcription}` : "🎤 Mensagem de áudio";
+      await supabase.from("channel_messages" as any).insert({
+        channel_id: activeChannel, user_id: user.id, content, tipo: "audio", anexo_url: audioUrl || null,
       } as any);
-
-      if (error) toast.error("Erro ao enviar áudio");
-      else toast.success("Áudio enviado!");
-    } catch (err: any) {
-      toast.error("Erro ao processar áudio: " + err.message);
-    } finally {
-      setTranscribing(false);
-    }
+      toast.success("Áudio enviado!");
+    } catch (err: any) { toast.error("Erro ao processar áudio: " + err.message); }
+    finally { setTranscribing(false); }
   };
 
-  const fmtDur = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+  // Task creation from message
+  const openCreateTaskFromMsg = (msg: Message) => {
+    setTaskFromMsg(msg);
+    setNewTask({
+      titulo: msg.content.slice(0, 100),
+      descricao: msg.content,
+      assigned_to: "",
+      prioridade: "media",
+    });
+    setShowCreateTask(true);
+  };
+
+  const createTask = async () => {
+    if (!newTask.titulo.trim() || !activeChannel || !user) return;
+    setCreating(true);
+    const { error } = await supabase.from("channel_tasks" as any).insert({
+      channel_id: activeChannel,
+      created_by: user.id,
+      message_id: taskFromMsg?.id || null,
+      titulo: newTask.titulo.trim(),
+      descricao: newTask.descricao,
+      assigned_to: newTask.assigned_to || null,
+      prioridade: newTask.prioridade,
+    } as any);
+    if (error) toast.error("Erro ao criar tarefa");
+    else {
+      toast.success("Tarefa criada!");
+      setShowCreateTask(false);
+      setTaskFromMsg(null);
+      setNewTask({ titulo: "", descricao: "", assigned_to: "", prioridade: "media" });
+      if (activeChannel) loadTasks(activeChannel);
+    }
+    setCreating(false);
+  };
+
+  const toggleTaskStatus = async (task: ChannelTask) => {
+    const newStatus = task.status === "concluida" ? "pendente" : "concluida";
+    await supabase.from("channel_tasks" as any).update({ status: newStatus } as any).eq("id", task.id);
+    if (activeChannel) loadTasks(activeChannel);
+  };
 
   const createChannel = async () => {
     if (!newChannel.nome.trim() || !user) return;
     setCreating(true);
     const slug = newChannel.nome.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
     const { error } = await supabase.from("corporate_channels" as any).insert({
-      nome: newChannel.nome.trim(),
-      slug,
-      descricao: newChannel.descricao.trim() || null,
-      tipo: newChannel.tipo,
-      setor: newChannel.setor || null,
-      criado_por: user.id,
+      nome: newChannel.nome.trim(), slug, descricao: newChannel.descricao.trim() || null,
+      tipo: newChannel.tipo, setor: newChannel.setor || null, criado_por: user.id,
     } as any);
-    if (error) {
-      toast.error("Erro ao criar canal");
-    } else {
+    if (error) toast.error("Erro ao criar canal");
+    else {
       toast.success("Canal criado!");
       setShowCreateChannel(false);
       setNewChannel({ nome: "", descricao: "", tipo: "publico", setor: "" });
@@ -335,29 +426,22 @@ export default function CorporateChannels() {
     setCreating(false);
   };
 
+  const fmtDur = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+
   const activeChannelData = channels.find(c => c.id === activeChannel);
   const otherProfiles = allProfiles.filter(p => p.id !== user?.id);
 
-  const filteredChannels = channels.filter(c =>
-    c.nome.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const filteredProfiles = otherProfiles.filter(p =>
-    p.nome.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChannels = channels.filter(c => c.nome.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredProfiles = otherProfiles.filter(p => p.nome.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  // Group messages by date
   const groupedMessages = useMemo(() => {
     const currentMsgs = tab === "canais" ? messages : dmMessages;
     const groups: { date: string; messages: Message[] }[] = [];
     let lastDate = "";
     currentMsgs.forEach(m => {
       const d = new Date(m.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
-      if (d !== lastDate) {
-        groups.push({ date: d, messages: [m] });
-        lastDate = d;
-      } else {
-        groups[groups.length - 1].messages.push(m);
-      }
+      if (d !== lastDate) { groups.push({ date: d, messages: [m] }); lastDate = d; }
+      else groups[groups.length - 1].messages.push(m);
     });
     return groups;
   }, [messages, dmMessages, tab]);
@@ -369,25 +453,21 @@ export default function CorporateChannels() {
 
   const getAvatarColor = (id: string) => {
     const colors = [
-      "bg-primary/20 text-primary",
-      "bg-hexa-green/20 text-hexa-green",
-      "bg-hexa-purple/20 text-hexa-purple",
-      "bg-hexa-blue/20 text-hexa-blue",
-      "bg-hexa-teal/20 text-hexa-teal",
-      "bg-hexa-amber/20 text-hexa-amber-dark",
+      "bg-primary/20 text-primary", "bg-hexa-green/20 text-hexa-green",
+      "bg-hexa-purple/20 text-hexa-purple", "bg-hexa-blue/20 text-hexa-blue",
+      "bg-hexa-teal/20 text-hexa-teal", "bg-hexa-amber/20 text-hexa-amber-dark",
     ];
-    const idx = id.charCodeAt(0) % colors.length;
-    return colors[idx];
+    return colors[id.charCodeAt(0) % colors.length];
   };
 
   const dmTarget = otherProfiles.find(p => p.id === dmTargetId);
+  const pendingTasks = tasks.filter(t => t.status !== "concluida").length;
 
   return (
     <HexaLayout>
       <div className="flex h-[calc(100vh-7rem)] gap-0 animate-slide-up">
         {/* ───── LEFT PANEL ───── */}
         <div className="w-72 shrink-0 hidden md:flex flex-col bg-card border-r rounded-l-xl overflow-hidden">
-          {/* Header */}
           <div className="p-4 border-b">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-bold">Mensagens</h2>
@@ -399,64 +479,40 @@ export default function CorporateChannels() {
             </div>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Buscar conversa..."
-                className="pl-8 h-8 text-sm bg-muted/50 border-0"
-              />
+              <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar conversa..." className="pl-8 h-8 text-sm bg-muted/50 border-0" />
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="flex border-b">
-            <button
-              onClick={() => setTab("canais")}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors relative ${
-                tab === "canais" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <Hash className="w-3.5 h-3.5" />
-                Canais
-              </div>
-              {tab === "canais" && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
-            </button>
-            <button
-              onClick={() => setTab("diretas")}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors relative ${
-                tab === "diretas" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
-                Diretas
-              </div>
-              {tab === "diretas" && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
-            </button>
+            {(["canais", "diretas"] as Tab[]).map(t => (
+              <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2.5 text-xs font-medium transition-colors relative ${tab === t ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                <div className="flex items-center justify-center gap-1.5">
+                  {t === "canais" ? <Hash className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
+                  {t === "canais" ? "Canais" : "Diretas"}
+                </div>
+                {tab === t && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />}
+              </button>
+            ))}
           </div>
 
-          {/* List */}
           <div className="flex-1 overflow-y-auto">
             {tab === "canais" && (
               <div className="p-2 space-y-0.5">
-                {filteredChannels.length === 0 && (
-                  <p className="text-xs text-muted-foreground p-3 text-center">Nenhum canal encontrado</p>
-                )}
+                {filteredChannels.length === 0 && <p className="text-xs text-muted-foreground p-3 text-center">Nenhum canal encontrado</p>}
                 {filteredChannels.map(ch => (
-                  <button
-                    key={ch.id}
-                    onClick={() => { setActiveChannel(ch.id); setDmTargetId(null); }}
+                  <button key={ch.id} onClick={() => { setActiveChannel(ch.id); setDmTargetId(null); }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all ${
                       activeChannel === ch.id && !dmTargetId
                         ? "bg-primary/8 text-foreground font-medium shadow-sm border border-primary/15"
                         : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      ch.tipo === "privado" ? "bg-hexa-amber/15 text-hexa-amber-dark" : "bg-primary/10 text-primary"
                     }`}>
-                      {ch.tipo === "privado" ? <Lock className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      ch.tipo === "privado" ? "bg-hexa-amber/15 text-hexa-amber-dark" :
+                      ch.slug === "alertas-ia" ? "bg-hexa-purple/15 text-hexa-purple" :
+                      "bg-primary/10 text-primary"
+                    }`}>
+                      {ch.slug === "alertas-ia" ? <AlertTriangle className="w-3.5 h-3.5" /> :
+                       ch.tipo === "privado" ? <Lock className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm truncate">{ch.nome}</p>
@@ -469,19 +525,12 @@ export default function CorporateChannels() {
 
             {tab === "diretas" && (
               <div className="p-2 space-y-0.5">
-                {filteredProfiles.length === 0 && (
-                  <p className="text-xs text-muted-foreground p-3 text-center">Nenhum colaborador encontrado</p>
-                )}
+                {filteredProfiles.length === 0 && <p className="text-xs text-muted-foreground p-3 text-center">Nenhum colaborador encontrado</p>}
                 {filteredProfiles.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => { setDmTargetId(p.id); setActiveChannel(null); }}
+                  <button key={p.id} onClick={() => { setDmTargetId(p.id); setActiveChannel(null); }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                      dmTargetId === p.id
-                        ? "bg-primary/8 text-foreground font-medium shadow-sm border border-primary/15"
-                        : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                    }`}
-                  >
+                      dmTargetId === p.id ? "bg-primary/8 text-foreground font-medium shadow-sm border border-primary/15" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    }`}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${getAvatarColor(p.id)}`}>
                       {getInitials(p.nome)}
                     </div>
@@ -489,7 +538,6 @@ export default function CorporateChannels() {
                       <p className="text-sm truncate">{p.nome}</p>
                       <p className="text-[10px] text-muted-foreground truncate">{p.funcao || p.setor}</p>
                     </div>
-                    {/* Online indicator (simulated) */}
                     <div className="w-2 h-2 rounded-full bg-hexa-green shrink-0" />
                   </button>
                 ))}
@@ -497,7 +545,6 @@ export default function CorporateChannels() {
             )}
           </div>
 
-          {/* Status bar */}
           <div className="p-3 border-t bg-muted/30">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div className="w-2 h-2 rounded-full bg-hexa-green" />
@@ -506,28 +553,39 @@ export default function CorporateChannels() {
           </div>
         </div>
 
-        {/* ───── RIGHT: CHAT AREA ───── */}
-        <div className="flex-1 flex flex-col bg-card rounded-r-xl overflow-hidden border border-l-0 md:border-l-0">
+        {/* ───── CENTER: CHAT AREA ───── */}
+        <div className="flex-1 flex flex-col bg-card overflow-hidden border border-l-0 md:border-l-0">
           {/* Chat header */}
           {(activeChannel || dmTargetId) ? (
             <div className="border-b px-5 py-3.5 flex items-center gap-3 bg-card">
               {tab === "canais" && activeChannelData ? (
                 <>
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    activeChannelData.slug === "alertas-ia" ? "bg-hexa-purple/15 text-hexa-purple" :
                     activeChannelData.tipo === "privado" ? "bg-hexa-amber/15 text-hexa-amber-dark" : "bg-primary/10 text-primary"
                   }`}>
-                    {activeChannelData.tipo === "privado" ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                    {activeChannelData.slug === "alertas-ia" ? <AlertTriangle className="w-4 h-4" /> :
+                     activeChannelData.tipo === "privado" ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold">{activeChannelData.nome}</h3>
-                    {activeChannelData.descricao && (
-                      <p className="text-xs text-muted-foreground truncate">{activeChannelData.descricao}</p>
-                    )}
+                    {activeChannelData.descricao && <p className="text-xs text-muted-foreground truncate">{activeChannelData.descricao}</p>}
                   </div>
                   <div className="flex items-center gap-1.5">
+                    <Button
+                      variant={sidePanel === "tasks" ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={() => setSidePanel(sidePanel === "tasks" ? "none" : "tasks")}
+                    >
+                      <ListTodo className="w-3.5 h-3.5" />
+                      Tarefas
+                      {pendingTasks > 0 && (
+                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{pendingTasks}</Badge>
+                      )}
+                    </Button>
                     <Badge variant="secondary" className="text-[10px] gap-1">
-                      <Users className="w-3 h-3" />
-                      {allProfiles.length}
+                      <Users className="w-3 h-3" />{allProfiles.length}
                     </Badge>
                   </div>
                 </>
@@ -547,16 +605,9 @@ export default function CorporateChannels() {
                 </>
               ) : null}
 
-              {/* Mobile channel selector */}
               <div className="ml-auto md:hidden">
-                <select
-                  className="text-xs border rounded px-2 py-1 bg-background"
-                  value={activeChannel || ""}
-                  onChange={e => setActiveChannel(e.target.value)}
-                >
-                  {channels.map(ch => (
-                    <option key={ch.id} value={ch.id}>{ch.nome}</option>
-                  ))}
+                <select className="text-xs border rounded px-2 py-1 bg-background" value={activeChannel || ""} onChange={e => setActiveChannel(e.target.value)}>
+                  {channels.map(ch => <option key={ch.id} value={ch.id}>{ch.nome}</option>)}
                 </select>
               </div>
             </div>
@@ -575,20 +626,17 @@ export default function CorporateChannels() {
                 </div>
                 <p className="text-sm font-medium mb-1">Nenhuma mensagem ainda</p>
                 <p className="text-xs text-muted-foreground/70">
-                  {tab === "diretas" ? "Envie uma mensagem para iniciar a conversa" : "Seja o primeiro a enviar uma mensagem neste canal"}
+                  {tab === "diretas" ? "Envie uma mensagem para iniciar" : "Seja o primeiro a enviar uma mensagem"}
                 </p>
               </div>
             ) : (
               groupedMessages.map((group, gi) => (
                 <div key={gi}>
-                  {/* Date separator */}
                   <div className="flex items-center gap-3 my-5">
                     <div className="flex-1 h-px bg-border" />
                     <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2">{group.date}</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
-
-                  {/* Messages */}
                   <div className="space-y-1">
                     {group.messages.map((m, mi) => {
                       const isMe = m.user_id === user?.id;
@@ -599,7 +647,6 @@ export default function CorporateChannels() {
 
                       return (
                         <div key={m.id} className={`group flex gap-3 px-2 py-0.5 rounded-lg hover:bg-muted/40 transition-colors ${compact ? "" : "mt-3"}`}>
-                          {/* Avatar */}
                           <div className="w-8 shrink-0">
                             {!compact && (
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold ${
@@ -609,8 +656,6 @@ export default function CorporateChannels() {
                               </div>
                             )}
                           </div>
-
-                          {/* Content */}
                           <div className="flex-1 min-w-0">
                             {!compact && (
                               <div className="flex items-baseline gap-2 mb-0.5">
@@ -629,9 +674,21 @@ export default function CorporateChannels() {
                                   <p className="text-xs text-muted-foreground italic pl-1">{m.content.replace("🎤 Áudio: ", "")}</p>
                                 )}
                               </div>
+                            ) : m.anexo_url && (m.tipo === "imagem" || m.tipo === "pdf" || m.tipo === "arquivo") ? (
+                              <div>
+                                <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                                <AttachmentPreview url={m.anexo_url} tipo={m.tipo} />
+                              </div>
                             ) : (
                               <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{m.content}</p>
                             )}
+                          </div>
+
+                          {/* Action buttons on hover */}
+                          <div className="hidden group-hover:flex items-start gap-0.5 shrink-0 mt-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Criar tarefa" onClick={() => openCreateTaskFromMsg(m)}>
+                              <CheckSquare className="w-3 h-3" />
+                            </Button>
                           </div>
                         </div>
                       );
@@ -646,7 +703,6 @@ export default function CorporateChannels() {
           {/* Input area */}
           {(activeChannel || dmTargetId) && (
             <div className="border-t p-4 bg-card">
-              {/* Transcribing state */}
               {transcribing && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 px-1">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -654,7 +710,6 @@ export default function CorporateChannels() {
                 </div>
               )}
 
-              {/* Recording state */}
               {isRecording ? (
                 <div className="flex items-center gap-3 bg-destructive/8 rounded-xl border border-destructive/20 px-4 py-3">
                   <span className="flex items-center gap-2 text-sm font-medium text-destructive">
@@ -672,38 +727,21 @@ export default function CorporateChannels() {
               ) : (
                 <div className="relative flex items-end gap-2 bg-muted/40 rounded-xl border px-3 py-2 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
                   <Input
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    placeholder={tab === "diretas" && dmTarget
-                      ? `Mensagem para ${dmTarget.nome.split(" ")[0]}...`
-                      : `Escreva em ${activeChannelData?.nome || "canal"}...`
-                    }
+                    value={input} onChange={e => setInput(e.target.value)}
+                    placeholder={tab === "diretas" && dmTarget ? `Mensagem para ${dmTarget.nome.split(" ")[0]}...` : `Escreva em ${activeChannelData?.nome || "canal"}...`}
                     className="border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-9 text-sm"
-                    onKeyDown={e => {
-                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-                    }}
-                    disabled={transcribing}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    disabled={transcribing || uploading}
                   />
+                  <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.pptx,.txt" onChange={handleFileUpload} />
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      title="Gravar áudio"
-                      onClick={startRecording}
-                      disabled={transcribing}
-                    >
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" title="Gravar áudio" onClick={startRecording} disabled={transcribing || uploading}>
                       <Mic className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Anexar">
-                      <Paperclip className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Anexar arquivo" onClick={() => fileInputRef.current?.click()} disabled={transcribing || uploading}>
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
                     </Button>
-                    <Button
-                      onClick={sendMessage}
-                      disabled={sending || !input.trim() || transcribing}
-                      size="icon"
-                      className="h-8 w-8 rounded-lg"
-                    >
+                    <Button onClick={sendMessage} disabled={sending || !input.trim() || transcribing || uploading} size="icon" className="h-8 w-8 rounded-lg">
                       {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>
@@ -712,92 +750,153 @@ export default function CorporateChannels() {
             </div>
           )}
         </div>
+
+        {/* ───── RIGHT PANEL: TASKS ───── */}
+        {sidePanel === "tasks" && (
+          <div className="w-80 shrink-0 hidden lg:flex flex-col bg-card border-l rounded-r-xl overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListTodo className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold">Tarefas do Canal</h3>
+              </div>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setTaskFromMsg(null); setNewTask({ titulo: "", descricao: "", assigned_to: "", prioridade: "media" }); setShowCreateTask(true); }}>
+                <Plus className="w-3 h-3" /> Nova
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {tasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                  <CheckSquare className="w-8 h-8 opacity-30 mb-2" />
+                  <p className="text-xs">Nenhuma tarefa ainda</p>
+                </div>
+              ) : (
+                tasks.map(t => (
+                  <div key={t.id} className={`p-3 rounded-lg border ${t.status === "concluida" ? "bg-muted/30 opacity-60" : "bg-card"} transition-all`}>
+                    <div className="flex items-start gap-2">
+                      <button onClick={() => toggleTaskStatus(t)} className="mt-0.5 shrink-0">
+                        <CheckSquare className={`w-4 h-4 ${t.status === "concluida" ? "text-hexa-green" : "text-muted-foreground"}`} />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm ${t.status === "concluida" ? "line-through" : "font-medium"}`}>{t.titulo}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[9px] h-4">
+                            {t.prioridade === "alta" ? "🔴 Alta" : t.prioridade === "baixa" ? "🟢 Baixa" : "🟡 Média"}
+                          </Badge>
+                          {t.assigned_to && (
+                            <span className="text-[10px] text-muted-foreground">
+                              → {allProfiles.find(p => p.id === t.assigned_to)?.nome || "..."}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ───── CREATE CHANNEL DIALOG ───── */}
       <Dialog open={showCreateChannel} onOpenChange={setShowCreateChannel}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary" />
-              Novo Canal
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> Novo Canal</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Nome do canal</Label>
-              <Input
-                value={newChannel.nome}
-                onChange={e => setNewChannel({ ...newChannel, nome: e.target.value })}
-                placeholder="ex: Projetos Q3"
-              />
+              <Input value={newChannel.nome} onChange={e => setNewChannel({ ...newChannel, nome: e.target.value })} placeholder="ex: Projetos Q3" />
             </div>
-
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Descrição</Label>
-              <Textarea
-                value={newChannel.descricao}
-                onChange={e => setNewChannel({ ...newChannel, descricao: e.target.value })}
-                placeholder="Do que se trata este canal?"
-                rows={2}
-              />
+              <Textarea value={newChannel.descricao} onChange={e => setNewChannel({ ...newChannel, descricao: e.target.value })} placeholder="Do que se trata?" rows={2} />
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Tipo</Label>
                 <Select value={newChannel.tipo} onValueChange={v => setNewChannel({ ...newChannel, tipo: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="publico">
-                      <div className="flex items-center gap-2"><Globe className="w-3.5 h-3.5" /> Público</div>
-                    </SelectItem>
-                    <SelectItem value="privado">
-                      <div className="flex items-center gap-2"><Lock className="w-3.5 h-3.5" /> Privado</div>
-                    </SelectItem>
-                    <SelectItem value="setor">
-                      <div className="flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Setor</div>
-                    </SelectItem>
+                    <SelectItem value="publico"><div className="flex items-center gap-2"><Globe className="w-3.5 h-3.5" /> Público</div></SelectItem>
+                    <SelectItem value="privado"><div className="flex items-center gap-2"><Lock className="w-3.5 h-3.5" /> Privado</div></SelectItem>
+                    <SelectItem value="setor"><div className="flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Setor</div></SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">Setor (opcional)</Label>
                 <Select value={newChannel.setor} onValueChange={v => setNewChannel({ ...newChannel, setor: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Nenhum" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
-                    <SelectItem value="Comercial">Comercial</SelectItem>
-                    <SelectItem value="Técnico">Técnico</SelectItem>
-                    <SelectItem value="Laboratório">Laboratório</SelectItem>
-                    <SelectItem value="Administrativo">Administrativo</SelectItem>
-                    <SelectItem value="Financeiro">Financeiro</SelectItem>
-                    <SelectItem value="Logística">Logística</SelectItem>
-                    <SelectItem value="Diretoria">Diretoria</SelectItem>
+                    {["Comercial", "Técnico", "Laboratório", "Administrativo", "Financeiro", "Logística", "Diretoria"].map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
-            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-              <p className="flex items-center gap-1.5">
-                <Lock className="w-3 h-3" />
-                Apenas administradores e gestores podem criar canais.
-              </p>
-            </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateChannel(false)}>Cancelar</Button>
             <Button onClick={createChannel} disabled={creating || !newChannel.nome.trim()}>
-              {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Criar Canal
+              {creating && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Criar Canal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ───── CREATE TASK DIALOG ───── */}
+      <Dialog open={showCreateTask} onOpenChange={setShowCreateTask}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CheckSquare className="w-5 h-5 text-primary" /> Nova Tarefa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Título</Label>
+              <Input value={newTask.titulo} onChange={e => setNewTask({ ...newTask, titulo: e.target.value })} placeholder="O que precisa ser feito?" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Descrição</Label>
+              <Textarea value={newTask.descricao} onChange={e => setNewTask({ ...newTask, descricao: e.target.value })} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Responsável</Label>
+                <Select value={newTask.assigned_to} onValueChange={v => setNewTask({ ...newTask, assigned_to: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem responsável</SelectItem>
+                    {allProfiles.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Prioridade</Label>
+                <Select value={newTask.prioridade} onValueChange={v => setNewTask({ ...newTask, prioridade: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">🟢 Baixa</SelectItem>
+                    <SelectItem value="media">🟡 Média</SelectItem>
+                    <SelectItem value="alta">🔴 Alta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {taskFromMsg && (
+              <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+                <p className="font-medium mb-1">Originada da mensagem:</p>
+                <p className="truncate italic">"{taskFromMsg.content}"</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateTask(false)}>Cancelar</Button>
+            <Button onClick={createTask} disabled={creating || !newTask.titulo.trim()}>
+              {creating && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Criar Tarefa
             </Button>
           </DialogFooter>
         </DialogContent>
