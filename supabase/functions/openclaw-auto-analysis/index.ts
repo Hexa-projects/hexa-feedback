@@ -273,7 +273,21 @@ serve(async (req) => {
       });
     }
 
-    // 7. Audit trail
+    // 7. Send notifications to all admins
+    const { data: adminRoles } = await db.from("user_roles").select("user_id").eq("role", "admin");
+    if (adminRoles && adminRoles.length > 0 && insights.length > 0) {
+      const notifs = adminRoles.map((r: any) => ({
+        user_id: r.user_id,
+        titulo: `🤖 ${insights.length} novo(s) insight(s) do Focus AI`,
+        mensagem: insights.map((i: any) => `• ${i.titulo}`).join("\n").slice(0, 300),
+        tipo: "sistema",
+        link: "/focus-ai",
+        metadata: { source: "auto_analysis", count: insights.length },
+      }));
+      await db.from("notifications").insert(notifs);
+    }
+
+    // 8. Audit trail
     await db.from("ai_audit_trail").insert({
       event_type: "auto_analysis",
       action: "analysis_completed",

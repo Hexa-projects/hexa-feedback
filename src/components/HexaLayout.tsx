@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Home, Users, Briefcase, Wrench, FlaskConical,
-  DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
+  DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen
 } from "lucide-react";
@@ -196,10 +197,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div className="flex items-center gap-2 ml-auto">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
-            </Button>
+            <NotificationDropdown />
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <div className="w-7 h-7 rounded-full hexa-gradient-brand flex items-center justify-center">
                 <User className="w-3.5 h-3.5 text-white" />
