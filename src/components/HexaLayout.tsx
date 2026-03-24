@@ -7,7 +7,7 @@ import {
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
-  Package, Calendar, TrendingDown, Wallet, LayoutDashboard
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +84,18 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    id: "estoque",
+    label: "Estoque Inteligente",
+    icon: Boxes,
+    children: [
+      { to: "/stock", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/stock/products", label: "Catálogo", icon: Package },
+      { to: "/stock/movements", label: "Movimentações", icon: ArrowDownToLine },
+      { to: "/stock/journey", label: "Jornada da Peça", icon: TrendingDown },
+      { to: "/stock/equipment", label: "Equipamentos", icon: Wrench },
+    ],
+  },
+  {
     id: "financeiro",
     label: "Financeiro",
     icon: DollarSign,
@@ -140,20 +152,20 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback", "ia", "settings"],
-  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback"],
-  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "comunicacao", "feedback"],
+  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback", "ia", "settings"],
+  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback"],
+  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "comunicacao", "feedback"],
 };
 
 // Setor-specific visibility overrides
 const SETOR_GROUPS: Record<string, string[]> = {
   Comercial: ["dashboard", "comercial", "comunicacao", "feedback"],
-  "Técnico": ["dashboard", "operacoes", "laboratorio", "comunicacao", "feedback"],
-  "Laboratório": ["dashboard", "laboratorio", "comunicacao", "feedback"],
+  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "comunicacao", "feedback"],
+  "Laboratório": ["dashboard", "laboratorio", "estoque", "comunicacao", "feedback"],
   Financeiro: ["dashboard", "financeiro", "comunicacao", "feedback"],
-  "Logística": ["dashboard", "operacoes", "comunicacao", "feedback"],
-  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "financeiro", "comunicacao", "feedback", "ia", "settings"],
+  "Logística": ["dashboard", "operacoes", "estoque", "comunicacao", "feedback"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback", "ia", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
