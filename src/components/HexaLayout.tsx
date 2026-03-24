@@ -5,7 +5,7 @@ import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
-  MessageCircle, Bot, Hash
+  MessageCircle, Bot, Hash, BookOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ const NAV: NavItem[] = [
   },
   { to: "/focus-ai", label: "Focus AI", icon: Brain, roles: ["admin"] },
   { to: "/agentes", label: "Agentes IA", icon: Bot, roles: ["admin"] },
+  { to: "/api-docs", label: "API & Webhooks", icon: BookOpen, roles: ["admin"] },
   { to: "/settings", label: "Configurações", icon: Settings, roles: ["admin"] },
 ];
 
