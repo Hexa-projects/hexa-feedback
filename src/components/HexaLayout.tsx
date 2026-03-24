@@ -4,7 +4,7 @@ import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Home, Users, Briefcase, Wrench, FlaskConical,
-  DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, Bell, User,
+  DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen
 } from "lucide-react";
