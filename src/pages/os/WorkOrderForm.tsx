@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
+
+const TIPOS = ["corretiva", "preventiva", "instalacao", "calibracao"];
 
 export default function WorkOrderForm() {
   const { user } = useAuth();
@@ -19,6 +21,7 @@ export default function WorkOrderForm() {
   const [form, setForm] = useState({
     numero_os: "", cliente: "", equipamento: "",
     descricao: "", urgencia: "Média", sla_horas: "48",
+    tipo_manutencao: "corretiva", equipamento_serial: "", localizacao: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,9 +33,9 @@ export default function WorkOrderForm() {
       sla_horas: parseInt(form.sla_horas) || 48,
       user_id: user.id,
       status: "Aberto",
-    });
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
-    else { toast({ title: "OS criada!" }); navigate("/os"); }
+    } as any);
+    if (error) toast.error(error.message);
+    else { toast.success("OS criada!"); navigate("/os"); }
     setSaving(false);
   };
 
@@ -59,7 +62,18 @@ export default function WorkOrderForm() {
                 </div>
                 <div className="space-y-2">
                   <Label>Equipamento</Label>
-                  <Input value={form.equipamento} onChange={e => update("equipamento", e.target.value)} />
+                  <Input value={form.equipamento} onChange={e => update("equipamento", e.target.value)} placeholder="Ex: RM Signa Explorer 1.5T" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nº Série</Label>
+                  <Input value={form.equipamento_serial} onChange={e => update("equipamento_serial", e.target.value)} placeholder="Serial do equipamento" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de Manutenção</Label>
+                  <Select value={form.tipo_manutencao} onValueChange={v => update("tipo_manutencao", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{TIPOS.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Urgência</Label>
@@ -74,12 +88,16 @@ export default function WorkOrderForm() {
                   <Label>SLA (horas)</Label>
                   <Input type="number" value={form.sla_horas} onChange={e => update("sla_horas", e.target.value)} />
                 </div>
+                <div className="space-y-2">
+                  <Label>Localização</Label>
+                  <Input value={form.localizacao} onChange={e => update("localizacao", e.target.value)} placeholder="Ex: Hospital São Paulo" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Descrição do Problema</Label>
-                <Textarea value={form.descricao} onChange={e => update("descricao", e.target.value)} rows={4} />
+                <Textarea value={form.descricao} onChange={e => update("descricao", e.target.value)} rows={4} placeholder="Descreva o defeito, sintomas observados..." />
               </div>
-              <Button type="submit" disabled={saving} className="gap-2">
+              <Button type="submit" disabled={saving} className="gap-2 w-full">
                 <Save className="w-4 h-4" /> {saving ? "Salvando..." : "Abrir OS"}
               </Button>
             </form>
