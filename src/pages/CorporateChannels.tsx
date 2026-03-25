@@ -589,7 +589,7 @@ export default function CorporateChannels() {
               <div className="p-2 space-y-0.5">
                 {filteredProfiles.length === 0 && <p className="text-xs text-muted-foreground p-3 text-center">Nenhum colaborador</p>}
                 {filteredProfiles.map(p => (
-                  <button key={p.id} onClick={() => { setDmTargetId(p.id); setActiveChannel(null); }}
+                  <button key={p.id} onClick={() => openDirectMessage(p.id)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
                       dmTargetId === p.id ? "bg-primary/8 text-foreground font-medium border border-primary/15" : "text-muted-foreground hover:bg-muted/50"
                     }`}>
