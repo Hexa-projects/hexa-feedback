@@ -109,10 +109,10 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "comunicacao",
-    label: "Comunicação",
+    label: "Teams Interno",
     icon: MessageCircle,
     children: [
-      { to: "/canais", label: "Canal Corporativo", icon: Hash },
+      { to: "/canais", label: "Times & Canais", icon: Hash },
       { to: "/chat-ia", label: "Chat IA", icon: Bot },
     ],
   },
