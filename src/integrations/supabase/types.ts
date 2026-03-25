@@ -396,6 +396,7 @@ export type Database = {
           is_ai: boolean | null
           metadata: Json | null
           parent_id: string | null
+          thread_count: number | null
           tipo: string | null
           user_id: string
         }
@@ -408,6 +409,7 @@ export type Database = {
           is_ai?: boolean | null
           metadata?: Json | null
           parent_id?: string | null
+          thread_count?: number | null
           tipo?: string | null
           user_id: string
         }
@@ -420,6 +422,7 @@ export type Database = {
           is_ai?: boolean | null
           metadata?: Json | null
           parent_id?: string | null
+          thread_count?: number | null
           tipo?: string | null
           user_id?: string
         }
@@ -444,6 +447,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           channel_id: string
+          checklist: Json | null
           created_at: string | null
           created_by: string
           descricao: string | null
@@ -458,6 +462,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           channel_id: string
+          checklist?: Json | null
           created_at?: string | null
           created_by: string
           descricao?: string | null
@@ -472,6 +477,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           channel_id?: string
+          checklist?: Json | null
           created_at?: string | null
           created_by?: string
           descricao?: string | null
@@ -510,6 +516,7 @@ export type Database = {
           nome: string
           setor: string | null
           slug: string
+          team_id: string | null
           tipo: string
           updated_at: string | null
         }
@@ -522,6 +529,7 @@ export type Database = {
           nome: string
           setor?: string | null
           slug: string
+          team_id?: string | null
           tipo?: string
           updated_at?: string | null
         }
@@ -534,10 +542,19 @@ export type Database = {
           nome?: string
           setor?: string | null
           slug?: string
+          team_id?: string | null
           tipo?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "corporate_channels_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_forms: {
         Row: {
@@ -1138,6 +1155,38 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "channel_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1718,6 +1767,77 @@ export type Database = {
           tags?: string[] | null
           transcricao_audio?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          ativo: boolean | null
+          cor: string | null
+          created_at: string | null
+          criado_por: string | null
+          descricao: string | null
+          icone: string | null
+          id: string
+          nome: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          nome: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          nome?: string
+          slug?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
