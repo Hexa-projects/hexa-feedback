@@ -293,11 +293,13 @@ export default function CorporateChannels() {
   const sendMessage = async () => {
     if (!input.trim() || !activeChannel || !user || sending) return;
     setSending(true);
+    const channelId = activeChannel;
     await supabase.from("channel_messages" as any).insert({
-      channel_id: activeChannel, user_id: user.id, content: input.trim(), tipo: "texto",
+      channel_id: channelId, user_id: user.id, content: input.trim(), tipo: "texto",
     } as any);
     setInput("");
     setSending(false);
+    loadMessages(channelId);
   };
 
   const toggleReaction = async (messageId: string, emoji: string) => {
