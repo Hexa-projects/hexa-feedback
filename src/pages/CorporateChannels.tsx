@@ -263,6 +263,32 @@ export default function CorporateChannels() {
     });
   };
 
+  // ── Open DM ──
+  const openDirectMessage = async (targetId: string) => {
+    if (!user) return;
+    setDmTargetId(targetId);
+    // Generate a deterministic DM slug from sorted user IDs
+    const ids = [user.id, targetId].sort();
+    const dmSlug = `dm-${ids[0].slice(0, 8)}-${ids[1].slice(0, 8)}`;
+    // Check if DM channel already exists
+    const { data: existing } = await supabase.from("corporate_channels" as any)
+      .select("id").eq("slug", dmSlug).single();
+    if (existing) {
+      setActiveChannel((existing as any).id);
+      return;
+    }
+    // Create DM channel
+    const targetProfile = allProfiles.find(p => p.id === targetId);
+    const { data: created, error } = await supabase.from("corporate_channels" as any).insert({
+      nome: `DM: ${profile?.nome || "Eu"} ↔ ${targetProfile?.nome || "Usuário"}`,
+      slug: dmSlug, tipo: "privado", criado_por: user.id,
+      descricao: "Conversa direta",
+    } as any).select("id").single();
+    if (error) { toast.error("Erro ao abrir conversa"); return; }
+    setActiveChannel((created as any).id);
+    loadChannels();
+  };
+
   // ── Actions ──
   const sendMessage = async () => {
     if (!input.trim() || !activeChannel || !user || sending) return;
