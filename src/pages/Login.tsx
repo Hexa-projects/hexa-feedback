@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import hexaLogo from "@/assets/hexaos-logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, profile, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,25 +17,52 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
+  useEffect(() => {
+    if (authLoading || !user) return;
+    navigate(profile && !profile.onboarding_completo ? "/onboarding" : "/home", { replace: true });
+  }, [authLoading, navigate, profile, user]);
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) { setError("Preencha e-mail e senha"); return; }
-    setLoading(true);
     setError("");
-    const { error: err } = await signIn(email.trim(), password);
-    setLoading(false);
-    if (err) { setError(err.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : err.message); return; }
-    navigate("/home");
+    setSuccessMsg("");
+    setLoading(true);
+
+    try {
+      const { error: err } = await signIn(email.trim(), password);
+      if (err) {
+        setError(err.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : err.message);
+        return;
+      }
+
+      navigate("/home");
+    } catch {
+      setError("Não foi possível entrar agora. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
     if (!email.trim() || !password.trim() || !nome.trim()) { setError("Preencha todos os campos"); return; }
     if (password.length < 6) { setError("Senha deve ter no mínimo 6 caracteres"); return; }
-    setLoading(true);
     setError("");
-    const { error: err } = await signUp(email.trim(), password, nome.trim());
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    setSuccessMsg("Cadastro realizado! Verifique seu e-mail para confirmar ou faça login.");
+    setSuccessMsg("");
+    setLoading(true);
+
+    try {
+      const { error: err } = await signUp(email.trim(), password, nome.trim());
+      if (err) {
+        setError(err.message);
+        return;
+      }
+
+      setSuccessMsg("Cadastro realizado! Verifique seu e-mail para confirmar ou faça login.");
+    } catch {
+      setError("Não foi possível concluir o cadastro agora. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

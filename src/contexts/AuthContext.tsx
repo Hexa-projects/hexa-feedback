@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+const AUTH_TIMEOUT_MS = 12000;
+
 interface Profile {
   id: string;
   nome: string;
@@ -44,25 +46,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<"admin" | "gestor" | "colaborador">("colaborador");
   const [loading, setLoading] = useState(true);
 
+  const withTimeout = async <T,>(promise: Promise<T>, message: string): Promise<T> => {
+    let timeoutId: number | undefined;
+
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error(message)), AUTH_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    }
+  };
+
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    setProfile(data);
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erro ao carregar perfil", error);
+        setProfile(null);
+        return null;
+      }
+
+      setProfile(data);
+      return data;
+    } catch (error) {
+      console.error("Falha inesperada ao carregar perfil", error);
+      setProfile(null);
+      return null;
+    }
   };
 
   const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-    const r = (data?.role as "admin" | "gestor" | "colaborador") || "colaborador";
-    setRole(r);
-    return r;
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erro ao carregar papel do usuário", error);
+      }
+
+      const nextRole = (data?.role as "admin" | "gestor" | "colaborador") || "colaborador";
+      setRole(nextRole);
+      return nextRole;
+    } catch (error) {
+      console.error("Falha inesperada ao carregar papel do usuário", error);
+      setRole("colaborador");
+      return "colaborador";
+    }
   };
 
   const refreshProfile = async () => {
@@ -73,55 +114,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let isActive = true;
+
+    const syncAuthState = async (nextSession: Session | null) => {
+      if (!isActive) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        setProfile(null);
+        setRole("colaborador");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      await Promise.allSettled([
+        fetchProfile(nextSession.user.id),
+        fetchRole(nextSession.user.id),
+      ]);
+
+      if (isActive) setLoading(false);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Use setTimeout to avoid Supabase deadlock on auth state change
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
-            await fetchRole(session.user.id);
-            setLoading(false);
-          }, 0);
-        } else {
-          setProfile(null);
-          setRole("colaborador");
-          setLoading(false);
-        }
+      (_event, session) => {
+        void syncAuthState(session);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).then(() =>
-          fetchRole(session.user.id).then(() => setLoading(false))
-        );
-      } else {
-        setLoading(false);
-      }
+      void syncAuthState(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isActive = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, nome: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { nome },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error };
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { nome },
+            emailRedirectTo: window.location.origin,
+          },
+        }),
+        "O cadastro demorou mais que o esperado. Tente novamente em instantes."
+      );
+
+      return { error };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error : new Error("Não foi possível concluir o cadastro."),
+      };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        "O login demorou mais que o esperado. Tente novamente em instantes."
+      );
+
+      return { error };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error : new Error("Não foi possível fazer login."),
+      };
+    }
   };
 
   const signOut = async () => {
