@@ -506,6 +506,78 @@ export type Database = {
           },
         ]
       }
+      contracts: {
+        Row: {
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          descricao: string | null
+          equipamentos: Json | null
+          id: string
+          lead_id: string | null
+          notas: string | null
+          proposal_id: string | null
+          status: string | null
+          tipo: string | null
+          titulo: string
+          updated_at: string | null
+          user_id: string
+          valor_mensal: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          equipamentos?: Json | null
+          id?: string
+          lead_id?: string | null
+          notas?: string | null
+          proposal_id?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo: string
+          updated_at?: string | null
+          user_id: string
+          valor_mensal?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          equipamentos?: Json | null
+          id?: string
+          lead_id?: string | null
+          notas?: string | null
+          proposal_id?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string
+          valor_mensal?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corporate_channels: {
         Row: {
           ativo: boolean | null
@@ -1024,44 +1096,73 @@ export type Database = {
           data_entrada: string | null
           descricao: string
           equipamento_origem: string
+          etapa_atual: string | null
+          fotos_urls: string[] | null
           id: string
           localizacao: string | null
           notas: string | null
+          pecas_consumidas: Json | null
           previsao_conclusao: string | null
+          serial_number: string | null
           status: string
           tecnico_id: string | null
+          tempo_total_min: number | null
+          tipo_peca: string | null
           updated_at: string | null
           user_id: string
+          work_order_id: string | null
         }
         Insert: {
           created_at?: string | null
           data_entrada?: string | null
           descricao?: string
           equipamento_origem?: string
+          etapa_atual?: string | null
+          fotos_urls?: string[] | null
           id?: string
           localizacao?: string | null
           notas?: string | null
+          pecas_consumidas?: Json | null
           previsao_conclusao?: string | null
+          serial_number?: string | null
           status?: string
           tecnico_id?: string | null
+          tempo_total_min?: number | null
+          tipo_peca?: string | null
           updated_at?: string | null
           user_id: string
+          work_order_id?: string | null
         }
         Update: {
           created_at?: string | null
           data_entrada?: string | null
           descricao?: string
           equipamento_origem?: string
+          etapa_atual?: string | null
+          fotos_urls?: string[] | null
           id?: string
           localizacao?: string | null
           notas?: string | null
+          pecas_consumidas?: Json | null
           previsao_conclusao?: string | null
+          serial_number?: string | null
           status?: string
           tecnico_id?: string | null
+          tempo_total_min?: number | null
+          tipo_peca?: string | null
           updated_at?: string | null
           user_id?: string
+          work_order_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lab_parts_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_interactions: {
         Row: {
@@ -1404,6 +1505,9 @@ export type Database = {
           data_inicio: string | null
           data_prevista: string | null
           descricao: string | null
+          documentos_urls: string[] | null
+          etapa_atual: string | null
+          fotos_urls: string[] | null
           id: string
           notas: string | null
           prioridade: string | null
@@ -1421,6 +1525,9 @@ export type Database = {
           data_inicio?: string | null
           data_prevista?: string | null
           descricao?: string | null
+          documentos_urls?: string[] | null
+          etapa_atual?: string | null
+          fotos_urls?: string[] | null
           id?: string
           notas?: string | null
           prioridade?: string | null
@@ -1438,6 +1545,9 @@ export type Database = {
           data_inicio?: string | null
           data_prevista?: string | null
           descricao?: string | null
+          documentos_urls?: string[] | null
+          etapa_atual?: string | null
+          fotos_urls?: string[] | null
           id?: string
           notas?: string | null
           prioridade?: string | null
@@ -2064,16 +2174,23 @@ export type Database = {
           assinatura_url: string | null
           audio_url: string | null
           cliente: string
+          contrato_id: string | null
           created_at: string | null
+          data_conclusao: string | null
           descricao: string | null
           equipamento: string
+          equipamento_serial: string | null
+          fotos_urls: string[] | null
           id: string
+          localizacao: string | null
           numero_os: string
           observacoes_ia: string | null
+          pecas_utilizadas: Json | null
           sla_horas: number | null
           status: string
           tecnico_id: string | null
           tempo_gasto_min: number | null
+          tipo_manutencao: string | null
           transcricao_audio: string | null
           updated_at: string | null
           urgencia: string | null
@@ -2083,16 +2200,23 @@ export type Database = {
           assinatura_url?: string | null
           audio_url?: string | null
           cliente?: string
+          contrato_id?: string | null
           created_at?: string | null
+          data_conclusao?: string | null
           descricao?: string | null
           equipamento?: string
+          equipamento_serial?: string | null
+          fotos_urls?: string[] | null
           id?: string
+          localizacao?: string | null
           numero_os?: string
           observacoes_ia?: string | null
+          pecas_utilizadas?: Json | null
           sla_horas?: number | null
           status?: string
           tecnico_id?: string | null
           tempo_gasto_min?: number | null
+          tipo_manutencao?: string | null
           transcricao_audio?: string | null
           updated_at?: string | null
           urgencia?: string | null
@@ -2102,16 +2226,23 @@ export type Database = {
           assinatura_url?: string | null
           audio_url?: string | null
           cliente?: string
+          contrato_id?: string | null
           created_at?: string | null
+          data_conclusao?: string | null
           descricao?: string | null
           equipamento?: string
+          equipamento_serial?: string | null
+          fotos_urls?: string[] | null
           id?: string
+          localizacao?: string | null
           numero_os?: string
           observacoes_ia?: string | null
+          pecas_utilizadas?: Json | null
           sla_horas?: number | null
           status?: string
           tecnico_id?: string | null
           tempo_gasto_min?: number | null
+          tipo_manutencao?: string | null
           transcricao_audio?: string | null
           updated_at?: string | null
           urgencia?: string | null
