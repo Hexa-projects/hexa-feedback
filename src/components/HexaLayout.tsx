@@ -69,7 +69,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Wrench,
     children: [
       { to: "/os", label: "Ordens de Serviço", icon: ClipboardList },
-      { to: "/schedule", label: "Agenda Técnica", icon: Calendar, wip: true },
+      { to: "/calendar", label: "Calendário", icon: Calendar },
       { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
     ],
   },
