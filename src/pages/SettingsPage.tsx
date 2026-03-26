@@ -738,6 +738,8 @@ function IntegrationsTab() {
                   onClick={() => {
                     if (int.key === "whatsapp") {
                       setActiveIntegration("whatsapp");
+                    } else if (int.key === "calendar") {
+                      setActiveIntegration("calendar");
                     } else if (int.status === "ativo") {
                       toast.info("Use a aba Focus AI para gerenciar o OpenClaw");
                     } else {
