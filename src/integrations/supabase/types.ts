@@ -1036,6 +1036,154 @@ export type Database = {
         }
         Relationships: []
       }
+      hex_calendar_events: {
+        Row: {
+          calendar_id: string
+          created_at: string | null
+          criado_por: string
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          dia_inteiro: boolean | null
+          external_id: string | null
+          id: string
+          local: string | null
+          metadata: Json | null
+          prioridade: string | null
+          recorrencia: string | null
+          status: string | null
+          tipo: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string | null
+          criado_por: string
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          dia_inteiro?: boolean | null
+          external_id?: string | null
+          id?: string
+          local?: string | null
+          metadata?: Json | null
+          prioridade?: string | null
+          recorrencia?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string | null
+          criado_por?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          dia_inteiro?: boolean | null
+          external_id?: string | null
+          id?: string
+          local?: string | null
+          metadata?: Json | null
+          prioridade?: string | null
+          recorrencia?: string | null
+          status?: string | null
+          tipo?: string | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hex_calendar_events_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "hex_calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hex_calendar_participants: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          notificado: boolean | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          notificado?: boolean | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          notificado?: boolean | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hex_calendar_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "hex_calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hex_calendars: {
+        Row: {
+          ativo: boolean | null
+          cor: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          owner_id: string
+          sync_last_at: string | null
+          sync_provider: string | null
+          sync_token: string | null
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          owner_id: string
+          sync_last_at?: string | null
+          sync_provider?: string | null
+          sync_token?: string | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          owner_id?: string
+          sync_last_at?: string | null
+          sync_provider?: string | null
+          sync_token?: string | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       installed_equipment: {
         Row: {
           cliente: string
