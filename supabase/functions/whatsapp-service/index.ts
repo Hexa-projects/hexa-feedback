@@ -15,10 +15,26 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(supabaseUrl, serviceKey);
 
-  const EVO_API_URL = Deno.env.get("EVO_API_URL");
-  const EVO_GLOBAL_KEY = Deno.env.get("EVO_GLOBAL_KEY");
-  const EVO_INSTANCE = Deno.env.get("EVO_INSTANCE");
-  const EVO_API_KEY = Deno.env.get("EVO_API_KEY");
+  // Try env secrets first, then fall back to DB config
+  let EVO_API_URL = Deno.env.get("EVO_API_URL");
+  let EVO_GLOBAL_KEY = Deno.env.get("EVO_GLOBAL_KEY");
+  let EVO_INSTANCE = Deno.env.get("EVO_INSTANCE");
+  let EVO_API_KEY = Deno.env.get("EVO_API_KEY");
+
+  if (!EVO_API_URL || !EVO_INSTANCE) {
+    const { data: dbConfig } = await admin
+      .from("integration_configs")
+      .select("config")
+      .eq("integration_name", "evolution_api")
+      .maybeSingle();
+    if (dbConfig?.config) {
+      const c = dbConfig.config as any;
+      EVO_API_URL = EVO_API_URL || c.evo_api_url || "";
+      EVO_GLOBAL_KEY = EVO_GLOBAL_KEY || c.evo_global_key || "";
+      EVO_INSTANCE = EVO_INSTANCE || c.evo_instance || "";
+      EVO_API_KEY = EVO_API_KEY || c.evo_api_key || "";
+    }
+  }
 
   // Auth check
   const authHeader = req.headers.get("Authorization");
