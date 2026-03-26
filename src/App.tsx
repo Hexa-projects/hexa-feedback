@@ -103,6 +103,9 @@ const AppRoutes = () => (
       <Route path="/canais" element={<PrivateRoute><CorporateChannels /></PrivateRoute>} />
       <Route path="/agentes" element={<PrivateRoute><AgentsDashboard /></PrivateRoute>} />
 
+      {/* Calendário */}
+      <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
+
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
