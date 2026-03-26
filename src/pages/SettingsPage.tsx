@@ -651,6 +651,9 @@ function IntegrationsTab() {
   if (activeIntegration === "whatsapp") {
     return <WhatsAppConfigView onBack={() => setActiveIntegration(null)} />;
   }
+  if (activeIntegration === "calendar") {
+    return <CalendarConfigView onBack={() => setActiveIntegration(null)} />;
+  }
 
   const integrations = [
     {
