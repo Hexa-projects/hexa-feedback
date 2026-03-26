@@ -44,7 +44,14 @@ import SettingsPage from "./pages/SettingsPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
 import CalendarPage from "./pages/CalendarPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
