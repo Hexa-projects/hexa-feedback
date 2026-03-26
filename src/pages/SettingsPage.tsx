@@ -939,51 +939,27 @@ function WhatsAppTab() {
 }
 
 // ═══════════════════════════════════════════════════
-// TAB: Integrations
+// TAB: Integrations (with sub-views)
 // ═══════════════════════════════════════════════════
 
 function IntegrationsTab() {
-  const [waStatus, setWaStatus] = useState<{ connected: boolean; state?: string; reason?: string } | null>(null);
-  const [waLoading, setWaLoading] = useState(false);
-  const [waLogs, setWaLogs] = useState<any[]>([]);
+  const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
 
-  const checkWhatsAppStatus = async () => {
-    setWaLoading(true);
-    try {
-      const { data } = await supabase.functions.invoke("whatsapp-service", { body: { action: "status" } });
-      setWaStatus(data);
-    } catch {
-      setWaStatus({ connected: false, reason: "Erro ao verificar" });
-    }
-    setWaLoading(false);
-  };
-
-  const connectWhatsApp = async () => {
-    setWaLoading(true);
-    try {
-      const { data } = await supabase.functions.invoke("whatsapp-service", { body: { action: "connect" } });
-      if (data?.qr) {
-        toast.info("QR Code gerado — verifique os logs da função para parear");
-      }
-      await checkWhatsAppStatus();
-    } catch {
-      toast.error("Erro ao conectar WhatsApp");
-    }
-    setWaLoading(false);
-  };
-
-  const loadLogs = async () => {
-    const { data } = await supabase.from("whatsapp_logs").select("*").order("created_at", { ascending: false }).limit(10);
-    setWaLogs(data || []);
-  };
-
-  useEffect(() => {
-    checkWhatsAppStatus();
-    loadLogs();
-  }, []);
+  if (activeIntegration === "whatsapp") {
+    return <WhatsAppConfigView onBack={() => setActiveIntegration(null)} />;
+  }
 
   const integrations = [
     {
+      key: "whatsapp",
+      nome: "WhatsApp (Evolution API)",
+      descricao: "Envio automático de resumos, alertas e comunicados via WhatsApp pelo Focus AI.",
+      icon: MessageSquare,
+      status: "pendente" as const,
+      config: ["URL da API", "Global Key", "Instância", "API Key"],
+    },
+    {
+      key: "smtp",
       nome: "E-mail SMTP",
       descricao: "Envio de e-mails transacionais para propostas, contratos e notificações.",
       icon: Mail,
@@ -991,6 +967,7 @@ function IntegrationsTab() {
       config: ["Host SMTP", "Porta", "Usuário", "Senha", "E-mail remetente"],
     },
     {
+      key: "calendar",
       nome: "Calendário Técnico",
       descricao: "Sincronização de agendas de manutenção e visitas técnicas.",
       icon: Calendar,
@@ -998,6 +975,7 @@ function IntegrationsTab() {
       config: ["Provedor (Google/Outlook)", "Client ID", "Client Secret"],
     },
     {
+      key: "openclaw",
       nome: "OpenClaw Gateway",
       descricao: "Motor de IA e automação inteligente (Focus AI).",
       icon: Zap,
@@ -1025,62 +1003,13 @@ function IntegrationsTab() {
         <CardDescription>Conecte o HexaOS a serviços externos para automação e comunicação.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* WhatsApp Evolution API Card */}
-        <Card className="border-2 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-                  <MessageSquare className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">WhatsApp (Evolution API)</span>
-                    <Badge variant="outline" className={`text-xs ${waStatus?.connected ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"}`}>
-                      {waLoading ? "Verificando..." : waStatus?.connected ? "Conectado" : waStatus?.reason || "Desconectado"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Envio automático de resumos, alertas e comunicados via WhatsApp pelo Focus AI.
-                  </p>
-                  {waStatus && !waStatus.connected && waStatus.state && (
-                    <p className="text-xs text-muted-foreground mt-1">Estado: {waStatus.state}</p>
-                  )}
-                  {waLogs.length > 0 && (
-                    <div className="mt-3 space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">Últimos envios:</p>
-                      {waLogs.slice(0, 5).map(log => (
-                        <div key={log.id} className="flex items-center gap-2 text-xs">
-                          <Badge variant="outline" className={`text-[10px] ${log.status === "sent" ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"}`}>
-                            {log.status}
-                          </Badge>
-                          <span className="text-muted-foreground truncate max-w-[200px]">{log.destinatario_nome || log.destinatario}</span>
-                          <span className="text-muted-foreground truncate max-w-[200px]">{log.mensagem.substring(0, 50)}...</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={checkWhatsAppStatus} disabled={waLoading}>
-                  <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? "animate-spin" : ""}`} />
-                </Button>
-                <Button size="sm" onClick={connectWhatsApp} disabled={waLoading}>
-                  {waStatus?.connected ? "Reconectar" : "Conectar"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {integrations.map(int => (
-          <Card key={int.nome} className="border">
+          <Card key={int.key} className={`border ${int.key === "whatsapp" ? "border-2 border-primary/20" : ""}`}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <int.icon className="w-5 h-5 text-primary" />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${int.key === "whatsapp" ? "bg-green-500/10" : "bg-primary/10"}`}>
+                    <int.icon className={`w-5 h-5 ${int.key === "whatsapp" ? "text-green-600" : "text-primary"}`} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -1101,7 +1030,9 @@ function IntegrationsTab() {
                   size="sm"
                   variant={int.status === "ativo" ? "outline" : "default"}
                   onClick={() => {
-                    if (int.status === "ativo") {
+                    if (int.key === "whatsapp") {
+                      setActiveIntegration("whatsapp");
+                    } else if (int.status === "ativo") {
                       toast.info("Use a aba Focus AI para gerenciar o OpenClaw");
                     } else {
                       toast.info(`Configuração de ${int.nome} será habilitada em breve`);
@@ -1116,5 +1047,249 @@ function IntegrationsTab() {
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// SUB-VIEW: WhatsApp Config
+// ═══════════════════════════════════════════════════
+
+function WhatsAppConfigView({ onBack }: { onBack: () => void }) {
+  const [config, setConfig] = useState({
+    evo_api_url: "",
+    evo_global_key: "",
+    evo_instance: "",
+    evo_api_key: "",
+  });
+  const [status, setStatus] = useState<{ connected: boolean; state?: string; reason?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [testNumber, setTestNumber] = useState("");
+  const [testMessage, setTestMessage] = useState("Teste de integração HexaOS 🚀");
+  const [testResult, setTestResult] = useState<{ ok: boolean; detail: string } | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    checkStatus();
+    loadLogs();
+  }, []);
+
+  const loadLogs = async () => {
+    const { data } = await supabase.from("whatsapp_logs").select("*").order("created_at", { ascending: false }).limit(20);
+    setLogs(data || []);
+  };
+
+  const checkStatus = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("whatsapp-service", { body: { action: "status" } });
+      setStatus(data);
+    } catch {
+      setStatus({ connected: false, reason: "Erro ao verificar conexão" });
+    }
+    setLoading(false);
+  };
+
+  const handleConnect = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("whatsapp-service", { body: { action: "connect" } });
+      if (data?.qr?.base64) {
+        toast.success("QR Code gerado! Escaneie com o WhatsApp.");
+      } else {
+        toast.info("Solicitação de conexão enviada. Verifique o painel da Evolution API.");
+      }
+      setTimeout(checkStatus, 5000);
+    } catch {
+      toast.error("Erro ao solicitar conexão");
+    }
+    setLoading(false);
+  };
+
+  const handleSaveConfig = () => {
+    if (!config.evo_api_url || !config.evo_instance) {
+      toast.error("URL da API e Nome da Instância são obrigatórios");
+      return;
+    }
+    toast.info("Salve as credenciais como Secrets no painel do Supabase: EVO_API_URL, EVO_GLOBAL_KEY, EVO_INSTANCE, EVO_API_KEY");
+  };
+
+  const handleTest = async () => {
+    if (!testNumber || !testMessage) {
+      toast.error("Preencha número e mensagem");
+      return;
+    }
+    const clean = testNumber.replace(/\D/g, "");
+    if (clean.length < 12 || clean.length > 13) {
+      toast.error("Número inválido. Use DDI+DDD+número (ex: 5511999999999)");
+      return;
+    }
+    setLoading(true);
+    setTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-service", {
+        body: { action: "sendText", number: clean, text: testMessage, evento: "test" },
+      });
+      if (error) {
+        setTestResult({ ok: false, detail: error.message });
+      } else if (data?.ok) {
+        setTestResult({ ok: true, detail: "Mensagem enviada com sucesso!" });
+        toast.success("Mensagem de teste enviada!");
+        loadLogs();
+      } else {
+        setTestResult({ ok: false, detail: data?.error || JSON.stringify(data?.result) });
+      }
+    } catch (e: any) {
+      setTestResult({ ok: false, detail: e.message });
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header with back button */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+          ← Voltar
+        </Button>
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-green-600" />
+          <h2 className="text-lg font-semibold">WhatsApp — Evolution API</h2>
+          <Badge variant="outline" className={`text-xs ${status?.connected ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"}`}>
+            {loading ? "Verificando..." : status?.connected ? "✅ Conectado" : "⚠️ Desconectado"}
+          </Badge>
+        </div>
+        <Button size="sm" variant="outline" onClick={checkStatus} disabled={loading} className="ml-auto h-7 w-7 p-0">
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+
+      {/* Status */}
+      {status && !status.connected && (
+        <div className="flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-600">Instância não conectada</p>
+            <p className="text-muted-foreground text-xs">{status.reason || `Estado: ${status.state || "desconhecido"}`}</p>
+          </div>
+          <Button size="sm" onClick={handleConnect} disabled={loading} className="ml-auto">Conectar</Button>
+        </div>
+      )}
+      {status?.connected && (
+        <div className="flex items-center gap-3 p-3 bg-green-500/5 border border-green-500/20 rounded-lg">
+          <Check className="w-4 h-4 text-green-600 shrink-0" />
+          <p className="text-sm text-green-700 font-medium">Instância conectada e pronta para enviar mensagens.</p>
+        </div>
+      )}
+
+      {/* Credentials */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><KeyRound className="w-4 h-4" /> Credenciais</CardTitle>
+          <CardDescription>Configure as credenciais da Evolution API. Elas são armazenadas como Secrets no Supabase.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">URL da API *</Label>
+              <Input value={config.evo_api_url} onChange={e => setConfig(p => ({ ...p, evo_api_url: e.target.value }))} placeholder="https://evo.seudominio.com" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Nome da Instância *</Label>
+              <Input value={config.evo_instance} onChange={e => setConfig(p => ({ ...p, evo_instance: e.target.value }))} placeholder="hexamedical-prod" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Global API Key</Label>
+              <Input type="password" value={config.evo_global_key} onChange={e => setConfig(p => ({ ...p, evo_global_key: e.target.value }))} placeholder="••••••••" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Instance API Key</Label>
+              <Input type="password" value={config.evo_api_key} onChange={e => setConfig(p => ({ ...p, evo_api_key: e.target.value }))} placeholder="••••••••" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Shield className="w-4 h-4 text-muted-foreground shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Salve como <strong>Secrets</strong> no Supabase:{" "}
+              <code className="text-[10px] bg-muted px-1 rounded">EVO_API_URL</code>,{" "}
+              <code className="text-[10px] bg-muted px-1 rounded">EVO_GLOBAL_KEY</code>,{" "}
+              <code className="text-[10px] bg-muted px-1 rounded">EVO_INSTANCE</code>,{" "}
+              <code className="text-[10px] bg-muted px-1 rounded">EVO_API_KEY</code>
+            </p>
+          </div>
+          <Button onClick={handleSaveConfig} className="gap-2"><Save className="w-4 h-4" /> Salvar Credenciais</Button>
+        </CardContent>
+      </Card>
+
+      {/* Test */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Zap className="w-4 h-4" /> Testar Envio</CardTitle>
+          <CardDescription>Envie uma mensagem de teste para validar a integração.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Número (DDI+DDD+Número)</Label>
+              <Input value={testNumber} onChange={e => setTestNumber(e.target.value.replace(/[^\d]/g, ""))} placeholder="5511999999999" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Mensagem</Label>
+              <Input value={testMessage} onChange={e => setTestMessage(e.target.value)} placeholder="Mensagem de teste..." />
+            </div>
+          </div>
+          {testResult && (
+            <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${testResult.ok ? "bg-green-500/5 border border-green-500/20 text-green-700" : "bg-destructive/5 border border-destructive/20 text-destructive"}`}>
+              {testResult.ok ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              {testResult.detail}
+            </div>
+          )}
+          <Button onClick={handleTest} disabled={loading} className="gap-2"><MessageSquare className="w-4 h-4" /> Enviar Teste</Button>
+        </CardContent>
+      </Card>
+
+      {/* Logs */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4" /> Histórico de Envios</CardTitle>
+            <Button size="sm" variant="outline" onClick={loadLogs} className="h-7 text-xs gap-1"><RefreshCw className="w-3 h-3" /> Atualizar</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {logs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhum envio registrado ainda.</p>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Status</th>
+                    <th className="text-left p-2 font-medium">Destinatário</th>
+                    <th className="text-left p-2 font-medium hidden md:table-cell">Mensagem</th>
+                    <th className="text-left p-2 font-medium hidden lg:table-cell">Evento</th>
+                    <th className="text-left p-2 font-medium">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map(log => (
+                    <tr key={log.id} className="border-t hover:bg-muted/30">
+                      <td className="p-2">
+                        <Badge variant="outline" className={`text-[10px] ${log.status === "sent" ? "bg-green-500/10 text-green-600" : log.status === "pending" ? "bg-amber-500/10 text-amber-600" : "bg-destructive/10 text-destructive"}`}>
+                          {log.status === "sent" ? "Enviado" : log.status === "pending" ? "Pendente" : "Falhou"}
+                        </Badge>
+                      </td>
+                      <td className="p-2 text-muted-foreground">{log.destinatario_nome || log.destinatario}</td>
+                      <td className="p-2 text-muted-foreground hidden md:table-cell truncate max-w-[200px]">{log.mensagem?.substring(0, 60)}</td>
+                      <td className="p-2 text-muted-foreground hidden lg:table-cell">{log.evento_origem || "—"}</td>
+                      <td className="p-2 text-muted-foreground">{new Date(log.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
