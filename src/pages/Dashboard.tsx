@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { db } from "@/lib/supabase-store";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { SETORES } from "@/types/forms";
 import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,11 @@ import {
 } from "recharts";
 
 const COLORS = ["#2a9d8f", "#e76f51", "#264653", "#e9c46a", "#f4a261", "#606c76", "#a855f7"];
-
 const ESFORCO_MAP: Record<string, number> = { "Baixo": 1, "Médio": 2, "Alto": 3 };
 const BENEFICIO_MAP: Record<string, number> = { "Tempo": 3, "Custo": 4, "Qualidade": 3, "Receita": 5, "Satisfação": 2 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<any>({ daily: [], processes: [], bottlenecks: [], suggestions: [], toolMappings: [] });
   const [profilesCount, setProfilesCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -26,12 +27,19 @@ export default function Dashboard() {
   const [filterTo, setFilterTo] = useState("");
 
   useEffect(() => {
-    Promise.all([db.getStats(), db.getProfilesCount()]).then(([s, c]) => {
-      setStats(s);
-      setProfilesCount(c);
-      setLoading(false);
-    });
-  }, []);
+    if (!user) { setLoading(false); return; }
+    Promise.all([
+      supabase.from("daily_forms").select("*").order("created_at", { ascending: false }).then(r => r.data || []),
+      supabase.from("repetitive_processes").select("*").order("created_at", { ascending: false }).then(r => r.data || []),
+      supabase.from("bottlenecks").select("*").order("created_at", { ascending: false }).then(r => r.data || []),
+      supabase.from("suggestions").select("*").order("created_at", { ascending: false }).then(r => r.data || []),
+      supabase.from("tool_mappings").select("*").order("created_at", { ascending: false }).then(r => r.data || []),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).then(r => r.count || 0),
+    ]).then(([daily, processes, bottlenecks, suggestions, toolMappings, count]) => {
+      setStats({ daily, processes, bottlenecks, suggestions, toolMappings });
+      setProfilesCount(count as number);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [user]);
 
   const filtered = useMemo(() => {
     const inRange = (date: string) => {
@@ -43,7 +51,6 @@ export default function Dashboard() {
     };
     const bySector = (item: any, sectorField = "setor") =>
       filterSetor === "Todos" || item[sectorField] === filterSetor;
-
     return {
       daily: stats.daily.filter((d: any) => bySector(d) && inRange(d.created_at)),
       processes: stats.processes.filter((p: any) => inRange(p.created_at)),
@@ -53,7 +60,6 @@ export default function Dashboard() {
     };
   }, [stats, filterSetor, filterFrom, filterTo]);
 
-  // Charts data
   const sectorData = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.daily.forEach((d: any) => { map[d.setor] = (map[d.setor] || 0) + 1; });
@@ -80,7 +86,6 @@ export default function Dashboard() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filtered.bottlenecks]);
 
-  // Effort × Impact matrix for suggestions
   const effortImpactData = useMemo(() => {
     return filtered.suggestions.map((s: any) => ({
       name: (s.ideia || "").slice(0, 30),
@@ -91,25 +96,8 @@ export default function Dashboard() {
     }));
   }, [filtered.suggestions]);
 
-  // Most hated tools (lowest satisfaction)
-  const mostHatedTools = useMemo(() => {
-    const satisfactionOrder = ["Péssimo", "Ruim", "Regular", "Bom", "Ótimo"];
-    return [...filtered.toolMappings]
-      .sort((a: any, b: any) => satisfactionOrder.indexOf(a.satisfacao) - satisfactionOrder.indexOf(b.satisfacao))
-      .slice(0, 5);
-  }, [filtered.toolMappings]);
-
-  // Tools most used
-  const toolUsageData = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.toolMappings.forEach((t: any) => { map[t.nome_ferramenta] = (map[t.nome_ferramenta] || 0) + 1; });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
-  }, [filtered.toolMappings]);
-
-  // % audio contributions
   const audioStats = useMemo(() => {
     const total = filtered.daily.length + filtered.processes.length + filtered.bottlenecks.length + filtered.suggestions.length;
-    // We check for transcricao_audio field presence as a proxy
     const withAudio = [
       ...filtered.daily.filter((d: any) => d.transcricao_audio),
       ...filtered.processes.filter((p: any) => p.transcricao_audio),
@@ -119,7 +107,6 @@ export default function Dashboard() {
     return { total, withAudio, pct: total > 0 ? Math.round((withAudio / total) * 100) : 0 };
   }, [filtered]);
 
-  // Financial impact estimate (based on time reported)
   const financialImpact = useMemo(() => {
     let totalMinutes = 0;
     filtered.processes.forEach((p: any) => {
@@ -131,8 +118,7 @@ export default function Dashboard() {
       }
     });
     const hoursPerMonth = Math.round(totalMinutes / 60);
-    const costPerHour = 50; // estimated R$/hour
-    return { hoursPerMonth, costPerMonth: hoursPerMonth * costPerHour };
+    return { hoursPerMonth, costPerMonth: hoursPerMonth * 50 };
   }, [filtered.processes]);
 
   const handleExport = (format: "json" | "csv") => {
@@ -172,9 +158,8 @@ export default function Dashboard() {
   return (
     <HexaLayout>
       <div className="space-y-6 animate-slide-up">
-        {/* Header + Filters */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">Relatórios & BI</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => handleExport("csv")}><Download className="w-4 h-4 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" onClick={() => handleExport("json")}><Download className="w-4 h-4 mr-1" />JSON</Button>
@@ -262,7 +247,6 @@ export default function Dashboard() {
               </ResponsiveContainer>
             ) : <p className="text-sm text-muted-foreground text-center py-12">Sem dados</p>}
           </div>
-
           <div className="hexa-card p-5">
             <h3 className="font-semibold mb-4">Gargalos por Urgência</h3>
             {urgencyData.length > 0 ? (
@@ -294,7 +278,6 @@ export default function Dashboard() {
               </ResponsiveContainer>
             ) : <p className="text-sm text-muted-foreground text-center py-12">Sem dados</p>}
           </div>
-
           <div className="hexa-card p-5">
             <h3 className="font-semibold mb-4">Matriz Esforço × Impacto (Sugestões)</h3>
             {effortImpactData.length > 0 ? (
@@ -340,44 +323,6 @@ export default function Dashboard() {
               ))}
             </div>
           ) : <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>}
-        </div>
-
-        {/* Most hated tools */}
-        <div className="hexa-card p-5">
-          <h3 className="font-semibold mb-4">🔥 Ferramentas Mais Odiadas</h3>
-          {mostHatedTools.length > 0 ? (
-            <div className="space-y-3">
-              {mostHatedTools.map((t: any, i: number) => (
-                <div key={i} className="p-3 rounded-lg bg-secondary/50 border">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Wrench className="w-4 h-4 text-destructive" />
-                    <span className="font-medium text-sm">{t.nome_ferramenta}</span>
-                    <span className={`hexa-badge ${
-                      t.satisfacao === "Péssimo" || t.satisfacao === "Ruim" ? "bg-destructive/10 text-destructive" : "bg-accent text-accent-foreground"
-                    }`}>{t.satisfacao}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{t.problemas || "Sem problemas descritos"}</p>
-                  {t.como_seria_ideal && <p className="text-xs mt-1 text-primary"><strong>Ideal:</strong> {t.como_seria_ideal}</p>}
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>}
-        </div>
-
-        {/* Tools most used */}
-        <div className="hexa-card p-5">
-          <h3 className="font-semibold mb-4">Ferramentas Mais Usadas</h3>
-          {toolUsageData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={toolUsageData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 18% 88%)" />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
-                <Tooltip />
-                <Bar dataKey="value" fill="hsl(152 55% 45%)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-12">Sem dados</p>}
         </div>
       </div>
     </HexaLayout>

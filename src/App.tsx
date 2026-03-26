@@ -11,6 +11,8 @@ import LeadsList from "./pages/crm/LeadsList";
 import LeadForm from "./pages/crm/LeadForm";
 import LeadDetail from "./pages/crm/LeadDetail";
 import KanbanFunnel from "./pages/crm/KanbanFunnel";
+import ProposalsList from "./pages/crm/ProposalsList";
+import ContractsList from "./pages/crm/ContractsList";
 import WorkOrdersList from "./pages/os/WorkOrdersList";
 import WorkOrderForm from "./pages/os/WorkOrderForm";
 import WorkOrderDetail from "./pages/os/WorkOrderDetail";
@@ -64,6 +66,8 @@ const AppRoutes = () => (
       <Route path="/crm" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
       <Route path="/crm/new" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
       <Route path="/crm/kanban" element={<PrivateRoute><KanbanFunnel /></PrivateRoute>} />
+      <Route path="/crm/proposals" element={<PrivateRoute><ProposalsList /></PrivateRoute>} />
+      <Route path="/crm/contracts" element={<PrivateRoute><ContractsList /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
       {/* Projetos & Implantação */}

@@ -59,8 +59,8 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { to: "/crm", label: "Leads", icon: Users },
       { to: "/crm/kanban", label: "Funil Kanban", icon: BarChart3 },
-      { to: "/proposals", label: "Propostas", icon: FileText, wip: true },
-      { to: "/contracts", label: "Contratos", icon: Briefcase, wip: true },
+      { to: "/crm/proposals", label: "Propostas", icon: FileText },
+      { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
     ],
   },
   {
