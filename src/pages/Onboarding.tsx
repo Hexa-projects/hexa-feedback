@@ -30,7 +30,20 @@ export default function Onboarding() {
     decisores: (profile as any)?.decisores || "",
     ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
     principal_gargalo: (profile as any)?.principal_gargalo || "",
+    whatsapp: (profile as any)?.whatsapp || "",
+    whatsapp_consent: (profile as any)?.whatsapp_consent || false,
   });
+
+  const [whatsappError, setWhatsappError] = useState("");
+
+  const validateWhatsapp = (val: string) => {
+    const clean = val.replace(/\D/g, "");
+    if (!clean) { setWhatsappError("WhatsApp é obrigatório"); return false; }
+    if (clean.length < 12 || clean.length > 13) { setWhatsappError("Use DDI+DDD+número (ex: 5511999999999)"); return false; }
+    if (!clean.startsWith("55")) { setWhatsappError("Deve começar com 55 (Brasil)"); return false; }
+    setWhatsappError("");
+    return true;
+  };
 
   const fields = Object.values(form);
   const filled = fields.filter(v => v.trim()).length;
