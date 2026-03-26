@@ -146,11 +146,11 @@ serve(async (req) => {
       if (channel) {
         await db.from("channel_messages").insert({
           channel_id: channel.id,
-          user_id: "00000000-0000-0000-0000-000000000000",
+          user_id: null,
           content: `🚨 **ALERTA: ${data.titulo}**\n\n${data.descricao || ""}\n\n→ ${data.acao_recomendada || "Ação imediata requerida"}`,
           is_ai: true,
           tipo: "texto",
-          metadata: { source: "openclaw_alert", priority: "critical" },
+          metadata: { source: "openclaw_alert", priority: "critical", author: "Focus AI (OpenClaw)" },
         });
       }
 
