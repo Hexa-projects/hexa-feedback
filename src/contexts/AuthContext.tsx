@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isActive = true;
 
-    const syncAuthState = async (nextSession: Session | null) => {
+    const syncAuthState = async (nextSession: Session | null, event?: string) => {
       if (!isActive) return;
 
       setSession(nextSession);
@@ -131,7 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setLoading(true);
+      // Only show loading spinner on initial load or sign-in, not on token refresh
+      const isInitialOrSignIn = !event || event === "SIGNED_IN" || event === "INITIAL_SESSION";
+      if (isInitialOrSignIn) setLoading(true);
+
       await Promise.allSettled([
         fetchProfile(nextSession.user.id),
         fetchRole(nextSession.user.id),
@@ -141,13 +144,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        void syncAuthState(session);
+      (event, session) => {
+        void syncAuthState(session, event);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      void syncAuthState(session);
+      void syncAuthState(session, "INITIAL_SESSION");
     });
 
     return () => {
