@@ -398,7 +398,7 @@ export type Database = {
           parent_id: string | null
           thread_count: number | null
           tipo: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           anexo_url?: string | null
@@ -411,7 +411,7 @@ export type Database = {
           parent_id?: string | null
           thread_count?: number | null
           tipo?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           anexo_url?: string | null
@@ -424,7 +424,7 @@ export type Database = {
           parent_id?: string | null
           thread_count?: number | null
           tipo?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
