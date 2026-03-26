@@ -19,6 +19,8 @@ interface Profile {
   ferramentas_criticas: string;
   principal_gargalo: string;
   onboarding_completo: boolean;
+  whatsapp: string;
+  whatsapp_consent: boolean;
 }
 
 interface UserRole {

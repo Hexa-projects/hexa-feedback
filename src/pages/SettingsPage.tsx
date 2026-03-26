@@ -646,14 +646,46 @@ function AutomationsTab() {
 // ═══════════════════════════════════════════════════
 
 function IntegrationsTab() {
+  const [waStatus, setWaStatus] = useState<{ connected: boolean; state?: string; reason?: string } | null>(null);
+  const [waLoading, setWaLoading] = useState(false);
+  const [waLogs, setWaLogs] = useState<any[]>([]);
+
+  const checkWhatsAppStatus = async () => {
+    setWaLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("whatsapp-service", { body: { action: "status" } });
+      setWaStatus(data);
+    } catch {
+      setWaStatus({ connected: false, reason: "Erro ao verificar" });
+    }
+    setWaLoading(false);
+  };
+
+  const connectWhatsApp = async () => {
+    setWaLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("whatsapp-service", { body: { action: "connect" } });
+      if (data?.qr) {
+        toast.info("QR Code gerado — verifique os logs da função para parear");
+      }
+      await checkWhatsAppStatus();
+    } catch {
+      toast.error("Erro ao conectar WhatsApp");
+    }
+    setWaLoading(false);
+  };
+
+  const loadLogs = async () => {
+    const { data } = await supabase.from("whatsapp_logs").select("*").order("created_at", { ascending: false }).limit(10);
+    setWaLogs(data || []);
+  };
+
+  useEffect(() => {
+    checkWhatsAppStatus();
+    loadLogs();
+  }, []);
+
   const integrations = [
-    {
-      nome: "WhatsApp (Evolution API)",
-      descricao: "Envio de mensagens automáticas via WhatsApp para leads, clientes e alertas internos.",
-      icon: MessageSquare,
-      status: "pendente" as const,
-      config: ["URL da API", "Token", "Número remetente"],
-    },
     {
       nome: "E-mail SMTP",
       descricao: "Envio de e-mails transacionais para propostas, contratos e notificações.",
@@ -696,6 +728,55 @@ function IntegrationsTab() {
         <CardDescription>Conecte o HexaOS a serviços externos para automação e comunicação.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* WhatsApp Evolution API Card */}
+        <Card className="border-2 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                  <MessageSquare className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">WhatsApp (Evolution API)</span>
+                    <Badge variant="outline" className={`text-xs ${waStatus?.connected ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"}`}>
+                      {waLoading ? "Verificando..." : waStatus?.connected ? "Conectado" : waStatus?.reason || "Desconectado"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Envio automático de resumos, alertas e comunicados via WhatsApp pelo Focus AI.
+                  </p>
+                  {waStatus && !waStatus.connected && waStatus.state && (
+                    <p className="text-xs text-muted-foreground mt-1">Estado: {waStatus.state}</p>
+                  )}
+                  {waLogs.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Últimos envios:</p>
+                      {waLogs.slice(0, 5).map(log => (
+                        <div key={log.id} className="flex items-center gap-2 text-xs">
+                          <Badge variant="outline" className={`text-[10px] ${log.status === "sent" ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"}`}>
+                            {log.status}
+                          </Badge>
+                          <span className="text-muted-foreground truncate max-w-[200px]">{log.destinatario_nome || log.destinatario}</span>
+                          <span className="text-muted-foreground truncate max-w-[200px]">{log.mensagem.substring(0, 50)}...</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={checkWhatsAppStatus} disabled={waLoading}>
+                  <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? "animate-spin" : ""}`} />
+                </Button>
+                <Button size="sm" onClick={connectWhatsApp} disabled={waLoading}>
+                  {waStatus?.connected ? "Reconectar" : "Conectar"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {integrations.map(int => (
           <Card key={int.nome} className="border">
             <CardContent className="p-4">

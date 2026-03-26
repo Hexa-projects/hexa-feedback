@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import FormProgress from "@/components/FormProgress";
 import AudioRecorder from "@/components/AudioRecorder";
 import { toast } from "sonner";
+import { Phone } from "lucide-react";
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -28,13 +30,29 @@ export default function Onboarding() {
     decisores: (profile as any)?.decisores || "",
     ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
     principal_gargalo: (profile as any)?.principal_gargalo || "",
+    whatsapp: (profile as any)?.whatsapp || "",
+    whatsapp_consent: (profile as any)?.whatsapp_consent || false,
   });
 
-  const fields = Object.values(form);
-  const filled = fields.filter(v => v.trim()).length;
+  const [whatsappError, setWhatsappError] = useState("");
+
+  const validateWhatsapp = (val: string) => {
+    const clean = val.replace(/\D/g, "");
+    if (!clean) { setWhatsappError("WhatsApp é obrigatório"); return false; }
+    if (clean.length < 12 || clean.length > 13) { setWhatsappError("Use DDI+DDD+número (ex: 5511999999999)"); return false; }
+    if (!clean.startsWith("55")) { setWhatsappError("Deve começar com 55 (Brasil)"); return false; }
+    setWhatsappError("");
+    return true;
+  };
+
+  const textFields = [form.setor, form.funcao, form.unidade, form.resumo_dia_dia, form.responsabilidades, form.qualidades, form.pontos_melhoria, form.tempo_casa, form.decisores, form.ferramentas_criticas, form.principal_gargalo, form.whatsapp];
+  const filled = textFields.filter(v => v.trim()).length;
+  const total = textFields.length;
 
   const handleSubmit = async () => {
     if (!profile) return;
+    if (!validateWhatsapp(form.whatsapp)) { toast.error("Corrija o número de WhatsApp"); return; }
+    if (!form.whatsapp_consent) { toast.error("Você precisa autorizar o recebimento de comunicações"); return; }
     setSaving(true);
     try {
       await db.updateProfile(profile.id, { ...form, onboarding_completo: true });
@@ -58,7 +76,7 @@ export default function Onboarding() {
           <p className="text-sm text-muted-foreground mt-1">Complete seu perfil para personalizar sua experiência.</p>
         </div>
 
-        <FormProgress current={filled} total={fields.length} />
+        <FormProgress current={filled} total={total} />
 
         <div className="space-y-4">
           <div className="form-section">
@@ -126,9 +144,40 @@ export default function Onboarding() {
               <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("principal_gargalo", form.principal_gargalo ? form.principal_gargalo + "\n" + text : text)} />
             </div>
           </div>
+
+          <div className="form-section border-2 border-primary/20 bg-primary/5 rounded-lg p-4">
+            <div>
+              <Label className="flex items-center gap-2 text-base font-semibold">
+                <Phone className="w-4 h-4 text-primary" /> WhatsApp (obrigatório)
+              </Label>
+              <Input
+                value={form.whatsapp}
+                onChange={e => {
+                  const val = e.target.value.replace(/[^\d+]/g, "");
+                  u("whatsapp", val);
+                  if (whatsappError) validateWhatsapp(val);
+                }}
+                onBlur={() => validateWhatsapp(form.whatsapp)}
+                placeholder="5511999999999"
+                className={whatsappError ? "border-destructive" : ""}
+              />
+              {whatsappError && <p className="text-xs text-destructive mt-1">{whatsappError}</p>}
+              <p className="text-xs text-muted-foreground mt-1">DDI + DDD + número, sem espaços ou traços</p>
+            </div>
+            <div className="flex items-start gap-2 mt-3">
+              <Checkbox
+                id="whatsapp_consent"
+                checked={form.whatsapp_consent}
+                onCheckedChange={(v) => setForm(p => ({ ...p, whatsapp_consent: !!v }))}
+              />
+              <label htmlFor="whatsapp_consent" className="text-sm leading-tight cursor-pointer">
+                Autorizo receber comunicações internas do Focus AI via WhatsApp (resumos, alertas e comunicados operacionais).
+              </label>
+            </div>
+          </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving}>
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving || !form.whatsapp_consent}>
           {saving ? "Salvando..." : "Salvar e continuar"}
         </Button>
 
