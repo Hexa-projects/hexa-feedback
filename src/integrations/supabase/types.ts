@@ -1238,6 +1238,30 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_configs: {
+        Row: {
+          config: Json
+          id: string
+          integration_name: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          integration_name: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          id?: string
+          integration_name?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       lab_parts: {
         Row: {
           created_at: string | null
