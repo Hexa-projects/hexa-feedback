@@ -144,9 +144,40 @@ export default function Onboarding() {
               <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("principal_gargalo", form.principal_gargalo ? form.principal_gargalo + "\n" + text : text)} />
             </div>
           </div>
+
+          <div className="form-section border-2 border-primary/20 bg-primary/5 rounded-lg p-4">
+            <div>
+              <Label className="flex items-center gap-2 text-base font-semibold">
+                <Phone className="w-4 h-4 text-primary" /> WhatsApp (obrigatório)
+              </Label>
+              <Input
+                value={form.whatsapp}
+                onChange={e => {
+                  const val = e.target.value.replace(/[^\d+]/g, "");
+                  u("whatsapp", val);
+                  if (whatsappError) validateWhatsapp(val);
+                }}
+                onBlur={() => validateWhatsapp(form.whatsapp)}
+                placeholder="5511999999999"
+                className={whatsappError ? "border-destructive" : ""}
+              />
+              {whatsappError && <p className="text-xs text-destructive mt-1">{whatsappError}</p>}
+              <p className="text-xs text-muted-foreground mt-1">DDI + DDD + número, sem espaços ou traços</p>
+            </div>
+            <div className="flex items-start gap-2 mt-3">
+              <Checkbox
+                id="whatsapp_consent"
+                checked={form.whatsapp_consent}
+                onCheckedChange={(v) => setForm(p => ({ ...p, whatsapp_consent: !!v }))}
+              />
+              <label htmlFor="whatsapp_consent" className="text-sm leading-tight cursor-pointer">
+                Autorizo receber comunicações internas do Focus AI via WhatsApp (resumos, alertas e comunicados operacionais).
+              </label>
+            </div>
+          </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving}>
+        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving || !form.whatsapp_consent}>
           {saving ? "Salvando..." : "Salvar e continuar"}
         </Button>
 
