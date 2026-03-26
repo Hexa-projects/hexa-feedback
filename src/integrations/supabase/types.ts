@@ -1417,6 +1417,8 @@ export type Database = {
           tempo_casa: string | null
           unidade: string | null
           updated_at: string | null
+          whatsapp: string | null
+          whatsapp_consent: boolean | null
         }
         Insert: {
           created_at?: string | null
@@ -1435,6 +1437,8 @@ export type Database = {
           tempo_casa?: string | null
           unidade?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
+          whatsapp_consent?: boolean | null
         }
         Update: {
           created_at?: string | null
@@ -1453,6 +1457,8 @@ export type Database = {
           tempo_casa?: string | null
           unidade?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
+          whatsapp_consent?: boolean | null
         }
         Relationships: []
       }
@@ -2131,6 +2137,45 @@ export type Database = {
           name?: string
           rate_limit_per_min?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_logs: {
+        Row: {
+          created_at: string | null
+          destinatario: string
+          destinatario_nome: string | null
+          erro: string | null
+          evento_origem: string | null
+          id: string
+          mensagem: string
+          metadata: Json | null
+          status: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          destinatario: string
+          destinatario_nome?: string | null
+          erro?: string | null
+          evento_origem?: string | null
+          id?: string
+          mensagem: string
+          metadata?: Json | null
+          status?: string
+          tipo?: string
+        }
+        Update: {
+          created_at?: string | null
+          destinatario?: string
+          destinatario_nome?: string | null
+          erro?: string | null
+          evento_origem?: string | null
+          id?: string
+          mensagem?: string
+          metadata?: Json | null
+          status?: string
+          tipo?: string
         }
         Relationships: []
       }
