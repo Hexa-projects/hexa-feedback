@@ -106,11 +106,11 @@ serve(async (req) => {
 
       const { error } = await db.from("channel_messages").insert({
         channel_id: channel.id,
-        user_id: "00000000-0000-0000-0000-000000000000",
+        user_id: null,
         content: data.content || data.message || "",
         is_ai: true,
         tipo: "texto",
-        metadata: { source: "openclaw_push", ...(data.metadata || {}) },
+        metadata: { source: "openclaw_push", author: "Focus AI (OpenClaw)", ...(data.metadata || {}) },
       });
 
       if (error) return jsonResp({ success: false, error: "db_error", message: error.message }, 500);
