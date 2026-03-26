@@ -42,6 +42,7 @@ import CorporateChannels from "./pages/CorporateChannels";
 import AgentsDashboard from "./pages/AgentsDashboard";
 import SettingsPage from "./pages/SettingsPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
+import CalendarPage from "./pages/CalendarPage";
 
 const queryClient = new QueryClient();
 
