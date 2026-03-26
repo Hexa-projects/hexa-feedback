@@ -651,6 +651,9 @@ function IntegrationsTab() {
   if (activeIntegration === "whatsapp") {
     return <WhatsAppConfigView onBack={() => setActiveIntegration(null)} />;
   }
+  if (activeIntegration === "calendar") {
+    return <CalendarConfigView onBack={() => setActiveIntegration(null)} />;
+  }
 
   const integrations = [
     {
@@ -735,6 +738,8 @@ function IntegrationsTab() {
                   onClick={() => {
                     if (int.key === "whatsapp") {
                       setActiveIntegration("whatsapp");
+                    } else if (int.key === "calendar") {
+                      setActiveIntegration("calendar");
                     } else if (int.status === "ativo") {
                       toast.info("Use a aba Focus AI para gerenciar o OpenClaw");
                     } else {
@@ -991,6 +996,163 @@ function WhatsAppConfigView({ onBack }: { onBack: () => void }) {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// SUB-VIEW: Calendar Config
+// ═══════════════════════════════════════════════════
+
+function CalendarConfigView({ onBack }: { onBack: () => void }) {
+  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [provider, setProvider] = useState("google");
+
+  const handleTestSync = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("calendar-service", {
+        body: { action: "sync", provider },
+      });
+      setSyncStatus(data);
+      if (data?.success) {
+        toast.success("Sincronização realizada!");
+      } else {
+        toast.info(data?.message || "Sync pendente de configuração");
+      }
+    } catch {
+      toast.error("Erro ao testar sincronização");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">← Voltar</Button>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold">Calendário — Sync Externo</h2>
+        </div>
+      </div>
+
+      {/* Provider Selection */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><Settings2 className="w-4 h-4" /> Provedor de Calendário</CardTitle>
+          <CardDescription>Selecione o provedor para sincronização bidirecional.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setProvider("google")}
+              className={`p-4 border rounded-lg text-left transition-all ${provider === "google" ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"}`}
+            >
+              <span className="font-medium text-sm">Google Calendar</span>
+              <p className="text-xs text-muted-foreground mt-1">Sync com Google Workspace</p>
+            </button>
+            <button
+              onClick={() => setProvider("outlook")}
+              className={`p-4 border rounded-lg text-left transition-all ${provider === "outlook" ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"}`}
+            >
+              <span className="font-medium text-sm">Microsoft Outlook</span>
+              <p className="text-xs text-muted-foreground mt-1">Sync com Microsoft 365</p>
+            </button>
+          </div>
+
+          {/* OAuth credentials */}
+          <div className="space-y-3 mt-4">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Client ID *</Label>
+              <Input placeholder={`${provider === "google" ? "Google" : "Azure AD"} Client ID`} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Client Secret *</Label>
+              <Input type="password" placeholder="••••••••" />
+            </div>
+            {provider === "outlook" && (
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Tenant ID</Label>
+                <Input placeholder="Azure AD Tenant ID" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Shield className="w-4 h-4 text-muted-foreground shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Salve como <strong>Secrets</strong> no Supabase:{" "}
+              {provider === "google" ? (
+                <>
+                  <code className="text-[10px] bg-muted px-1 rounded">GOOGLE_CLIENT_ID</code>,{" "}
+                  <code className="text-[10px] bg-muted px-1 rounded">GOOGLE_CLIENT_SECRET</code>
+                </>
+              ) : (
+                <>
+                  <code className="text-[10px] bg-muted px-1 rounded">OUTLOOK_CLIENT_ID</code>,{" "}
+                  <code className="text-[10px] bg-muted px-1 rounded">OUTLOOK_CLIENT_SECRET</code>,{" "}
+                  <code className="text-[10px] bg-muted px-1 rounded">OUTLOOK_TENANT_ID</code>
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={() => toast.info("Salve as credenciais como Secrets no painel do Supabase")} className="gap-2">
+              <Save className="w-4 h-4" /> Salvar Credenciais
+            </Button>
+            <Button variant="outline" onClick={handleTestSync} disabled={loading} className="gap-2">
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Testar Sync
+            </Button>
+          </div>
+
+          {syncStatus && (
+            <div className={`p-3 rounded-lg text-sm ${syncStatus.success ? "bg-green-500/5 border border-green-500/20 text-green-700" : "bg-amber-500/5 border border-amber-500/20 text-amber-700"}`}>
+              {syncStatus.success ? (
+                <p className="flex items-center gap-2"><Check className="w-4 h-4" /> Sincronizado com sucesso</p>
+              ) : (
+                <div>
+                  <p className="flex items-center gap-2 font-medium"><AlertTriangle className="w-4 h-4" /> {syncStatus.message}</p>
+                  {syncStatus.pending_config && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {syncStatus.pending_config.map((c: string) => (
+                        <Badge key={c} variant="outline" className="text-[10px]">{c}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Calendar Features */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Funcionalidades do Calendário</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {[
+              { label: "Calendário interno HexaOS", status: "✅ Ativo", desc: "Criação e gestão de eventos internos" },
+              { label: "Conflito de horários", status: "✅ Ativo", desc: "Verificação automática de disponibilidade" },
+              { label: "Participantes e convites", status: "✅ Ativo", desc: "Convide colaboradores para eventos" },
+              { label: `Sync ${provider === "google" ? "Google Calendar" : "Outlook"}`, status: "⏳ Pendente", desc: "Requer credenciais OAuth configuradas" },
+              { label: "Horário de trabalho", status: "🔜 Em breve", desc: "Respeitar jornada dos colaboradores" },
+            ].map(f => (
+              <div key={f.label} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                <div>
+                  <span className="text-sm font-medium">{f.label}</span>
+                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+                <Badge variant="outline" className="text-xs">{f.status}</Badge>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

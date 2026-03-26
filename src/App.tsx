@@ -42,6 +42,7 @@ import CorporateChannels from "./pages/CorporateChannels";
 import AgentsDashboard from "./pages/AgentsDashboard";
 import SettingsPage from "./pages/SettingsPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
+import CalendarPage from "./pages/CalendarPage";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,9 @@ const AppRoutes = () => (
       <Route path="/chat-ia" element={<PrivateRoute><AIChat /></PrivateRoute>} />
       <Route path="/canais" element={<PrivateRoute><CorporateChannels /></PrivateRoute>} />
       <Route path="/agentes" element={<PrivateRoute><AgentsDashboard /></PrivateRoute>} />
+
+      {/* Calendário */}
+      <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
 
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
