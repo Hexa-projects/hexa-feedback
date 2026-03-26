@@ -45,11 +45,14 @@ export default function Onboarding() {
     return true;
   };
 
-  const fields = Object.values(form);
-  const filled = fields.filter(v => v.trim()).length;
+  const textFields = [form.setor, form.funcao, form.unidade, form.resumo_dia_dia, form.responsabilidades, form.qualidades, form.pontos_melhoria, form.tempo_casa, form.decisores, form.ferramentas_criticas, form.principal_gargalo, form.whatsapp];
+  const filled = textFields.filter(v => v.trim()).length;
+  const total = textFields.length;
 
   const handleSubmit = async () => {
     if (!profile) return;
+    if (!validateWhatsapp(form.whatsapp)) { toast.error("Corrija o número de WhatsApp"); return; }
+    if (!form.whatsapp_consent) { toast.error("Você precisa autorizar o recebimento de comunicações"); return; }
     setSaving(true);
     try {
       await db.updateProfile(profile.id, { ...form, onboarding_completo: true });
