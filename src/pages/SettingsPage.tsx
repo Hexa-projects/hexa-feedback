@@ -102,11 +102,12 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-5 h-auto">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-6 h-auto">
             <TabsTrigger value="users" className="text-xs gap-1"><Users className="w-3 h-3" />Usuários</TabsTrigger>
             <TabsTrigger value="permissions" className="text-xs gap-1"><KeyRound className="w-3 h-3" />Permissões</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs gap-1"><FileText className="w-3 h-3" />Templates</TabsTrigger>
             <TabsTrigger value="automations" className="text-xs gap-1"><Zap className="w-3 h-3" />Automações</TabsTrigger>
+            <TabsTrigger value="whatsapp" className="text-xs gap-1"><MessageSquare className="w-3 h-3" />WhatsApp</TabsTrigger>
             <TabsTrigger value="integrations" className="text-xs gap-1"><Plug className="w-3 h-3" />Integrações</TabsTrigger>
           </TabsList>
 
@@ -114,6 +115,7 @@ export default function SettingsPage() {
           <TabsContent value="permissions"><PermissionsTab /></TabsContent>
           <TabsContent value="templates"><TemplatesTab /></TabsContent>
           <TabsContent value="automations"><AutomationsTab /></TabsContent>
+          <TabsContent value="whatsapp"><WhatsAppTab /></TabsContent>
           <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
         </Tabs>
       </div>
