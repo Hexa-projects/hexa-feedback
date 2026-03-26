@@ -779,7 +779,25 @@ function WhatsAppConfigView({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     checkStatus();
     loadLogs();
+    loadConfig();
   }, []);
+
+  const loadConfig = async () => {
+    const { data } = await supabase
+      .from("integration_configs")
+      .select("config")
+      .eq("integration_name", "evolution_api")
+      .maybeSingle();
+    if (data?.config) {
+      const c = data.config as any;
+      setConfig({
+        evo_api_url: c.evo_api_url || "",
+        evo_global_key: c.evo_global_key || "",
+        evo_instance: c.evo_instance || "",
+        evo_api_key: c.evo_api_key || "",
+      });
+    }
+  };
 
   const loadLogs = async () => {
     const { data } = await supabase.from("whatsapp_logs").select("*").order("created_at", { ascending: false }).limit(20);
@@ -813,12 +831,28 @@ function WhatsAppConfigView({ onBack }: { onBack: () => void }) {
     setLoading(false);
   };
 
-  const handleSaveConfig = () => {
+  const handleSaveConfig = async () => {
     if (!config.evo_api_url || !config.evo_instance) {
       toast.error("URL da API e Nome da Instância são obrigatórios");
       return;
     }
-    toast.info("Salve as credenciais como Secrets no painel do Supabase: EVO_API_URL, EVO_GLOBAL_KEY, EVO_INSTANCE, EVO_API_KEY");
+    setLoading(true);
+    const { error } = await supabase
+      .from("integration_configs")
+      .upsert(
+        {
+          integration_name: "evolution_api",
+          config: config,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "integration_name" }
+      );
+    setLoading(false);
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+    } else {
+      toast.success("Credenciais salvas com sucesso no banco de dados!");
+    }
   };
 
   const handleTest = async () => {
