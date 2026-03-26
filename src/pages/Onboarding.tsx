@@ -76,7 +76,7 @@ export default function Onboarding() {
           <p className="text-sm text-muted-foreground mt-1">Complete seu perfil para personalizar sua experiência.</p>
         </div>
 
-        <FormProgress current={filled} total={fields.length} />
+        <FormProgress current={filled} total={total} />
 
         <div className="space-y-4">
           <div className="form-section">
