@@ -6,6 +6,111 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Upsert a participant into meeting_logs.participants JSONB array */
+async function upsertParticipant(
+  admin: ReturnType<typeof createClient>,
+  roomName: string,
+  identity: string,
+  name: string,
+  field: "joined_at" | "left_at"
+) {
+  const { data: meeting } = await admin
+    .from("meeting_logs")
+    .select("id, participants")
+    .eq("room_name", roomName)
+    .maybeSingle();
+
+  if (!meeting) {
+    console.log(`Meeting not found for room ${roomName}, skipping participant update.`);
+    return;
+  }
+
+  const participants: any[] = (meeting.participants as any[]) || [];
+  const idx = participants.findIndex((p: any) => p.user_id === identity || p.identity === identity);
+  const ts = new Date().toISOString();
+
+  if (idx >= 0) {
+    participants[idx][field] = ts;
+    if (field === "joined_at" && !participants[idx].name && name) {
+      participants[idx].name = name;
+    }
+  } else if (field === "joined_at") {
+    participants.push({ user_id: identity, name: name || "Participante", joined_at: ts });
+  }
+
+  await admin.from("meeting_logs").update({ participants }).eq("id", meeting.id);
+  console.log(`Participant ${identity} ${field} updated for room ${roomName}`);
+}
+
+/** Generate personalized summary via OpenAI */
+async function generateSummary(
+  openaiKey: string,
+  roomName: string,
+  transcription: string,
+  allParticipants: string[],
+  targetName: string
+): Promise<string> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openaiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: 800,
+      messages: [
+        {
+          role: "system",
+          content: `Você é o Focus AI do HexaOS. Gere um resumo personalizado de reunião para o colaborador "${targetName}". 
+O resumo deve ser direto, em português, formatado para WhatsApp (sem markdown pesado, use *negrito* e emojis moderados).
+Estrutura:
+📋 *Resumo da Reunião*
+- O que foi discutido
+🎯 *Decisões que envolvem você*
+- Decisões específicas para este participante
+✅ *Suas ações pendentes*
+- Tarefa / responsável / prazo
+Se não houver itens específicos para o participante, inclua um resumo geral.`,
+        },
+        {
+          role: "user",
+          content: `Transcrição da reunião (sala: ${roomName}):\n\n${transcription}\n\nParticipantes: ${allParticipants.join(", ")}\n\nGere o resumo personalizado para: ${targetName}`,
+        },
+      ],
+    }),
+  });
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "Resumo indisponível.";
+}
+
+/** Resolve WhatsApp number for a participant */
+async function resolveWhatsApp(
+  admin: ReturnType<typeof createClient>,
+  identity: string
+): Promise<string | null> {
+  const { data: mapEntry } = await admin
+    .from("meeting_participants_map")
+    .select("whatsapp_e164")
+    .eq("participant_identity", identity)
+    .maybeSingle();
+
+  if (mapEntry?.whatsapp_e164) return mapEntry.whatsapp_e164;
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("whatsapp, whatsapp_consent")
+    .eq("id", identity)
+    .maybeSingle();
+
+  if (profile?.whatsapp && profile?.whatsapp_consent) {
+    return profile.whatsapp.replace(/\D/g, "");
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,7 +125,6 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey);
 
   try {
-    // Validate LiveKit webhook signature
     const body = await req.text();
     const receiver = new WebhookReceiver(apiKey, apiSecret);
     const authHeader = req.headers.get("Authorization") || "";
@@ -36,17 +140,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("LiveKit webhook event:", event.event);
+    const eventType = event.event;
+    const roomName = event.room?.name;
+    console.log(`LiveKit webhook: ${eventType} | room: ${roomName || "n/a"}`);
 
-    // Only process room_finished
-    if (event.event !== "room_finished") {
-      return new Response(JSON.stringify({ ok: true, skipped: event.event }), {
+    // ── participant_joined ──
+    if (eventType === "participant_joined" && roomName && event.participant) {
+      const p = event.participant;
+      await upsertParticipant(admin, roomName, p.identity, p.name || p.identity, "joined_at");
+      return new Response(JSON.stringify({ ok: true, event: eventType }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── participant_left ──
+    if (eventType === "participant_left" && roomName && event.participant) {
+      const p = event.participant;
+      await upsertParticipant(admin, roomName, p.identity, p.name || p.identity, "left_at");
+      return new Response(JSON.stringify({ ok: true, event: eventType }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── room_finished ──
+    if (eventType !== "room_finished") {
+      return new Response(JSON.stringify({ ok: true, skipped: eventType }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const roomName = event.room?.name;
     if (!roomName) {
       return new Response(JSON.stringify({ error: "No room name" }), {
         status: 400,
@@ -72,13 +195,10 @@ Deno.serve(async (req) => {
     }
 
     // Update meeting as ended
-    const duration = event.room?.activeRecording
-      ? null
-      : Math.floor((Date.now() / 1000) - (event.room?.creationTime || 0));
-
+    const duration = Math.floor((Date.now() / 1000) - (event.room?.creationTime || 0));
     await admin.from("meeting_logs").update({
       ended_at: new Date().toISOString(),
-      duration_seconds: duration,
+      duration_seconds: duration > 0 ? duration : null,
     }).eq("id", meeting.id);
 
     const participants = (meeting.participants as any[]) || [];
@@ -93,86 +213,32 @@ Deno.serve(async (req) => {
     }
 
     // 2) For each participant, generate summary and send WhatsApp DM
+    const allNames = participants.map((p: any) => p.name || "Participante");
     const results: any[] = [];
 
     for (const p of participants) {
       const identity = p.user_id || p.identity;
       const name = p.name || "Participante";
 
-      // Lookup WhatsApp from meeting_participants_map first, then profiles
-      let whatsapp: string | null = null;
-
-      const { data: mapEntry } = await admin
-        .from("meeting_participants_map")
-        .select("whatsapp_e164")
-        .eq("participant_identity", identity)
-        .maybeSingle();
-
-      if (mapEntry?.whatsapp_e164) {
-        whatsapp = mapEntry.whatsapp_e164;
-      } else {
-        // Fallback: check profiles table
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("whatsapp, whatsapp_consent")
-          .eq("id", identity)
-          .maybeSingle();
-
-        if (profile?.whatsapp && profile?.whatsapp_consent) {
-          whatsapp = profile.whatsapp.replace(/\D/g, "");
-        }
-      }
+      const whatsapp = await resolveWhatsApp(admin, identity);
 
       if (!whatsapp) {
-        console.log(`No WhatsApp for participant ${name} (${identity}), skipping.`);
+        console.log(`No WhatsApp for ${name} (${identity}), skipping.`);
         results.push({ identity, name, status: "skipped", reason: "no_whatsapp" });
         continue;
       }
 
-      // 3) Generate personalized summary via OpenAI
       let summary: string;
       try {
-        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            max_tokens: 800,
-            messages: [
-              {
-                role: "system",
-                content: `Você é o Focus AI do HexaOS. Gere um resumo personalizado de reunião para o colaborador "${name}". 
-O resumo deve ser direto, em português, formatado para WhatsApp (sem markdown pesado, use *negrito* e emojis moderados).
-Estrutura:
-📋 *Resumo da Reunião*
-- O que foi discutido
-🎯 *Decisões que envolvem você*
-- Decisões específicas para este participante
-✅ *Suas ações pendentes*
-- Tarefa / responsável / prazo
-Se não houver itens específicos para o participante, inclua um resumo geral.`,
-              },
-              {
-                role: "user",
-                content: `Transcrição da reunião (sala: ${roomName}):\n\n${transcription}\n\nParticipantes: ${participants.map((pp: any) => pp.name).join(", ")}\n\nGere o resumo personalizado para: ${name}`,
-              },
-            ],
-          }),
-        });
-
-        const aiData = await aiRes.json();
-        summary = aiData.choices?.[0]?.message?.content || "Resumo indisponível.";
+        summary = await generateSummary(openaiKey, roomName, transcription, allNames, name);
       } catch (aiErr) {
         console.error("AI summary error for", name, aiErr);
         summary = `📋 *Resumo da Reunião (${roomName})*\n\nResumo automático indisponível. Consulte a transcrição completa no HexaOS.`;
       }
 
-      // 4) Send WhatsApp DM via whatsapp-service
+      // Send WhatsApp DM
       try {
-        const { data: sendResult, error: sendErr } = await admin.functions.invoke("whatsapp-service", {
+        const { error: sendErr } = await admin.functions.invoke("whatsapp-service", {
           body: {
             action: "sendText",
             number: whatsapp,
@@ -195,8 +261,9 @@ Se não houver itens específicos para o participante, inclua um resumo geral.`,
     }
 
     // Update meeting summary
+    const sentCount = results.filter(r => r.status === "sent").length;
     await admin.from("meeting_logs").update({
-      summary: `Resumos enviados para ${results.filter(r => r.status === "sent").length}/${results.length} participantes`,
+      summary: `Resumos enviados para ${sentCount}/${results.length} participantes`,
       metadata: { webhook_processed: true, summary_results: results },
     }).eq("id", meeting.id);
 
