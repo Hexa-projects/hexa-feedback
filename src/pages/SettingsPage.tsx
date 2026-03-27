@@ -753,20 +753,20 @@ function IntegrationsTab() {
                 </div>
                 <Button
                   size="sm"
-                  variant={int.status === "ativo" ? "outline" : "default"}
+                  variant={getStatus(int.key) === "ativo" ? "outline" : "default"}
                   onClick={() => {
                     if (int.key === "whatsapp") {
                       setActiveIntegration("whatsapp");
                     } else if (int.key === "calendar") {
                       setActiveIntegration("calendar");
-                    } else if (int.status === "ativo") {
+                    } else if (getStatus(int.key) === "ativo") {
                       toast.info("Use a aba Focus AI para gerenciar o OpenClaw");
                     } else {
                       toast.info(`Configuração de ${int.nome} será habilitada em breve`);
                     }
                   }}
                 >
-                  {int.status === "ativo" ? "Gerenciar" : "Configurar"}
+                  {getStatus(int.key) === "ativo" ? "Gerenciar" : "Configurar"}
                 </Button>
               </div>
             </CardContent>
