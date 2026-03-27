@@ -647,6 +647,24 @@ function AutomationsTab() {
 
 function IntegrationsTab() {
   const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
+  const [configuredIntegrations, setConfiguredIntegrations] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const checkConfigs = async () => {
+      const { data } = await supabase.from("integration_configs").select("integration_name, config");
+      if (data) {
+        const map: Record<string, boolean> = {};
+        data.forEach((row: any) => {
+          // Consider active if config has non-empty values
+          const cfg = row.config as Record<string, string>;
+          const hasValues = cfg && Object.values(cfg).some(v => v && String(v).trim() !== "");
+          map[row.integration_name] = hasValues;
+        });
+        setConfiguredIntegrations(map);
+      }
+    };
+    checkConfigs();
+  }, []);
 
   if (activeIntegration === "whatsapp") {
     return <WhatsAppConfigView onBack={() => setActiveIntegration(null)} />;
@@ -655,13 +673,17 @@ function IntegrationsTab() {
     return <CalendarConfigView onBack={() => setActiveIntegration(null)} />;
   }
 
+  const getStatus = (key: string): "ativo" | "pendente" | "erro" => {
+    if (key === "openclaw") return "ativo";
+    return configuredIntegrations[key] ? "ativo" : "pendente";
+  };
+
   const integrations = [
     {
       key: "whatsapp",
       nome: "WhatsApp (Evolution API)",
       descricao: "Envio automático de resumos, alertas e comunicados via WhatsApp pelo Focus AI.",
       icon: MessageSquare,
-      status: "pendente" as const,
       config: ["URL da API", "Global Key", "Instância", "API Key"],
     },
     {
@@ -669,7 +691,6 @@ function IntegrationsTab() {
       nome: "E-mail SMTP",
       descricao: "Envio de e-mails transacionais para propostas, contratos e notificações.",
       icon: Mail,
-      status: "pendente" as const,
       config: ["Host SMTP", "Porta", "Usuário", "Senha", "E-mail remetente"],
     },
     {
@@ -677,7 +698,6 @@ function IntegrationsTab() {
       nome: "Calendário Técnico",
       descricao: "Sincronização de agendas de manutenção e visitas técnicas.",
       icon: Calendar,
-      status: "pendente" as const,
       config: ["Provedor (Google/Outlook)", "Client ID", "Client Secret"],
     },
     {
@@ -685,7 +705,6 @@ function IntegrationsTab() {
       nome: "OpenClaw Gateway",
       descricao: "Motor de IA e automação inteligente (Focus AI).",
       icon: Zap,
-      status: "ativo" as const,
       config: ["URL", "Token", "Ambiente"],
     },
   ];
@@ -720,8 +739,8 @@ function IntegrationsTab() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{int.nome}</span>
-                      <Badge variant="outline" className={`text-xs ${STATUS_BADGE[int.status]}`}>
-                        {STATUS_LABEL[int.status]}
+                      <Badge variant="outline" className={`text-xs ${STATUS_BADGE[getStatus(int.key)]}`}>
+                        {STATUS_LABEL[getStatus(int.key)]}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">{int.descricao}</p>
@@ -734,20 +753,20 @@ function IntegrationsTab() {
                 </div>
                 <Button
                   size="sm"
-                  variant={int.status === "ativo" ? "outline" : "default"}
+                  variant={getStatus(int.key) === "ativo" ? "outline" : "default"}
                   onClick={() => {
                     if (int.key === "whatsapp") {
                       setActiveIntegration("whatsapp");
                     } else if (int.key === "calendar") {
                       setActiveIntegration("calendar");
-                    } else if (int.status === "ativo") {
+                    } else if (getStatus(int.key) === "ativo") {
                       toast.info("Use a aba Focus AI para gerenciar o OpenClaw");
                     } else {
                       toast.info(`Configuração de ${int.nome} será habilitada em breve`);
                     }
                   }}
                 >
-                  {int.status === "ativo" ? "Gerenciar" : "Configurar"}
+                  {getStatus(int.key) === "ativo" ? "Gerenciar" : "Configurar"}
                 </Button>
               </div>
             </CardContent>
