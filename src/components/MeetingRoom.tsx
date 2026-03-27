@@ -8,6 +8,7 @@ import {
   GridLayout,
   ParticipantTile,
 } from "@livekit/components-react";
+// @ts-ignore
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
