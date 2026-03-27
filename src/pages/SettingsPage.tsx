@@ -739,8 +739,8 @@ function IntegrationsTab() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{int.nome}</span>
-                      <Badge variant="outline" className={`text-xs ${STATUS_BADGE[int.status]}`}>
-                        {STATUS_LABEL[int.status]}
+                      <Badge variant="outline" className={`text-xs ${STATUS_BADGE[getStatus(int.key)]}`}>
+                        {STATUS_LABEL[getStatus(int.key)]}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">{int.descricao}</p>
