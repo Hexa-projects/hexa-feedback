@@ -311,14 +311,16 @@ serve(async (req) => {
       // Text columns to search per table
       const searchFields: Record<string, string[]> = {
         leads: ["nome", "empresa", "notas", "email"],
-        work_orders: ["numero_os", "cliente", "equipamento", "descricao"],
-        bottlenecks: ["descricao", "exemplo_real"],
-        suggestions: ["ideia"],
         proposals: ["titulo", "descricao"],
+        contracts: ["titulo", "descricao", "notas"],
+        financial_records: ["descricao", "cliente", "categoria"],
+        bottlenecks: ["descricao", "exemplo_real"],
         profiles: ["nome", "funcao", "responsabilidades"],
         lab_parts: ["descricao", "equipamento_origem"],
+        installed_equipment: ["nome", "cliente", "modelo"],
         repetitive_processes: ["processo"],
-        tool_mappings: ["nome_ferramenta", "descricao_uso"],
+        projects: ["titulo", "descricao", "cliente"],
+        channel_messages: ["content"],
       };
 
       for (const table of targetTables) {
