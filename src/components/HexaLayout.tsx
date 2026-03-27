@@ -289,7 +289,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const SidebarInner = () => (
+  const sidebarContent = (
     <>
       {/* Logo */}
       <div className="p-5 flex items-center gap-3">
@@ -331,7 +331,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen bg-background flex">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 hexa-gradient min-h-screen sticky top-0 border-r border-sidebar-border">
-        <SidebarInner />
+        {sidebarContent}
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -343,7 +343,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SidebarInner />
+            {sidebarContent}
           </div>
           <div className="flex-1 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
         </div>
