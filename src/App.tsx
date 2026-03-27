@@ -48,6 +48,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
+const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -82,6 +83,7 @@ const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/docs" element={<Suspense fallback={<PageLoader />}><PublicApiDocs /></Suspense>} />
       <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
 
       {/* HexaOS modules */}
