@@ -83,6 +83,7 @@ const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/docs" element={<Suspense fallback={<PageLoader />}><PublicApiDocs /></Suspense>} />
       <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
 
       {/* HexaOS modules */}
