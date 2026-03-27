@@ -343,7 +343,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SidebarInner />
+            {sidebarContent}
           </div>
           <div className="flex-1 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
         </div>
