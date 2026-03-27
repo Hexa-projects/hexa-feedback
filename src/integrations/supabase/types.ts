@@ -1494,6 +1494,33 @@ export type Database = {
           },
         ]
       }
+      meeting_participants_map: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          participant_identity: string
+          user_id: string
+          whatsapp_e164: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          participant_identity: string
+          user_id: string
+          whatsapp_e164?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          participant_identity?: string
+          user_id?: string
+          whatsapp_e164?: string | null
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string | null
