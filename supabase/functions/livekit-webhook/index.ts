@@ -42,49 +42,6 @@ async function upsertParticipant(
   console.log(`Participant ${identity} ${field} updated for room ${roomName}`);
 }
 
-/** Generate personalized summary via OpenAI */
-async function generateSummary(
-  openaiKey: string,
-  roomName: string,
-  transcription: string,
-  allParticipants: string[],
-  targetName: string
-): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      max_tokens: 800,
-      messages: [
-        {
-          role: "system",
-          content: `Você é o Focus AI do HexaOS. Gere um resumo personalizado de reunião para o colaborador "${targetName}". 
-O resumo deve ser direto, em português, formatado para WhatsApp (sem markdown pesado, use *negrito* e emojis moderados).
-Estrutura:
-📋 *Resumo da Reunião*
-- O que foi discutido
-🎯 *Decisões que envolvem você*
-- Decisões específicas para este participante
-✅ *Suas ações pendentes*
-- Tarefa / responsável / prazo
-Se não houver itens específicos para o participante, inclua um resumo geral.`,
-        },
-        {
-          role: "user",
-          content: `Transcrição da reunião (sala: ${roomName}):\n\n${transcription}\n\nParticipantes: ${allParticipants.join(", ")}\n\nGere o resumo personalizado para: ${targetName}`,
-        },
-      ],
-    }),
-  });
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "Resumo indisponível.";
-}
-
 /** Resolve WhatsApp number for a participant */
 async function resolveWhatsApp(
   admin: ReturnType<typeof createClient>,
@@ -120,7 +77,6 @@ Deno.serve(async (req) => {
   const apiSecret = Deno.env.get("LIVEKIT_API_SECRET")!;
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const openaiKey = Deno.env.get("OPENAI_API_KEY")!;
 
   const admin = createClient(supabaseUrl, serviceKey);
 
@@ -212,64 +168,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2) For each participant, generate summary and send WhatsApp DM
+    // 2) Enqueue async summary jobs per participant instead of blocking webhook
     const allNames = participants.map((p: any) => p.name || "Participante");
-    const results: any[] = [];
+    let enqueued = 0;
 
     for (const p of participants) {
       const identity = p.user_id || p.identity;
       const name = p.name || "Participante";
-
       const whatsapp = await resolveWhatsApp(admin, identity);
 
       if (!whatsapp) {
         console.log(`No WhatsApp for ${name} (${identity}), skipping.`);
-        results.push({ identity, name, status: "skipped", reason: "no_whatsapp" });
         continue;
       }
 
-      let summary: string;
-      try {
-        summary = await generateSummary(openaiKey, roomName, transcription, allNames, name);
-      } catch (aiErr) {
-        console.error("AI summary error for", name, aiErr);
-        summary = `📋 *Resumo da Reunião (${roomName})*\n\nResumo automático indisponível. Consulte a transcrição completa no HexaOS.`;
-      }
-
-      // Send WhatsApp DM
-      try {
-        const { error: sendErr } = await admin.functions.invoke("whatsapp-service", {
-          body: {
-            action: "sendText",
-            number: whatsapp,
-            text: summary,
-            evento: "meeting_summary",
-          },
-        });
-
-        if (sendErr) {
-          console.error("WhatsApp send error for", name, sendErr);
-          results.push({ identity, name, status: "send_failed", error: sendErr.message });
-        } else {
-          console.log("WhatsApp sent to", name, whatsapp);
-          results.push({ identity, name, status: "sent" });
-        }
-      } catch (wErr) {
-        console.error("WhatsApp invoke error:", wErr);
-        results.push({ identity, name, status: "error", error: String(wErr) });
-      }
+      // Queue a summary job in openclaw_event_queue
+      await admin.from("openclaw_event_queue").insert({
+        event_type: "meeting_summary",
+        domain: "meetings",
+        priority: "high",
+        data: {
+          meeting_id: meeting.id,
+          room_name: roomName,
+          participant_identity: identity,
+          participant_name: name,
+          whatsapp_e164: whatsapp,
+          all_participants: allNames,
+          transcription_preview: transcription.slice(0, 500),
+        },
+        tags: ["meeting", "summary", roomName],
+      });
+      enqueued++;
     }
 
-    // Update meeting summary
-    const sentCount = results.filter(r => r.status === "sent").length;
+    // Update meeting summary status
     await admin.from("meeting_logs").update({
-      summary: `Resumos enviados para ${sentCount}/${results.length} participantes`,
-      metadata: { webhook_processed: true, summary_results: results },
+      summary: `${enqueued} resumos enfileirados para processamento assíncrono`,
+      metadata: { webhook_processed: true, enqueued_summaries: enqueued, total_participants: participants.length },
     }).eq("id", meeting.id);
 
-    console.log("Webhook processing complete:", JSON.stringify(results));
+    console.log(`Enqueued ${enqueued} summary jobs for room ${roomName}`);
 
-    return new Response(JSON.stringify({ ok: true, results }), {
+    return new Response(JSON.stringify({ ok: true, enqueued }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

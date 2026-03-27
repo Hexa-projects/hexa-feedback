@@ -137,7 +137,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { to: "/focus-ai", label: "Focus AI", icon: Brain },
       { to: "/agentes", label: "Agentes IA", icon: Bot },
-      { to: "/automations", label: "Automações", icon: Zap, wip: true },
+      { to: "/ops", label: "Painel de Operações", icon: Zap },
       { to: "/api-docs", label: "API & Webhooks", icon: BookOpen },
     ],
   },

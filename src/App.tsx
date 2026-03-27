@@ -1,48 +1,54 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+
+// Eagerly loaded (auth flow)
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
-import HomePage from "./pages/HomePage";
-import LeadsList from "./pages/crm/LeadsList";
-import LeadForm from "./pages/crm/LeadForm";
-import LeadDetail from "./pages/crm/LeadDetail";
-import KanbanFunnel from "./pages/crm/KanbanFunnel";
-import ProposalsList from "./pages/crm/ProposalsList";
-import ContractsList from "./pages/crm/ContractsList";
-import WorkOrdersList from "./pages/os/WorkOrdersList";
-import WorkOrderForm from "./pages/os/WorkOrderForm";
-import WorkOrderDetail from "./pages/os/WorkOrderDetail";
-import LabPartsList from "./pages/lab/LabPartsList";
-import LabPartForm from "./pages/lab/LabPartForm";
-import StockDashboard from "./pages/stock/StockDashboard";
-import StockProducts from "./pages/stock/StockProducts";
-import StockProductForm from "./pages/stock/StockProductForm";
-import StockMovements from "./pages/stock/StockMovements";
-import StockJourney from "./pages/stock/StockJourney";
-import StockEquipment from "./pages/stock/StockEquipment";
-import ProjectsList from "./pages/projects/ProjectsList";
-import ProjectForm from "./pages/projects/ProjectForm";
-import ProjectDetail from "./pages/projects/ProjectDetail";
-import FinanceDashboard from "./pages/finance/FinanceDashboard";
-import DailyForm from "./pages/DailyForm";
-import RepetitiveProcesses from "./pages/RepetitiveProcesses";
-import ToolsMapping from "./pages/ToolsMapping";
-import Bottlenecks from "./pages/Bottlenecks";
-import Suggestions from "./pages/Suggestions";
-import HistoryPage from "./pages/HistoryPage";
-import FocusAI from "./pages/FocusAI";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import AIChat from "./pages/AIChat";
-import CorporateChannels from "./pages/CorporateChannels";
-import AgentsDashboard from "./pages/AgentsDashboard";
-import SettingsPage from "./pages/SettingsPage";
-import ApiDocsPage from "./pages/ApiDocsPage";
-import CalendarPage from "./pages/CalendarPage";
+
+// Lazy-loaded pages
+const HomePage = lazy(() => import("./pages/HomePage"));
+const LeadsList = lazy(() => import("./pages/crm/LeadsList"));
+const LeadForm = lazy(() => import("./pages/crm/LeadForm"));
+const LeadDetail = lazy(() => import("./pages/crm/LeadDetail"));
+const KanbanFunnel = lazy(() => import("./pages/crm/KanbanFunnel"));
+const ProposalsList = lazy(() => import("./pages/crm/ProposalsList"));
+const ContractsList = lazy(() => import("./pages/crm/ContractsList"));
+const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
+const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
+const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
+const LabPartsList = lazy(() => import("./pages/lab/LabPartsList"));
+const LabPartForm = lazy(() => import("./pages/lab/LabPartForm"));
+const StockDashboard = lazy(() => import("./pages/stock/StockDashboard"));
+const StockProducts = lazy(() => import("./pages/stock/StockProducts"));
+const StockProductForm = lazy(() => import("./pages/stock/StockProductForm"));
+const StockMovements = lazy(() => import("./pages/stock/StockMovements"));
+const StockJourney = lazy(() => import("./pages/stock/StockJourney"));
+const StockEquipment = lazy(() => import("./pages/stock/StockEquipment"));
+const ProjectsList = lazy(() => import("./pages/projects/ProjectsList"));
+const ProjectForm = lazy(() => import("./pages/projects/ProjectForm"));
+const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
+const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
+const DailyForm = lazy(() => import("./pages/DailyForm"));
+const RepetitiveProcesses = lazy(() => import("./pages/RepetitiveProcesses"));
+const ToolsMapping = lazy(() => import("./pages/ToolsMapping"));
+const Bottlenecks = lazy(() => import("./pages/Bottlenecks"));
+const Suggestions = lazy(() => import("./pages/Suggestions"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const FocusAI = lazy(() => import("./pages/FocusAI"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AIChat = lazy(() => import("./pages/AIChat"));
+const CorporateChannels = lazy(() => import("./pages/CorporateChannels"));
+const AgentsDashboard = lazy(() => import("./pages/AgentsDashboard"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,12 +59,23 @@ const queryClient = new QueryClient({
   },
 });
 
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Carregando módulo...</p>
+      </div>
+    </div>
+  );
+}
+
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Carregando...</p></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/" replace />;
   if (profile && !profile.onboarding_completo && window.location.pathname !== "/onboarding") return <Navigate to="/onboarding" replace />;
-  return <>{children}</>;
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
 const AppRoutes = () => (
@@ -110,6 +127,7 @@ const AppRoutes = () => (
       <Route path="/chat-ia" element={<PrivateRoute><AIChat /></PrivateRoute>} />
       <Route path="/canais" element={<PrivateRoute><CorporateChannels /></PrivateRoute>} />
       <Route path="/agentes" element={<PrivateRoute><AgentsDashboard /></PrivateRoute>} />
+      <Route path="/ops" element={<PrivateRoute><OpsDashboard /></PrivateRoute>} />
 
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
@@ -126,7 +144,7 @@ const AppRoutes = () => (
       <Route path="/history" element={<PrivateRoute><HistoryPage /></PrivateRoute>} />
       <Route path="/dashboard" element={<Navigate to="/reports" replace />} />
 
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
     </Routes>
   </BrowserRouter>
 );
