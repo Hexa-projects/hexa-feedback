@@ -42,6 +42,7 @@ Configure no dashboard do Supabase (Settings → Edge Functions → Secrets):
 ## Fluxo de Reuniões
 
 1. Usuário clica "Reunião" → `livekit-token` gera JWT e registra em `meeting_logs`
+   - Alternativa programática: `POST /functions/v1/create-meeting` (usado pelo Focus AI)
 2. LiveKit envia `participant_joined`/`participant_left` → webhook atualiza participantes
 3. Áudio gravado → `livekit-transcribe` transcreve via ElevenLabs
 4. Sala encerrada (`room_finished`) → webhook gera resumo por participante e envia via WhatsApp DM
