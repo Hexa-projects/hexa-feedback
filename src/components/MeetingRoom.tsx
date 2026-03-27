@@ -1,19 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   LiveKitRoom,
   VideoConference,
   RoomAudioRenderer,
-  ControlBar,
-  useTracks,
-  GridLayout,
-  ParticipantTile,
 } from "@livekit/components-react";
 // @ts-ignore
 import "@livekit/components-styles";
-import { Track } from "livekit-client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Video, VideoOff, Phone, PhoneOff, Loader2 } from "lucide-react";
+import { Video, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -31,6 +26,25 @@ export default function MeetingRoom({ channelId, channelName, workOrderId }: Mee
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [roomName, setRoomName] = useState("");
+
+  // Register participant mapping for WhatsApp summaries
+  useEffect(() => {
+    if (!user || !profile) return;
+    const whatsapp = profile.whatsapp?.replace(/\D/g, "") || "";
+    if (!whatsapp) return;
+
+    supabase.from("meeting_participants_map" as any).upsert(
+      {
+        user_id: user.id,
+        participant_identity: user.id,
+        whatsapp_e164: whatsapp,
+        display_name: profile.nome || "Participante",
+      },
+      { onConflict: "participant_identity" }
+    ).then(({ error }) => {
+      if (error) console.warn("Failed to upsert participant map:", error);
+    });
+  }, [user, profile]);
 
   const startMeeting = useCallback(async () => {
     if (!user || !profile) return;
