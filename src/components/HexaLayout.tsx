@@ -331,7 +331,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen bg-background flex">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 hexa-gradient min-h-screen sticky top-0 border-r border-sidebar-border">
-        <SidebarInner />
+        {sidebarContent}
       </aside>
 
       {/* Mobile sidebar overlay */}
