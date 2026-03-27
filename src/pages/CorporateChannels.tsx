@@ -733,6 +733,7 @@ export default function CorporateChannels() {
                 {activeChannelData.descricao && <p className="text-xs text-muted-foreground truncate">{activeChannelData.descricao}</p>}
               </div>
               <div className="flex items-center gap-1.5">
+                <MeetingRoom channelId={activeChannel!} channelName={activeChannelData.nome} />
                 <Button variant={sidePanel === "tasks" ? "default" : "ghost"} size="sm" className="h-8 gap-1.5 text-xs"
                   onClick={() => setSidePanel(sidePanel === "tasks" ? "none" : "tasks")}>
                   <ListTodo className="w-3.5 h-3.5" />Tarefas
