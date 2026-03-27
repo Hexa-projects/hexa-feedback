@@ -289,7 +289,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const SidebarInner = () => (
+  const sidebarContent = (
     <>
       {/* Logo */}
       <div className="p-5 flex items-center gap-3">
