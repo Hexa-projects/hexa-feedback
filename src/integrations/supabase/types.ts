@@ -1428,6 +1428,72 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_logs: {
+        Row: {
+          channel_id: string | null
+          created_at: string | null
+          created_by: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          metadata: Json | null
+          participants: Json | null
+          recording_url: string | null
+          room_name: string
+          started_at: string
+          summary: string | null
+          transcription: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string | null
+          created_by: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json | null
+          participants?: Json | null
+          recording_url?: string | null
+          room_name: string
+          started_at?: string
+          summary?: string | null
+          transcription?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json | null
+          participants?: Json | null
+          recording_url?: string | null
+          room_name?: string
+          started_at?: string
+          summary?: string | null
+          transcription?: string | null
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_logs_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "corporate_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_logs_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string | null

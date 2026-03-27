@@ -22,6 +22,7 @@ import {
   Check, Circle, Clock, Flame, AlertCircle, ThumbsUp, Smile, Star
 } from "lucide-react";
 import { toast } from "sonner";
+import MeetingRoom from "@/components/MeetingRoom";
 
 const SUPABASE_URL = "https://fevmcjnaeuxydmxmkarw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldm1jam5hZXV4eWRteG1rYXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjM1MDcsImV4cCI6MjA4OTkzOTUwN30.oHTGDmdVb2kXj0HR8GJWjGBeuCjDY0w3x4aJ-qJIT-4";
@@ -733,6 +734,7 @@ export default function CorporateChannels() {
                 {activeChannelData.descricao && <p className="text-xs text-muted-foreground truncate">{activeChannelData.descricao}</p>}
               </div>
               <div className="flex items-center gap-1.5">
+                <MeetingRoom channelId={activeChannel!} channelName={activeChannelData.nome} />
                 <Button variant={sidePanel === "tasks" ? "default" : "ghost"} size="sm" className="h-8 gap-1.5 text-xs"
                   onClick={() => setSidePanel(sidePanel === "tasks" ? "none" : "tasks")}>
                   <ListTodo className="w-3.5 h-3.5" />Tarefas
