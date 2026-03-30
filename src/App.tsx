@@ -141,6 +141,11 @@ const AppRoutes = () => (
       {/* Playbook SDR */}
       <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
 
+      {/* SDR Nina - WhatsApp & Pipeline */}
+      <Route path="/sdr/chat" element={<PrivateRoute><WhatsAppChat /></PrivateRoute>} />
+      <Route path="/sdr/pipeline" element={<PrivateRoute><SDRPipeline /></PrivateRoute>} />
+      <Route path="/sdr/contacts" element={<PrivateRoute><WhatsAppContacts /></PrivateRoute>} />
+
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
