@@ -61,6 +61,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Funil Kanban", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
+      { to: "/playbook", label: "Playbook SDR", icon: Zap },
     ],
   },
   {
