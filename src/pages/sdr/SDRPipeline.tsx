@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { sdrApi } from '@/services/sdr-api';
 import { Deal, KanbanColumn } from '@/types/sdr';
 import { supabase } from '@/integrations/supabase/client';
-import { HexaLayout } from '@/components/HexaLayout';
+import HexaLayout from '@/components/HexaLayout';
 import { toast } from 'sonner';
 
 export default function SDRPipeline() {

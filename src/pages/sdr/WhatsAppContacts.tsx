@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { sdrApi } from '@/services/sdr-api';
 import { DBContact } from '@/types/sdr';
-import { HexaLayout } from '@/components/HexaLayout';
+import HexaLayout from '@/components/HexaLayout';
 
 export default function WhatsAppContacts() {
   const [contacts, setContacts] = useState<DBContact[]>([]);

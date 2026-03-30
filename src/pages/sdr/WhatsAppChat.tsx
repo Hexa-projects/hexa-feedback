@@ -6,7 +6,7 @@ import {
 import { MessageDirection, MessageType, UIConversation, UIMessage, ConversationStatus } from '@/types/sdr';
 import { useSDRConversations } from '@/hooks/useSDRConversations';
 import { Button } from '@/components/ui/button';
-import { HexaLayout } from '@/components/HexaLayout';
+import HexaLayout from '@/components/HexaLayout';
 
 export default function WhatsAppChatPage() {
   const { conversations, loading, sendMessage, updateStatus, markAsRead } = useSDRConversations();
