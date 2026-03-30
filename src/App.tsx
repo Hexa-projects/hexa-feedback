@@ -49,6 +49,7 @@ const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
+const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -133,6 +134,9 @@ const AppRoutes = () => (
 
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
+
+      {/* Playbook SDR */}
+      <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
 
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
