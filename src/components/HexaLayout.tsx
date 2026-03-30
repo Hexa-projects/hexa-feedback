@@ -53,6 +53,18 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    id: "sdr",
+    label: "SDR & WhatsApp",
+    icon: MessageSquare,
+    roles: ["admin", "gestor", "colaborador"],
+    children: [
+      { to: "/sdr/chat", label: "Chat WhatsApp", icon: MessageCircle },
+      { to: "/sdr/pipeline", label: "Pipeline Deals", icon: Target },
+      { to: "/sdr/contacts", label: "Contatos WA", icon: Users },
+      { to: "/playbook", label: "Playbook SDR", icon: Zap },
+    ],
+  },
+  {
     id: "comercial",
     label: "Comercial",
     icon: Target,
@@ -62,7 +74,6 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Funil Kanban", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
-      { to: "/playbook", label: "Playbook SDR", icon: Zap },
     ],
   },
   {
