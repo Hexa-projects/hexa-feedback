@@ -50,6 +50,9 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
 const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
+const WhatsAppChat = lazy(() => import("./pages/sdr/WhatsAppChat"));
+const SDRPipeline = lazy(() => import("./pages/sdr/SDRPipeline"));
+const WhatsAppContacts = lazy(() => import("./pages/sdr/WhatsAppContacts"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
