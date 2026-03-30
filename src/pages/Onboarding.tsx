@@ -30,7 +30,7 @@ export default function Onboarding() {
   const [form, setForm] = useState({
     setor: profile?.setor || "Administrativo",
     funcao: profile?.funcao || "",
-    unidade: profile?.unidade || "",
+    unidade: "Hexamedical - SP",
     tempo_casa: profile?.tempo_casa || "",
     resumo_dia_dia: profile?.resumo_dia_dia || "",
     responsabilidades: profile?.responsabilidades || "",
