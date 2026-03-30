@@ -135,6 +135,9 @@ const AppRoutes = () => (
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
 
+      {/* Playbook SDR */}
+      <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
+
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
