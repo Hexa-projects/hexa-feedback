@@ -33,7 +33,7 @@ export default function StepIdentidade({ form, update }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Unidade / Filial</Label>
-          <Input value={form.unidade} onChange={e => update("unidade", e.target.value)} placeholder="Ex: Matriz SP" />
+          <Input value="Hexamedical - SP" disabled className="bg-muted" />
         </div>
         <div className="space-y-1.5">
           <Label className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Tempo de casa</Label>
