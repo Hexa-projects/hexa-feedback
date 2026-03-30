@@ -1,63 +1,90 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/supabase-store";
-import { SETORES, type Setor } from "@/types/forms";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import FormProgress from "@/components/FormProgress";
-import AudioRecorder from "@/components/AudioRecorder";
 import { toast } from "sonner";
-import { Phone } from "lucide-react";
+import { Building2, CalendarClock, Cog, AlertTriangle, Phone, ArrowLeft, ArrowRight, Check } from "lucide-react";
+
+import OnboardingStepIndicator from "@/components/onboarding/OnboardingStepIndicator";
+import StepIdentidade from "@/components/onboarding/StepIdentidade";
+import StepRotina from "@/components/onboarding/StepRotina";
+import StepProcessos from "@/components/onboarding/StepProcessos";
+import StepGargalos from "@/components/onboarding/StepGargalos";
+import StepContato from "@/components/onboarding/StepContato";
+
+const STEPS = [
+  { label: "Identidade", icon: <Building2 className="w-4 h-4" /> },
+  { label: "Rotina", icon: <CalendarClock className="w-4 h-4" /> },
+  { label: "Processos", icon: <Cog className="w-4 h-4" /> },
+  { label: "Gargalos", icon: <AlertTriangle className="w-4 h-4" /> },
+  { label: "Contato", icon: <Phone className="w-4 h-4" /> },
+];
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { profile, role, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
+
   const [form, setForm] = useState({
     setor: profile?.setor || "Administrativo",
     funcao: profile?.funcao || "",
     unidade: profile?.unidade || "",
+    tempo_casa: profile?.tempo_casa || "",
     resumo_dia_dia: profile?.resumo_dia_dia || "",
     responsabilidades: profile?.responsabilidades || "",
-    qualidades: profile?.qualidades || "",
-    pontos_melhoria: profile?.pontos_melhoria || "",
-    tempo_casa: profile?.tempo_casa || "",
-    decisores: (profile as any)?.decisores || "",
     ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
+    tarefas_repetitivas: "",
+    tempo_tarefas_manuais: "",
+    decisores: (profile as any)?.decisores || "",
     principal_gargalo: (profile as any)?.principal_gargalo || "",
+    pontos_melhoria: profile?.pontos_melhoria || "",
+    qualidades: profile?.qualidades || "",
+    mudaria_no_setor: "",
     whatsapp: (profile as any)?.whatsapp || "",
     whatsapp_consent: (profile as any)?.whatsapp_consent || false,
   });
 
-  const [whatsappError, setWhatsappError] = useState("");
+  const update = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
 
-  const validateWhatsapp = (val: string) => {
-    const clean = val.replace(/\D/g, "");
-    if (!clean) { setWhatsappError("WhatsApp é obrigatório"); return false; }
-    if (clean.length < 12 || clean.length > 13) { setWhatsappError("Use DDI+DDD+número (ex: 5511999999999)"); return false; }
-    if (!clean.startsWith("55")) { setWhatsappError("Deve começar com 55 (Brasil)"); return false; }
-    setWhatsappError("");
-    return true;
-  };
-
-  const textFields = [form.setor, form.funcao, form.unidade, form.resumo_dia_dia, form.responsabilidades, form.qualidades, form.pontos_melhoria, form.tempo_casa, form.decisores, form.ferramentas_criticas, form.principal_gargalo, form.whatsapp];
-  const filled = textFields.filter(v => v.trim()).length;
-  const total = textFields.length;
+  const stepValid = useMemo(() => {
+    switch (step) {
+      case 0: return !!(form.setor && form.funcao.trim() && form.unidade.trim());
+      case 1: return !!(form.resumo_dia_dia.trim() && form.responsabilidades.trim());
+      case 2: return !!(form.ferramentas_criticas.trim());
+      case 3: return !!(form.principal_gargalo.trim());
+      case 4: {
+        const clean = form.whatsapp.replace(/\D/g, "");
+        return clean.length >= 12 && clean.startsWith("55") && form.whatsapp_consent;
+      }
+      default: return false;
+    }
+  }, [step, form]);
 
   const handleSubmit = async () => {
     if (!profile) return;
-    if (!validateWhatsapp(form.whatsapp)) { toast.error("Corrija o número de WhatsApp"); return; }
-    if (!form.whatsapp_consent) { toast.error("Você precisa autorizar o recebimento de comunicações"); return; }
     setSaving(true);
     try {
-      await db.updateProfile(profile.id, { ...form, onboarding_completo: true });
+      const payload: Record<string, any> = {
+        setor: form.setor,
+        funcao: form.funcao,
+        unidade: form.unidade,
+        tempo_casa: form.tempo_casa,
+        resumo_dia_dia: form.resumo_dia_dia,
+        responsabilidades: form.responsabilidades,
+        ferramentas_criticas: form.ferramentas_criticas,
+        decisores: form.decisores,
+        principal_gargalo: form.principal_gargalo,
+        pontos_melhoria: form.pontos_melhoria,
+        qualidades: form.qualidades,
+        whatsapp: form.whatsapp,
+        whatsapp_consent: form.whatsapp_consent,
+        onboarding_completo: true,
+      };
+      await db.updateProfile(profile.id, payload);
       await refreshProfile();
-      toast.success("Perfil salvo com sucesso!");
+      toast.success("Perfil completo! Bem-vindo ao HexaOS 🚀");
       navigate("/home");
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
@@ -66,142 +93,88 @@ export default function Onboarding() {
     }
   };
 
-  const u = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
+  const next = () => {
+    if (step === STEPS.length - 1) {
+      handleSubmit();
+    } else {
+      setStep(s => s + 1);
+    }
+  };
+
+  const prev = () => setStep(s => Math.max(0, s - 1));
 
   return (
-    <div className="min-h-screen bg-background p-4 lg:p-8">
-      <div className="max-w-lg mx-auto space-y-6 animate-slide-up">
-        <div>
-          <h1 className="text-2xl font-bold">Quem eu sou na Hexamedical</h1>
-          <p className="text-sm text-muted-foreground mt-1">Complete seu perfil para personalizar sua experiência.</p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl font-bold">Onboarding HexaOS</h1>
+          <p className="text-sm text-muted-foreground">Mapeamento de processos e identidade profissional</p>
         </div>
 
-        <FormProgress current={filled} total={total} />
+        {/* Step Indicator */}
+        <OnboardingStepIndicator steps={STEPS} currentStep={step} />
 
-        <div className="space-y-4">
-          <div className="form-section">
-            <div>
-              <Label>Setor</Label>
-              <Select value={form.setor} onValueChange={v => u("setor", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Função / Cargo</Label>
-              <Input value={form.funcao} onChange={e => u("funcao", e.target.value)} placeholder="Ex: Analista financeiro" />
-            </div>
-            <div>
-              <Label>Unidade / Filial</Label>
-              <Input value={form.unidade} onChange={e => u("unidade", e.target.value)} placeholder="Ex: Matriz SP" />
-            </div>
-            <div>
-              <Label>Tempo de casa</Label>
-              <Input value={form.tempo_casa} onChange={e => u("tempo_casa", e.target.value)} placeholder="Ex: 2 anos e 3 meses" />
-            </div>
-          </div>
-
-          <div className="form-section">
-           <div>
-              <Label>Resumo do que você faz no dia a dia</Label>
-              <Textarea value={form.resumo_dia_dia} onChange={e => u("resumo_dia_dia", e.target.value)} placeholder="Descreva brevemente suas atividades..." rows={3} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("resumo_dia_dia", form.resumo_dia_dia ? form.resumo_dia_dia + "\n" + text : text)} />
-            </div>
-            <div>
-              <Label>Principais responsabilidades</Label>
-              <Textarea value={form.responsabilidades} onChange={e => u("responsabilidades", e.target.value)} placeholder="Liste suas responsabilidades..." rows={3} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("responsabilidades", form.responsabilidades ? form.responsabilidades + "\n" + text : text)} />
-            </div>
-          </div>
-
-          <div className="form-section">
-            <div>
-              <Label>Suas qualidades principais no trabalho</Label>
-              <Textarea value={form.qualidades} onChange={e => u("qualidades", e.target.value)} placeholder="O que você faz de melhor..." rows={2} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("qualidades", form.qualidades ? form.qualidades + "\n" + text : text)} />
-            </div>
-            <div>
-              <Label>Pontos que gostaria de melhorar</Label>
-              <Textarea value={form.pontos_melhoria} onChange={e => u("pontos_melhoria", e.target.value)} placeholder="O que pode ser aprimorado..." rows={2} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("pontos_melhoria", form.pontos_melhoria ? form.pontos_melhoria + "\n" + text : text)} />
-            </div>
-          </div>
-
-          <div className="form-section">
-            <div>
-              <Label>Quem participa das decisões na sua área? (gestor, pares, diretoria)</Label>
-              <Textarea value={form.decisores} onChange={e => u("decisores", e.target.value)} placeholder="Ex: Meu gestor direto e o diretor técnico" rows={2} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("decisores", form.decisores ? form.decisores + "\n" + text : text)} />
-            </div>
-            <div>
-              <Label>Ferramentas críticas que você usa todos os dias</Label>
-              <Textarea value={form.ferramentas_criticas} onChange={e => u("ferramentas_criticas", e.target.value)} placeholder="Ex: Excel de OS, ERP Totvs, WhatsApp do setor..." rows={2} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("ferramentas_criticas", form.ferramentas_criticas ? form.ferramentas_criticas + "\n" + text : text)} />
-            </div>
-            <div>
-              <Label>Principal gargalo que você percebe na sua área</Label>
-              <Textarea value={form.principal_gargalo} onChange={e => u("principal_gargalo", e.target.value)} placeholder="O que mais trava ou atrasa o trabalho do seu setor?" rows={2} />
-              <AudioRecorder label="Descrever por áudio" onTranscription={(text) => u("principal_gargalo", form.principal_gargalo ? form.principal_gargalo + "\n" + text : text)} />
-            </div>
-          </div>
-
-          <div className="form-section border-2 border-primary/20 bg-primary/5 rounded-lg p-4">
-            <div>
-              <Label className="flex items-center gap-2 text-base font-semibold">
-                <Phone className="w-4 h-4 text-primary" /> WhatsApp (obrigatório)
-              </Label>
-              <Input
-                value={form.whatsapp}
-                onChange={e => {
-                  const val = e.target.value.replace(/[^\d+]/g, "");
-                  u("whatsapp", val);
-                  if (whatsappError) validateWhatsapp(val);
-                }}
-                onBlur={() => validateWhatsapp(form.whatsapp)}
-                placeholder="5511999999999"
-                className={whatsappError ? "border-destructive" : ""}
+        {/* Card */}
+        <div className="rounded-2xl border bg-card p-6 shadow-sm min-h-[380px] flex flex-col">
+          <div className="flex-1">
+            {step === 0 && <StepIdentidade form={form} update={update} />}
+            {step === 1 && <StepRotina form={form} update={update} />}
+            {step === 2 && <StepProcessos form={form} update={update} />}
+            {step === 3 && <StepGargalos form={form} update={update} />}
+            {step === 4 && (
+              <StepContato
+                form={form}
+                update={update}
+                setConsent={(v) => setForm(p => ({ ...p, whatsapp_consent: v }))}
               />
-              {whatsappError && <p className="text-xs text-destructive mt-1">{whatsappError}</p>}
-              <p className="text-xs text-muted-foreground mt-1">DDI + DDD + número, sem espaços ou traços</p>
-            </div>
-            <div className="flex items-start gap-2 mt-3">
-              <Checkbox
-                id="whatsapp_consent"
-                checked={form.whatsapp_consent}
-                onCheckedChange={(v) => setForm(p => ({ ...p, whatsapp_consent: !!v }))}
-              />
-              <label htmlFor="whatsapp_consent" className="text-sm leading-tight cursor-pointer">
-                Autorizo receber comunicações internas do Focus AI via WhatsApp (resumos, alertas e comunicados operacionais).
-              </label>
-            </div>
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-6 mt-4 border-t">
+            <Button variant="ghost" onClick={prev} disabled={step === 0} className="gap-2">
+              <ArrowLeft className="w-4 h-4" /> Voltar
+            </Button>
+
+            <span className="text-xs text-muted-foreground">
+              {step + 1} de {STEPS.length}
+            </span>
+
+            <Button onClick={next} disabled={!stepValid || saving} className="gap-2">
+              {step === STEPS.length - 1 ? (
+                saving ? "Salvando..." : <><Check className="w-4 h-4" /> Finalizar</>
+              ) : (
+                <>Próximo <ArrowRight className="w-4 h-4" /></>
+              )}
+            </Button>
           </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={handleSubmit} disabled={filled < 7 || saving || !form.whatsapp_consent}>
-          {saving ? "Salvando..." : "Salvar e continuar"}
-        </Button>
-
+        {/* Admin skip */}
         {role === "admin" && (
-          <Button
-            variant="ghost"
-            className="w-full text-muted-foreground"
-            onClick={async () => {
-              if (!profile) return;
-              setSaving(true);
-              try {
-                await db.updateProfile(profile.id, { onboarding_completo: true });
-                await refreshProfile();
-                navigate("/home");
-              } catch (err: any) {
-                toast.error("Erro ao pular: " + err.message);
-              } finally {
-                setSaving(false);
-              }
-            }}
-            disabled={saving}
-          >
-            Preencher depois →
-          </Button>
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              className="text-muted-foreground text-sm"
+              onClick={async () => {
+                if (!profile) return;
+                setSaving(true);
+                try {
+                  await db.updateProfile(profile.id, { onboarding_completo: true });
+                  await refreshProfile();
+                  navigate("/home");
+                } catch (err: any) {
+                  toast.error("Erro ao pular: " + err.message);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+            >
+              Preencher depois →
+            </Button>
+          </div>
         )}
       </div>
     </div>
