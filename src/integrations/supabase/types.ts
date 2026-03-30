@@ -718,6 +718,156 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_activities: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          deal_id: string
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          scheduled_at: string | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          deal_id: string
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          scheduled_at?: string | null
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          deal_id?: string
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          scheduled_at?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          company: string | null
+          contact_email: string | null
+          contact_id: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          conversation_id: string | null
+          created_at: string | null
+          due_date: string | null
+          id: string
+          lost_at: string | null
+          lost_reason: string | null
+          owner_id: string | null
+          owner_name: string | null
+          priority: string | null
+          qualification_score: number | null
+          stage_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          value: number | null
+          won_at: string | null
+        }
+        Insert: {
+          company?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string | null
+          qualification_score?: number | null
+          stage_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          value?: number | null
+          won_at?: string | null
+        }
+        Update: {
+          company?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: string | null
+          qualification_score?: number | null
+          stage_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          value?: number | null
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_imports: {
         Row: {
           analise_estrutura: Json | null
@@ -1664,6 +1814,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_stages: {
+        Row: {
+          ai_trigger_criteria: string | null
+          color: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_ai_managed: boolean | null
+          is_system: boolean | null
+          position: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_trigger_criteria?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_ai_managed?: boolean | null
+          is_system?: boolean | null
+          position?: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_trigger_criteria?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_ai_managed?: boolean | null
+          is_system?: boolean | null
+          position?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -2151,6 +2340,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tag_definitions: {
+        Row: {
+          category: string | null
+          color: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          key: string
+          label: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key: string
+          label: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key?: string
+          label?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string | null
@@ -2405,6 +2627,146 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_contacts: {
+        Row: {
+          blocked_at: string | null
+          blocked_reason: string | null
+          call_name: string | null
+          cargo: string | null
+          cidade: string | null
+          client_memory: Json | null
+          created_at: string | null
+          email: string | null
+          empresa: string | null
+          estado: string | null
+          first_contact_date: string | null
+          id: string
+          is_blocked: boolean | null
+          is_business: boolean | null
+          last_activity: string | null
+          linha_negocio: string | null
+          name: string | null
+          notes: string | null
+          phone_number: string
+          profile_picture_url: string | null
+          resumo_vivo: string | null
+          tags: string[] | null
+          updated_at: string | null
+          whatsapp_id: string | null
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          call_name?: string | null
+          cargo?: string | null
+          cidade?: string | null
+          client_memory?: Json | null
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          estado?: string | null
+          first_contact_date?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          is_business?: boolean | null
+          last_activity?: string | null
+          linha_negocio?: string | null
+          name?: string | null
+          notes?: string | null
+          phone_number: string
+          profile_picture_url?: string | null
+          resumo_vivo?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          whatsapp_id?: string | null
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          call_name?: string | null
+          cargo?: string | null
+          cidade?: string | null
+          client_memory?: Json | null
+          created_at?: string | null
+          email?: string | null
+          empresa?: string | null
+          estado?: string | null
+          first_contact_date?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          is_business?: boolean | null
+          last_activity?: string | null
+          linha_negocio?: string | null
+          name?: string | null
+          notes?: string | null
+          phone_number?: string
+          profile_picture_url?: string | null
+          resumo_vivo?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          whatsapp_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_conversations: {
+        Row: {
+          assigned_team: string | null
+          assigned_user_id: string | null
+          contact_id: string
+          created_at: string | null
+          id: string
+          instance_id: string | null
+          is_active: boolean | null
+          last_message_at: string | null
+          metadata: Json | null
+          nina_context: Json | null
+          started_at: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_team?: string | null
+          assigned_user_id?: string | null
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          instance_id?: string | null
+          is_active?: boolean | null
+          last_message_at?: string | null
+          metadata?: Json | null
+          nina_context?: Json | null
+          started_at?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_team?: string | null
+          assigned_user_id?: string | null
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          instance_id?: string | null
+          is_active?: boolean | null
+          last_message_at?: string | null
+          metadata?: Json | null
+          nina_context?: Json | null
+          started_at?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_logs: {
         Row: {
           created_at: string | null
@@ -2443,6 +2805,74 @@ export type Database = {
           tipo?: string
         }
         Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string | null
+          delivered_at: string | null
+          from_type: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          metadata: Json | null
+          nina_response_time: number | null
+          processed_by_nina: boolean | null
+          read_at: string | null
+          reply_to_id: string | null
+          sent_at: string | null
+          status: string
+          type: string
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string | null
+          delivered_at?: string | null
+          from_type?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          metadata?: Json | null
+          nina_response_time?: number | null
+          processed_by_nina?: boolean | null
+          read_at?: string | null
+          reply_to_id?: string | null
+          sent_at?: string | null
+          status?: string
+          type?: string
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          from_type?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          metadata?: Json | null
+          nina_response_time?: number | null
+          processed_by_nina?: boolean | null
+          read_at?: string | null
+          reply_to_id?: string | null
+          sent_at?: string | null
+          status?: string
+          type?: string
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       work_order_activities: {
         Row: {

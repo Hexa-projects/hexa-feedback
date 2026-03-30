@@ -50,6 +50,9 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
 const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
+const WhatsAppChat = lazy(() => import("./pages/sdr/WhatsAppChat"));
+const SDRPipeline = lazy(() => import("./pages/sdr/SDRPipeline"));
+const WhatsAppContacts = lazy(() => import("./pages/sdr/WhatsAppContacts"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -137,6 +140,11 @@ const AppRoutes = () => (
 
       {/* Playbook SDR */}
       <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
+
+      {/* SDR Nina - WhatsApp & Pipeline */}
+      <Route path="/sdr/chat" element={<PrivateRoute><WhatsAppChat /></PrivateRoute>} />
+      <Route path="/sdr/pipeline" element={<PrivateRoute><SDRPipeline /></PrivateRoute>} />
+      <Route path="/sdr/contacts" element={<PrivateRoute><WhatsAppContacts /></PrivateRoute>} />
 
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
