@@ -117,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isActive = true;
+    let initialSessionHandled = false;
 
     const syncAuthState = async (nextSession: Session | null, event?: string) => {
       if (!isActive) return;
@@ -131,9 +132,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Only show loading spinner on initial load or sign-in, not on token refresh
-      const isInitialOrSignIn = !event || event === "SIGNED_IN" || event === "INITIAL_SESSION";
-      if (isInitialOrSignIn) setLoading(true);
+      // Only show loading on the very first session restore or explicit sign-in.
+      // TOKEN_REFRESHED, INITIAL_SESSION (duplicate from listener) etc. should NOT flash loading.
+      const isFirstLoad = event === "INITIAL_SESSION" && !initialSessionHandled;
+      const isSignIn = event === "SIGNED_IN";
+
+      if (isFirstLoad || isSignIn) {
+        setLoading(true);
+      }
+
+      if (event === "INITIAL_SESSION") {
+        initialSessionHandled = true;
+      }
 
       await Promise.allSettled([
         fetchProfile(nextSession.user.id),
@@ -143,15 +153,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isActive) setLoading(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        void syncAuthState(session, event);
-      }
-    );
-
+    // Restore session from storage first, then listen for changes
     supabase.auth.getSession().then(({ data: { session } }) => {
       void syncAuthState(session, "INITIAL_SESSION");
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        // Skip redundant INITIAL_SESSION from listener if getSession already handled it
+        if (event === "INITIAL_SESSION" && initialSessionHandled) return;
+        // Skip token refreshes entirely — session/user refs don't change
+        if (event === "TOKEN_REFRESHED") {
+          setSession(session);
+          return;
+        }
+        void syncAuthState(session, event);
+      }
+    );
 
     return () => {
       isActive = false;
