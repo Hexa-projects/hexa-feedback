@@ -64,7 +64,11 @@ export default function Onboarding() {
     };
   });
 
-  const update = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
+  const update = (key: string, val: string) => setForm((p: any) => {
+    const next = { ...p, [key]: val };
+    sessionStorage.setItem("onboarding_form", JSON.stringify(next));
+    return next;
+  });
 
   const stepValid = useMemo(() => {
     switch (step) {
