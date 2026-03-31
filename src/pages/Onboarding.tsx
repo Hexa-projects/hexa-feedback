@@ -150,7 +150,11 @@ export default function Onboarding() {
               <StepContato
                 form={form}
                 update={update}
-                setConsent={(v) => setForm(p => ({ ...p, whatsapp_consent: v }))}
+                setConsent={(v) => setForm((p: any) => {
+                  const next = { ...p, whatsapp_consent: v };
+                  sessionStorage.setItem("onboarding_form", JSON.stringify(next));
+                  return next;
+                })}
               />
             )}
           </div>
