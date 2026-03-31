@@ -25,25 +25,43 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { profile, role, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => {
+    const saved = sessionStorage.getItem("onboarding_step");
+    return saved ? parseInt(saved, 10) : 0;
+  });
 
-  const [form, setForm] = useState({
-    setor: profile?.setor || "Administrativo",
-    funcao: profile?.funcao || "",
-    unidade: "Hexamedical - SP",
-    tempo_casa: profile?.tempo_casa || "",
-    resumo_dia_dia: profile?.resumo_dia_dia || "",
-    responsabilidades: profile?.responsabilidades || "",
-    ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
-    tarefas_repetitivas: "",
-    tempo_tarefas_manuais: "",
-    decisores: (profile as any)?.decisores || "",
-    principal_gargalo: (profile as any)?.principal_gargalo || "",
-    pontos_melhoria: profile?.pontos_melhoria || "",
-    qualidades: profile?.qualidades || "",
-    mudaria_no_setor: "",
-    whatsapp: (profile as any)?.whatsapp || "",
-    whatsapp_consent: (profile as any)?.whatsapp_consent || false,
+  // Persist step to sessionStorage
+  const updateStep = (updater: (prev: number) => number) => {
+    setStep(prev => {
+      const next = updater(prev);
+      sessionStorage.setItem("onboarding_step", String(next));
+      return next;
+    });
+  };
+
+  const [form, setForm] = useState(() => {
+    const saved = sessionStorage.getItem("onboarding_form");
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return {
+      setor: profile?.setor || "Administrativo",
+      funcao: profile?.funcao || "",
+      unidade: "Hexamedical - SP",
+      tempo_casa: profile?.tempo_casa || "",
+      resumo_dia_dia: profile?.resumo_dia_dia || "",
+      responsabilidades: profile?.responsabilidades || "",
+      ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
+      tarefas_repetitivas: "",
+      tempo_tarefas_manuais: "",
+      decisores: (profile as any)?.decisores || "",
+      principal_gargalo: (profile as any)?.principal_gargalo || "",
+      pontos_melhoria: profile?.pontos_melhoria || "",
+      qualidades: profile?.qualidades || "",
+      mudaria_no_setor: "",
+      whatsapp: (profile as any)?.whatsapp || "",
+      whatsapp_consent: (profile as any)?.whatsapp_consent || false,
+    };
   });
 
   const update = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
