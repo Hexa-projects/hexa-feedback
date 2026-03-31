@@ -105,6 +105,28 @@ export default function Onboarding() {
         onboarding_completo: true,
       };
       await db.updateProfile(profile.id, payload);
+
+      // Save complete onboarding responses for Focus AI analysis
+      await db.saveOnboardingResponse({
+        user_id: profile.id,
+        setor: form.setor,
+        funcao: form.funcao,
+        unidade: form.unidade,
+        tempo_casa: form.tempo_casa,
+        resumo_dia_dia: form.resumo_dia_dia,
+        responsabilidades: form.responsabilidades,
+        ferramentas_criticas: form.ferramentas_criticas,
+        tarefas_repetitivas: form.tarefas_repetitivas,
+        tempo_tarefas_manuais: form.tempo_tarefas_manuais,
+        decisores: form.decisores,
+        principal_gargalo: form.principal_gargalo,
+        pontos_melhoria: form.pontos_melhoria,
+        qualidades: form.qualidades,
+        mudaria_no_setor: form.mudaria_no_setor,
+        whatsapp: form.whatsapp,
+        respostas_completas: form,
+      });
+
       sessionStorage.removeItem("onboarding_step");
       sessionStorage.removeItem("onboarding_form");
       await refreshProfile();

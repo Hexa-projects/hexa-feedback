@@ -139,4 +139,23 @@ export const db = {
     if (error) throw error;
     return count || 0;
   },
+
+  // ===== ONBOARDING RESPONSES =====
+  async saveOnboardingResponse(data: {
+    user_id: string; setor: string; funcao: string; unidade: string;
+    tempo_casa?: string; resumo_dia_dia?: string; responsabilidades?: string;
+    ferramentas_criticas?: string; tarefas_repetitivas?: string; tempo_tarefas_manuais?: string;
+    decisores?: string; principal_gargalo?: string; pontos_melhoria?: string;
+    qualidades?: string; mudaria_no_setor?: string; whatsapp?: string;
+    respostas_completas?: Record<string, any>;
+  }) {
+    const { error } = await supabase.from("onboarding_responses" as any).upsert(data as any, { onConflict: "user_id" });
+    if (error) throw error;
+  },
+
+  async getOnboardingResponses() {
+    const { data, error } = await supabase.from("onboarding_responses" as any).select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
 };
