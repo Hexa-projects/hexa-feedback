@@ -105,6 +105,8 @@ export default function Onboarding() {
         onboarding_completo: true,
       };
       await db.updateProfile(profile.id, payload);
+      sessionStorage.removeItem("onboarding_step");
+      sessionStorage.removeItem("onboarding_form");
       await refreshProfile();
       toast.success("Perfil completo! Bem-vindo ao HexaOS 🚀");
       navigate("/home");
@@ -119,11 +121,11 @@ export default function Onboarding() {
     if (step === STEPS.length - 1) {
       handleSubmit();
     } else {
-      setStep(s => s + 1);
+      updateStep(s => s + 1);
     }
   };
 
-  const prev = () => setStep(s => Math.max(0, s - 1));
+  const prev = () => updateStep(s => Math.max(0, s - 1));
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
