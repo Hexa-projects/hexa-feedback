@@ -1,0 +1,1 @@
+ALTER TABLE public.onboarding_responses ADD CONSTRAINT onboarding_responses_user_id_unique UNIQUE (user_id);
