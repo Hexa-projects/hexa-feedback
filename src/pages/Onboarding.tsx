@@ -190,6 +190,8 @@ export default function Onboarding() {
                 setSaving(true);
                 try {
                   await db.updateProfile(profile.id, { onboarding_completo: true });
+                  sessionStorage.removeItem("onboarding_step");
+                  sessionStorage.removeItem("onboarding_form");
                   await refreshProfile();
                   navigate("/home");
                 } catch (err: any) {
