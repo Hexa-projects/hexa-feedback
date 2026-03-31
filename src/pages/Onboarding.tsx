@@ -25,28 +25,50 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { profile, role, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [step, setStep] = useState(0);
-
-  const [form, setForm] = useState({
-    setor: profile?.setor || "Administrativo",
-    funcao: profile?.funcao || "",
-    unidade: "Hexamedical - SP",
-    tempo_casa: profile?.tempo_casa || "",
-    resumo_dia_dia: profile?.resumo_dia_dia || "",
-    responsabilidades: profile?.responsabilidades || "",
-    ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
-    tarefas_repetitivas: "",
-    tempo_tarefas_manuais: "",
-    decisores: (profile as any)?.decisores || "",
-    principal_gargalo: (profile as any)?.principal_gargalo || "",
-    pontos_melhoria: profile?.pontos_melhoria || "",
-    qualidades: profile?.qualidades || "",
-    mudaria_no_setor: "",
-    whatsapp: (profile as any)?.whatsapp || "",
-    whatsapp_consent: (profile as any)?.whatsapp_consent || false,
+  const [step, setStep] = useState(() => {
+    const saved = sessionStorage.getItem("onboarding_step");
+    return saved ? parseInt(saved, 10) : 0;
   });
 
-  const update = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
+  // Persist step to sessionStorage
+  const updateStep = (updater: (prev: number) => number) => {
+    setStep(prev => {
+      const next = updater(prev);
+      sessionStorage.setItem("onboarding_step", String(next));
+      return next;
+    });
+  };
+
+  const [form, setForm] = useState(() => {
+    const saved = sessionStorage.getItem("onboarding_form");
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return {
+      setor: profile?.setor || "Administrativo",
+      funcao: profile?.funcao || "",
+      unidade: "Hexamedical - SP",
+      tempo_casa: profile?.tempo_casa || "",
+      resumo_dia_dia: profile?.resumo_dia_dia || "",
+      responsabilidades: profile?.responsabilidades || "",
+      ferramentas_criticas: (profile as any)?.ferramentas_criticas || "",
+      tarefas_repetitivas: "",
+      tempo_tarefas_manuais: "",
+      decisores: (profile as any)?.decisores || "",
+      principal_gargalo: (profile as any)?.principal_gargalo || "",
+      pontos_melhoria: profile?.pontos_melhoria || "",
+      qualidades: profile?.qualidades || "",
+      mudaria_no_setor: "",
+      whatsapp: (profile as any)?.whatsapp || "",
+      whatsapp_consent: (profile as any)?.whatsapp_consent || false,
+    };
+  });
+
+  const update = (key: string, val: string) => setForm((p: any) => {
+    const next = { ...p, [key]: val };
+    sessionStorage.setItem("onboarding_form", JSON.stringify(next));
+    return next;
+  });
 
   const stepValid = useMemo(() => {
     switch (step) {
@@ -83,6 +105,8 @@ export default function Onboarding() {
         onboarding_completo: true,
       };
       await db.updateProfile(profile.id, payload);
+      sessionStorage.removeItem("onboarding_step");
+      sessionStorage.removeItem("onboarding_form");
       await refreshProfile();
       toast.success("Perfil completo! Bem-vindo ao HexaOS 🚀");
       navigate("/home");
@@ -97,11 +121,11 @@ export default function Onboarding() {
     if (step === STEPS.length - 1) {
       handleSubmit();
     } else {
-      setStep(s => s + 1);
+      updateStep(s => s + 1);
     }
   };
 
-  const prev = () => setStep(s => Math.max(0, s - 1));
+  const prev = () => updateStep(s => Math.max(0, s - 1));
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -126,7 +150,11 @@ export default function Onboarding() {
               <StepContato
                 form={form}
                 update={update}
-                setConsent={(v) => setForm(p => ({ ...p, whatsapp_consent: v }))}
+                setConsent={(v) => setForm((p: any) => {
+                  const next = { ...p, whatsapp_consent: v };
+                  sessionStorage.setItem("onboarding_form", JSON.stringify(next));
+                  return next;
+                })}
               />
             )}
           </div>
@@ -162,6 +190,8 @@ export default function Onboarding() {
                 setSaving(true);
                 try {
                   await db.updateProfile(profile.id, { onboarding_completo: true });
+                  sessionStorage.removeItem("onboarding_step");
+                  sessionStorage.removeItem("onboarding_form");
                   await refreshProfile();
                   navigate("/home");
                 } catch (err: any) {
