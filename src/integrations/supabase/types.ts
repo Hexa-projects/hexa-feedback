@@ -1739,6 +1739,81 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_responses: {
+        Row: {
+          analisado_por_ia: boolean | null
+          analise_ia: Json | null
+          created_at: string
+          decisores: string | null
+          ferramentas_criticas: string | null
+          funcao: string
+          id: string
+          mudaria_no_setor: string | null
+          pontos_melhoria: string | null
+          principal_gargalo: string | null
+          qualidades: string | null
+          responsabilidades: string | null
+          respostas_completas: Json | null
+          resumo_dia_dia: string | null
+          setor: string
+          tarefas_repetitivas: string | null
+          tempo_casa: string | null
+          tempo_tarefas_manuais: string | null
+          unidade: string
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          analisado_por_ia?: boolean | null
+          analise_ia?: Json | null
+          created_at?: string
+          decisores?: string | null
+          ferramentas_criticas?: string | null
+          funcao: string
+          id?: string
+          mudaria_no_setor?: string | null
+          pontos_melhoria?: string | null
+          principal_gargalo?: string | null
+          qualidades?: string | null
+          responsabilidades?: string | null
+          respostas_completas?: Json | null
+          resumo_dia_dia?: string | null
+          setor: string
+          tarefas_repetitivas?: string | null
+          tempo_casa?: string | null
+          tempo_tarefas_manuais?: string | null
+          unidade?: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          analisado_por_ia?: boolean | null
+          analise_ia?: Json | null
+          created_at?: string
+          decisores?: string | null
+          ferramentas_criticas?: string | null
+          funcao?: string
+          id?: string
+          mudaria_no_setor?: string | null
+          pontos_melhoria?: string | null
+          principal_gargalo?: string | null
+          qualidades?: string | null
+          responsabilidades?: string | null
+          respostas_completas?: Json | null
+          resumo_dia_dia?: string | null
+          setor?: string
+          tarefas_repetitivas?: string | null
+          tempo_casa?: string | null
+          tempo_tarefas_manuais?: string | null
+          unidade?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       openclaw_event_queue: {
         Row: {
           attempts: number
