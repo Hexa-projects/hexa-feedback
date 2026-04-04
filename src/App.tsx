@@ -50,6 +50,9 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
 const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
+const OpenClawKpiDashboard = lazy(() => import("./pages/OpenClawKpiDashboard"));
+const OpenClawAgentAudit = lazy(() => import("./pages/OpenClawAgentAudit"));
+const OpenClawOpsConsole = lazy(() => import("./pages/OpenClawOpsConsole"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
