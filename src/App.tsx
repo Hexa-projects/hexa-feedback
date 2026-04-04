@@ -141,6 +141,11 @@ const AppRoutes = () => (
       {/* Playbook SDR */}
       <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
 
+      {/* OpenClaw Integration */}
+      <Route path="/openclaw/kpis" element={<PrivateRoute><OpenClawKpiDashboard /></PrivateRoute>} />
+      <Route path="/openclaw/audit" element={<PrivateRoute><OpenClawAgentAudit /></PrivateRoute>} />
+      <Route path="/openclaw/console" element={<PrivateRoute><OpenClawOpsConsole /></PrivateRoute>} />
+
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
