@@ -14,6 +14,88 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_queue: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          event_id: string | null
+          id: string
+          payload: Json | null
+          requires_review: boolean | null
+          status: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          payload?: Json | null
+          requires_review?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          payload?: Json | null
+          requires_review?: boolean | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_queue_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "operational_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_runs: {
+        Row: {
+          actions: Json | null
+          errors: Json | null
+          event_id: string | null
+          finished_at: string | null
+          id: string
+          openclaw_request_id: string | null
+          started_at: string | null
+          status: string
+          summary: string | null
+        }
+        Insert: {
+          actions?: Json | null
+          errors?: Json | null
+          event_id?: string | null
+          finished_at?: string | null
+          id?: string
+          openclaw_request_id?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+        }
+        Update: {
+          actions?: Json | null
+          errors?: Json | null
+          event_id?: string | null
+          finished_at?: string | null
+          id?: string
+          openclaw_request_id?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "operational_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_action_requests: {
         Row: {
           action_type: string
@@ -1412,6 +1494,36 @@ export type Database = {
         }
         Relationships: []
       }
+      kpi_snapshots: {
+        Row: {
+          created_at: string | null
+          id: string
+          kpi_key: string
+          meta: Json | null
+          period_end: string
+          period_start: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          kpi_key: string
+          meta?: Json | null
+          period_end: string
+          period_start: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          kpi_key?: string
+          meta?: Json | null
+          period_end?: string
+          period_start?: string
+          value?: number
+        }
+        Relationships: []
+      }
       lab_parts: {
         Row: {
           created_at: string | null
@@ -1886,6 +1998,39 @@ export type Database = {
           metric_name?: string
           metric_value?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      operational_events: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          payload: Json
+          source: string | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          payload?: Json
+          source?: string | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          payload?: Json
+          source?: string | null
+          status?: string | null
+          type?: string
         }
         Relationships: []
       }

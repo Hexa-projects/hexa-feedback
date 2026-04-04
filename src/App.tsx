@@ -50,6 +50,9 @@ const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
 const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
+const OpenClawKpiDashboard = lazy(() => import("./pages/OpenClawKpiDashboard"));
+const OpenClawAgentAudit = lazy(() => import("./pages/OpenClawAgentAudit"));
+const OpenClawOpsConsole = lazy(() => import("./pages/OpenClawOpsConsole"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -137,6 +140,11 @@ const AppRoutes = () => (
 
       {/* Playbook SDR */}
       <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
+
+      {/* OpenClaw Integration */}
+      <Route path="/openclaw/kpis" element={<PrivateRoute><OpenClawKpiDashboard /></PrivateRoute>} />
+      <Route path="/openclaw/audit" element={<PrivateRoute><OpenClawAgentAudit /></PrivateRoute>} />
+      <Route path="/openclaw/console" element={<PrivateRoute><OpenClawOpsConsole /></PrivateRoute>} />
 
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
