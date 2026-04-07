@@ -57,8 +57,40 @@ export default function WorkOrderDetail() {
       setPecas(osRes.data?.pecas_utilizadas || []);
       setActivities(actRes.data || []);
       setLoading(false);
+
+      // Auto-load Copiloto Técnico docs based on equipment
+      if (osRes.data?.equipamento) {
+        loadKnowledgeDocs(osRes.data.equipamento, osRes.data.equipamento_serial);
+      }
     });
   }, [id]);
+
+  const loadKnowledgeDocs = async (equipment: string, serial?: string) => {
+    setLoadingKnowledge(true);
+    try {
+      // Parse model/brand from equipment field (e.g., "Siemens Artis Zee")
+      const parts = equipment.trim().split(/\s+/);
+      const brand = parts[0] || "";
+      const model = parts.slice(1).join(" ") || equipment;
+
+      const { data, error } = await supabase.functions.invoke("knowledge-search", {
+        body: { action: "search_by_equipment", model, brand, limit: 20 },
+      });
+
+      if (!error && data?.results) {
+        setKnowledgeDocs(data.results);
+      } else {
+        // Fallback: text search
+        const { data: fallback } = await supabase.functions.invoke("knowledge-search", {
+          body: { action: "search_text", query: equipment, limit: 10 },
+        });
+        setKnowledgeDocs(fallback?.results || []);
+      }
+    } catch (err) {
+      console.error("Knowledge search error:", err);
+    }
+    setLoadingKnowledge(false);
+  };
 
   const handleSave = async () => {
     if (!os) return;
