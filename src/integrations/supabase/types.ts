@@ -375,6 +375,48 @@ export type Database = {
           },
         ]
       }
+      automation_executions: {
+        Row: {
+          automation_type: string
+          created_at: string
+          error_message: string | null
+          executed_by: string | null
+          id: string
+          payload: Json | null
+          result: Json | null
+          status: string
+          trigger_entity: string | null
+          trigger_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          automation_type: string
+          created_at?: string
+          error_message?: string | null
+          executed_by?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          status?: string
+          trigger_entity?: string | null
+          trigger_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          automation_type?: string
+          created_at?: string
+          error_message?: string | null
+          executed_by?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          status?: string
+          trigger_entity?: string | null
+          trigger_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       autonomy_rules: {
         Row: {
           acao: string
@@ -1494,6 +1536,108 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory: {
+        Row: {
+          category: string | null
+          cost_per_unit: number | null
+          created_at: string
+          current_quantity: number
+          id: string
+          location: string | null
+          min_quantity: number
+          name: string
+          notes: string | null
+          sku: string | null
+          supplier: string | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          location?: string | null
+          min_quantity?: number
+          name: string
+          notes?: string | null
+          sku?: string | null
+          supplier?: string | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          location?: string | null
+          min_quantity?: number
+          name?: string
+          notes?: string | null
+          sku?: string | null
+          supplier?: string | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      knowledge_chunks: {
+        Row: {
+          content: string
+          created_at: string
+          doc_type: string | null
+          embedding: string | null
+          equipment_brand: string | null
+          equipment_model: string | null
+          id: string
+          metadata: Json | null
+          source_file: string | null
+          source_url: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          doc_type?: string | null
+          embedding?: string | null
+          equipment_brand?: string | null
+          equipment_model?: string | null
+          id?: string
+          metadata?: Json | null
+          source_file?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          doc_type?: string | null
+          embedding?: string | null
+          equipment_brand?: string | null
+          equipment_model?: string | null
+          id?: string
+          metadata?: Json | null
+          source_file?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       kpi_snapshots: {
         Row: {
           created_at: string | null
@@ -2416,6 +2560,7 @@ export type Database = {
           quantidade: number
           referencia: string | null
           tipo: string
+          work_order_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -2427,6 +2572,7 @@ export type Database = {
           quantidade?: number
           referencia?: string | null
           tipo?: string
+          work_order_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -2438,6 +2584,7 @@ export type Database = {
           quantidade?: number
           referencia?: string | null
           tipo?: string
+          work_order_id?: string | null
         }
         Relationships: [
           {

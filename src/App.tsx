@@ -53,6 +53,7 @@ const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
 const OpenClawKpiDashboard = lazy(() => import("./pages/OpenClawKpiDashboard"));
 const OpenClawAgentAudit = lazy(() => import("./pages/OpenClawAgentAudit"));
 const OpenClawOpsConsole = lazy(() => import("./pages/OpenClawOpsConsole"));
+const ExecutiveDashboard = lazy(() => import("./pages/ExecutiveDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -92,6 +93,7 @@ const AppRoutes = () => (
 
       {/* HexaOS modules */}
       <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+      <Route path="/executive" element={<PrivateRoute><ExecutiveDashboard /></PrivateRoute>} />
 
       {/* CRM */}
       <Route path="/crm" element={<PrivateRoute><LeadsList /></PrivateRoute>} />

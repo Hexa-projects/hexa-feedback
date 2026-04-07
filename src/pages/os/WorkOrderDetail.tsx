@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, Plus, CheckSquare, Clock, AlertTriangle,
-  Wrench, Package, Camera, FileText, User
+  Wrench, Package, Camera, FileText, User, Brain, BookOpen, Loader2, RefreshCw
 } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 
@@ -43,6 +43,10 @@ export default function WorkOrderDetail() {
   const [pecas, setPecas] = useState<PecaUsada[]>([]);
   const [newPeca, setNewPeca] = useState({ nome: "", quantidade: 1, serial: "" });
 
+  // Copiloto Técnico
+  const [knowledgeDocs, setKnowledgeDocs] = useState<any[]>([]);
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     Promise.all([
@@ -53,8 +57,40 @@ export default function WorkOrderDetail() {
       setPecas(osRes.data?.pecas_utilizadas || []);
       setActivities(actRes.data || []);
       setLoading(false);
+
+      // Auto-load Copiloto Técnico docs based on equipment
+      if (osRes.data?.equipamento) {
+        loadKnowledgeDocs(osRes.data.equipamento, osRes.data.equipamento_serial);
+      }
     });
   }, [id]);
+
+  const loadKnowledgeDocs = async (equipment: string, serial?: string) => {
+    setLoadingKnowledge(true);
+    try {
+      // Parse model/brand from equipment field (e.g., "Siemens Artis Zee")
+      const parts = equipment.trim().split(/\s+/);
+      const brand = parts[0] || "";
+      const model = parts.slice(1).join(" ") || equipment;
+
+      const { data, error } = await supabase.functions.invoke("knowledge-search", {
+        body: { action: "search_by_equipment", model, brand, limit: 20 },
+      });
+
+      if (!error && data?.results) {
+        setKnowledgeDocs(data.results);
+      } else {
+        // Fallback: text search
+        const { data: fallback } = await supabase.functions.invoke("knowledge-search", {
+          body: { action: "search_text", query: equipment, limit: 10 },
+        });
+        setKnowledgeDocs(fallback?.results || []);
+      }
+    } catch (err) {
+      console.error("Knowledge search error:", err);
+    }
+    setLoadingKnowledge(false);
+  };
 
   const handleSave = async () => {
     if (!os) return;
@@ -67,8 +103,37 @@ export default function WorkOrderDetail() {
       equipamento_serial: os.equipamento_serial, pecas_utilizadas: pecas,
       data_conclusao: os.status === "Concluído" ? new Date().toISOString() : null,
     } as any).eq("id", os.id);
-    if (error) toast.error(error.message);
-    else toast.success("OS atualizada!");
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("OS atualizada!");
+
+      // Trigger stock automation when OS is completed
+      if (os.status === "Concluído" && pecas.length > 0) {
+        try {
+          await supabase.functions.invoke("stock-automation", {
+            body: {
+              action: "on_os_completed",
+              work_order_id: os.id,
+              pecas_utilizadas: pecas,
+              user_id: user?.id,
+            },
+          });
+          toast.success("Baixa de estoque realizada automaticamente!");
+        } catch (stockErr) {
+          console.error("Stock automation error:", stockErr);
+          // Queue for retry
+          await supabase.from("openclaw_event_queue").insert({
+            event_type: "stock_deduction_retry",
+            data: { work_order_id: os.id, pecas_utilizadas: pecas },
+            status: "pending",
+            domain: "stock",
+            priority: "high",
+          } as any);
+          toast.info("Baixa de estoque enfileirada para processamento.");
+        }
+      }
+    }
     setSaving(false);
   };
 
@@ -163,6 +228,12 @@ export default function WorkOrderDetail() {
             <TabsTrigger value="dados">Dados da OS</TabsTrigger>
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="pecas">Peças Utilizadas</TabsTrigger>
+            <TabsTrigger value="copiloto" className="gap-1">
+              <Brain className="w-3 h-3" /> Copiloto Técnico
+              {knowledgeDocs.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-[10px] px-1">{knowledgeDocs.length}</Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Dados Tab */}
@@ -282,6 +353,92 @@ export default function WorkOrderDetail() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">Lembre-se de salvar a OS após alterar as peças.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Copiloto Técnico Tab */}
+          <TabsContent value="copiloto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-primary" /> Copiloto Técnico
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Manuais, diagramas e procedimentos para <strong>{os.equipamento}</strong>
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {loadingKnowledge ? (
+                  <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm">Buscando documentação técnica...</span>
+                  </div>
+                ) : knowledgeDocs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum documento técnico encontrado para "{os.equipamento}".
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Faça upload de manuais na seção de Conhecimento para ativar o copiloto.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 gap-1"
+                      onClick={() => os.equipamento && loadKnowledgeDocs(os.equipamento)}
+                    >
+                      <RefreshCw className="w-3 h-3" /> Buscar novamente
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {knowledgeDocs.map((doc: any) => (
+                      <Card key={doc.id} className="border-primary/20">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="shrink-0 mt-0.5">
+                              {doc.doc_type === "diagrama" ? (
+                                <FileText className="w-5 h-5 text-primary" />
+                              ) : doc.doc_type === "procedimento" ? (
+                                <CheckSquare className="w-5 h-5 text-hexa-green" />
+                              ) : (
+                                <BookOpen className="w-5 h-5 text-hexa-amber" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-medium truncate">{doc.title}</p>
+                                <Badge variant="outline" className="text-[10px] shrink-0">{doc.doc_type}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
+                                {doc.content?.slice(0, 300)}{doc.content?.length > 300 ? "..." : ""}
+                              </p>
+                              <div className="flex items-center gap-2 mt-2">
+                                {doc.equipment_brand && (
+                                  <Badge variant="secondary" className="text-[10px]">{doc.equipment_brand}</Badge>
+                                )}
+                                {doc.equipment_model && (
+                                  <Badge variant="secondary" className="text-[10px]">{doc.equipment_model}</Badge>
+                                )}
+                                {doc.source_file && (
+                                  <span className="text-[10px] text-muted-foreground">📄 {doc.source_file}</span>
+                                )}
+                              </div>
+                              {doc.source_url && (
+                                <a href={doc.source_url} target="_blank" rel="noreferrer"
+                                  className="text-xs text-primary underline mt-1 inline-block">
+                                  Abrir documento completo →
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

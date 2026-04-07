@@ -48,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: LayoutDashboard,
     children: [
       { to: "/home", label: "Visão Geral", icon: Home },
+      { to: "/executive", label: "Executive Dashboard", icon: BarChart3 },
       { to: "/reports", label: "Relatórios & BI", icon: BarChart3 },
     ],
   },
