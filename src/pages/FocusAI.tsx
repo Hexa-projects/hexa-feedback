@@ -19,7 +19,7 @@ import {
 import CoCEODashboard from "@/components/CoCEODashboard";
 import WebhookOpsDashboard from "@/components/WebhookOpsDashboard";
 import OpenClawSyncPanel from "@/components/OpenClawSyncPanel";
-import { checkHealth, maskToken, buildWsUrl } from "@/lib/openclaw-client";
+import { checkHealth, maskToken } from "@/lib/openclaw-client";
 import { toast } from "sonner";
 
 interface FocusConfig {
@@ -138,7 +138,7 @@ export default function FocusAI() {
   const testConnection = async () => {
     setTesting(true);
     try {
-      const result = await checkHealth(config?.openclaw_url || "", config?.openclaw_api_key || "");
+      const result = await checkHealth(config?.openclaw_url || "");
 
       if (result.success) {
         toast.success("✅ " + result.message, { description: `Status: ${result.status} — ${JSON.stringify(result.data)}` });

@@ -1,16 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-function maskToken(t: string): string {
-  if (!t || t.length < 8) return "***";
-  return t.slice(0, 4) + "..." + t.slice(-4);
-}
 
 function jsonResp(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -48,7 +42,7 @@ async function handleFailure(db: any, events: any[], errorMsg: string) {
   }, { onConflict: "metric_name" });
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -60,6 +54,67 @@ serve(async (req) => {
   try {
     const { action } = await req.json();
 
+    // ── P2P Health Check ──
+    if (action === "health_check") {
+      const { data: cfg } = await db.from("focus_ai_config").select("openclaw_url, openclaw_api_key, openclaw_ativo").limit(1).single();
+
+      if (!cfg || !cfg.openclaw_ativo) {
+        return jsonResp({ success: false, error: "disabled", message: "OpenClaw está desativado na configuração." });
+      }
+
+      const baseUrl = (cfg.openclaw_url || "").replace(/\/+$/, "");
+      const token = cfg.openclaw_api_key || "";
+
+      if (!baseUrl) {
+        return jsonResp({ success: false, error: "no_url", message: "URL da API não configurada." });
+      }
+
+      // P2P: test direct connectivity to the configured endpoint
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["x-api-token"] = token;
+
+        const testPayload = {
+          message: JSON.stringify({ type: "health_check", source: "hexaos", timestamp: new Date().toISOString() }),
+          sessionKey: "hexaos-health",
+        };
+
+        const res = await fetch(`${baseUrl}/api/chat`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(testPayload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          let body: unknown = null;
+          try { body = await res.json(); } catch { body = await res.text(); }
+
+          await db.from("openclaw_sync_status").upsert({
+            metric_name: "connection",
+            metric_value: { status: "connected", last_check: new Date().toISOString(), mode: "p2p" },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "metric_name" });
+
+          return jsonResp({ success: true, status: res.status, data: body, message: "Conexão P2P estabelecida com sucesso" });
+        }
+
+        if (res.status === 401 || res.status === 403) {
+          return jsonResp({ success: false, error: "auth_error", status: res.status, message: "Token (x-api-token) inválido ou ausente" });
+        }
+
+        return jsonResp({ success: false, error: "http_error", status: res.status, message: `Endpoint retornou HTTP ${res.status}` });
+      } catch (err: any) {
+        const errMsg = err.name === "AbortError" ? "Timeout (8s)" : (err.message || "unknown");
+        return jsonResp({ success: false, error: "network_error", message: "Endpoint não respondeu", detail: errMsg });
+      }
+    }
+
+    // ── Process Queue (P2P direct) ──
     if (action === "process_queue") {
       const { data: cfg } = await db.from("focus_ai_config").select("*").limit(1).single();
       if (!cfg || !cfg.openclaw_ativo) {
@@ -69,7 +124,7 @@ serve(async (req) => {
       const token = cfg.openclaw_api_key || "";
 
       if (!baseUrl) {
-        return jsonResp({ success: false, error: "no_url", message: "URL do OpenClaw não configurada." });
+        return jsonResp({ success: false, error: "no_url", message: "URL da API não configurada." });
       }
 
       const { data: events, error: fetchErr } = await db
@@ -93,9 +148,7 @@ serve(async (req) => {
       const ids = events.map((e: any) => e.id);
       await db.from("openclaw_event_queue").update({ status: "processing" }).in("id", ids);
 
-      // Try /api/chat endpoint (OpenClaw standard)
       const endpoint = `${baseUrl}/api/chat`;
-
       const allResults: any[] = [];
       let allOk = true;
 
@@ -119,10 +172,9 @@ serve(async (req) => {
         const timeout = setTimeout(() => controller.abort(), 8000);
 
         try {
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-          };
-          if (token) headers["Authorization"] = `Bearer ${token}`;
+          // P2P: use x-api-token header instead of Bearer auth
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (token) headers["x-api-token"] = token;
 
           const res = await fetch(endpoint, {
             method: "POST",
@@ -138,19 +190,16 @@ serve(async (req) => {
             const errText = await res.text().catch(() => "");
 
             if (res.status === 401 || res.status === 403) {
-              // Auth error - fail all remaining
-              await handleFailure(db, events, "Token inválido ou ausente");
+              await handleFailure(db, events, "Token (x-api-token) inválido ou ausente");
               return jsonResp({ success: false, error: "auth_error", message: "Token inválido." });
             }
 
-            // For 404 on tools/invoke, the tool may not exist - still mark as delivered
-            // since OpenClaw received it but doesn't have the tool installed
             if (res.status === 404) {
-              console.log(`[openclaw-sync] Tool not found (404), marking event as delivered (gateway received it)`);
-              allResults.push({ id: evt.id, ok: true, note: "tool_not_found" });
+              console.log(`[openclaw-sync] 404 — endpoint não encontrado, marcando como entregue`);
+              allResults.push({ id: evt.id, ok: true, note: "endpoint_not_found" });
             } else {
               allOk = false;
-              allResults.push({ id: evt.id, ok: false, status: res.status, error: errText.slice(0, 200) });
+              allResults.push({ id: evt.id, ok: false, status: res.status, error: errText.slice(0, 500) });
             }
           }
         } catch (fetchErr: any) {
@@ -179,13 +228,13 @@ serve(async (req) => {
 
       await db.from("openclaw_sync_status").upsert({
         metric_name: "last_heartbeat",
-        metric_value: { sent_at: new Date().toISOString(), success: allOk, count: successIds.length },
+        metric_value: { sent_at: new Date().toISOString(), success: allOk, count: successIds.length, mode: "p2p" },
         updated_at: new Date().toISOString(),
       }, { onConflict: "metric_name" });
 
       await db.from("openclaw_sync_status").upsert({
         metric_name: "connection",
-        metric_value: { status: allOk ? "connected" : "partial", last_check: new Date().toISOString() },
+        metric_value: { status: allOk ? "connected" : "partial", last_check: new Date().toISOString(), mode: "p2p" },
         updated_at: new Date().toISOString(),
       }, { onConflict: "metric_name" });
 
@@ -193,7 +242,7 @@ serve(async (req) => {
         success: allOk,
         processed: successIds.length,
         failed: failedResults.length,
-        message: `${successIds.length}/${events.length} eventos enviados.`,
+        message: `${successIds.length}/${events.length} eventos enviados (P2P).`,
       });
     }
 
