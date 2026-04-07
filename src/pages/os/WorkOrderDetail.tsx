@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, Plus, CheckSquare, Clock, AlertTriangle,
-  Wrench, Package, Camera, FileText, User, Brain, BookOpen, Loader2
+  Wrench, Package, Camera, FileText, User, Brain, BookOpen, Loader2, RefreshCw
 } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 
