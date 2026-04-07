@@ -23,6 +23,7 @@ const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
 const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
 const LabPartsList = lazy(() => import("./pages/lab/LabPartsList"));
 const LabPartForm = lazy(() => import("./pages/lab/LabPartForm"));
+const DataImporter = lazy(() => import("./pages/lab/DataImporter"));
 const StockDashboard = lazy(() => import("./pages/stock/StockDashboard"));
 const StockProducts = lazy(() => import("./pages/stock/StockProducts"));
 const StockProductForm = lazy(() => import("./pages/stock/StockProductForm"));
@@ -116,6 +117,7 @@ const AppRoutes = () => (
       {/* Laboratório */}
       <Route path="/lab" element={<PrivateRoute><LabPartsList /></PrivateRoute>} />
       <Route path="/lab/new" element={<PrivateRoute><LabPartForm /></PrivateRoute>} />
+      <Route path="/lab/import" element={<PrivateRoute><DataImporter /></PrivateRoute>} />
 
       {/* Estoque Inteligente */}
       <Route path="/stock" element={<PrivateRoute><StockDashboard /></PrivateRoute>} />
