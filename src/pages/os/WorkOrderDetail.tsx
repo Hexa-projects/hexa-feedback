@@ -103,8 +103,37 @@ export default function WorkOrderDetail() {
       equipamento_serial: os.equipamento_serial, pecas_utilizadas: pecas,
       data_conclusao: os.status === "Concluído" ? new Date().toISOString() : null,
     } as any).eq("id", os.id);
-    if (error) toast.error(error.message);
-    else toast.success("OS atualizada!");
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("OS atualizada!");
+
+      // Trigger stock automation when OS is completed
+      if (os.status === "Concluído" && pecas.length > 0) {
+        try {
+          await supabase.functions.invoke("stock-automation", {
+            body: {
+              action: "on_os_completed",
+              work_order_id: os.id,
+              pecas_utilizadas: pecas,
+              user_id: user?.id,
+            },
+          });
+          toast.success("Baixa de estoque realizada automaticamente!");
+        } catch (stockErr) {
+          console.error("Stock automation error:", stockErr);
+          // Queue for retry
+          await supabase.from("openclaw_event_queue").insert({
+            event_type: "stock_deduction_retry",
+            data: { work_order_id: os.id, pecas_utilizadas: pecas },
+            status: "pending",
+            domain: "stock",
+            priority: "high",
+          } as any);
+          toast.info("Baixa de estoque enfileirada para processamento.");
+        }
+      }
+    }
     setSaving(false);
   };
 
