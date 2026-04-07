@@ -184,6 +184,20 @@ export function createMetricsEvent(metrics: Record<string, unknown>) {
   });
 }
 
+// ── Retry individual event ──
+
+export async function retryEvent(eventId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("openclaw_event_queue" as any)
+    .update({ status: "pending", attempts: 0, last_error: null, next_retry_at: null } as any)
+    .eq("id", eventId);
+  if (error) {
+    console.error("[OpenClawEvents] Retry failed:", error.message);
+    return false;
+  }
+  return true;
+}
+
 // ── PII sanitization ──
 
 const PII_FIELDS = ["senha", "password", "cpf", "rg", "token", "api_key", "secret"];
