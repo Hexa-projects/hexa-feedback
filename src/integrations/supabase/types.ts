@@ -3212,7 +3212,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      openclaw_sync_queue: {
+        Row: {
+          created_at: string | null
+          event_type: string | null
+          id: string | null
+          last_error: string | null
+          payload: Json | null
+          retry_count: number | null
+          scheduled_for: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          last_error?: string | null
+          payload?: Json | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          last_error?: string | null
+          payload?: Json | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_setor: {
