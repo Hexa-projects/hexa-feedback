@@ -202,32 +202,30 @@ export default function Onboarding() {
         </div>
 
         {/* Admin skip */}
-        {role === "admin" && (
-          <div className="text-center">
-            <Button
-              variant="ghost"
-              className="text-muted-foreground text-sm"
-              onClick={async () => {
-                if (!profile) return;
-                setSaving(true);
-                try {
-                  await db.updateProfile(profile.id, { onboarding_completo: true });
-                  sessionStorage.removeItem("onboarding_step");
-                  sessionStorage.removeItem("onboarding_form");
-                  await refreshProfile();
-                  navigate("/home");
-                } catch (err: any) {
-                  toast.error("Erro ao pular: " + err.message);
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              disabled={saving}
-            >
-              Preencher depois →
-            </Button>
-          </div>
-        )}
+        <div className="text-center">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground text-sm"
+            onClick={async () => {
+              if (!profile) return;
+              setSaving(true);
+              try {
+                await db.updateProfile(profile.id, { onboarding_completo: true });
+                sessionStorage.removeItem("onboarding_step");
+                sessionStorage.removeItem("onboarding_form");
+                await refreshProfile();
+                navigate("/home");
+              } catch (err: any) {
+                toast.error("Erro ao pular: " + err.message);
+              } finally {
+                setSaving(false);
+              }
+            }}
+            disabled={saving}
+          >
+            Preencher depois →
+          </Button>
+        </div>
       </div>
     </div>
   );
