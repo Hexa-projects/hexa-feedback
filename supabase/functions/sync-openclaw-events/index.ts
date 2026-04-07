@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(config.openclaw_api_key ? { Authorization: `Bearer ${config.openclaw_api_key}` } : {}),
+            ...(config.openclaw_api_key ? { "x-api-token": config.openclaw_api_key } : {}),
           },
           body: JSON.stringify({
             event_type: event.event_type,
