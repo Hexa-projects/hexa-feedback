@@ -304,18 +304,21 @@ export default function FocusAI() {
           <TabsContent value="openclaw">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><Plug className="w-5 h-5" /> Integração OpenClaw (VPS)</CardTitle>
-                <CardDescription>Conecte-se ao servidor OpenClaw para habilitar automações e skills.</CardDescription>
+                <CardTitle className="text-lg flex items-center gap-2"><Plug className="w-5 h-5" /> Integração OpenClaw (P2P)</CardTitle>
+                <CardDescription>Conexão direta ponto-a-ponto via Edge Function — sem gateway intermediário.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 mb-2">
+                  <p className="text-xs text-primary font-medium">🔗 Modo P2P Ativo — Comunicação direta via Edge Function com header x-api-token. Sem intermediários.</p>
+                </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>URL da API</Label>
-                    <Input placeholder="https://openclaw.seuservidor.com" value={config.openclaw_url} onChange={e => updateConfig("openclaw_url", e.target.value)} />
+                    <Label>URL da API (Endpoint Direto)</Label>
+                    <Input placeholder="https://seu-servidor.com" value={config.openclaw_url} onChange={e => updateConfig("openclaw_url", e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label>API Key / Token</Label>
-                    <Input type="password" placeholder="oc_..." value={config.openclaw_api_key} onChange={e => updateConfig("openclaw_api_key", e.target.value)} />
+                    <Label>x-api-token</Label>
+                    <Input type="password" placeholder="seu-token-de-autenticação" value={config.openclaw_api_key} onChange={e => updateConfig("openclaw_api_key", e.target.value)} />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
