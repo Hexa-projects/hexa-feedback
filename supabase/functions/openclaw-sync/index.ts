@@ -52,7 +52,9 @@ Deno.serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey);
 
   try {
-    const { action } = await req.json();
+    const body = await req.json();
+    console.log("[openclaw-sync] REQUEST BODY:", JSON.stringify(body));
+    const { action } = body;
 
     // ── P2P Health Check ──
     if (action === "health_check") {
