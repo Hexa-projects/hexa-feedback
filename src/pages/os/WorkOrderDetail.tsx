@@ -228,6 +228,12 @@ export default function WorkOrderDetail() {
             <TabsTrigger value="dados">Dados da OS</TabsTrigger>
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="pecas">Peças Utilizadas</TabsTrigger>
+            <TabsTrigger value="copiloto" className="gap-1">
+              <Brain className="w-3 h-3" /> Copiloto Técnico
+              {knowledgeDocs.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-[10px] px-1">{knowledgeDocs.length}</Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Dados Tab */}
@@ -347,6 +353,92 @@ export default function WorkOrderDetail() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">Lembre-se de salvar a OS após alterar as peças.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Copiloto Técnico Tab */}
+          <TabsContent value="copiloto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-primary" /> Copiloto Técnico
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Manuais, diagramas e procedimentos para <strong>{os.equipamento}</strong>
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {loadingKnowledge ? (
+                  <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm">Buscando documentação técnica...</span>
+                  </div>
+                ) : knowledgeDocs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum documento técnico encontrado para "{os.equipamento}".
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Faça upload de manuais na seção de Conhecimento para ativar o copiloto.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 gap-1"
+                      onClick={() => os.equipamento && loadKnowledgeDocs(os.equipamento)}
+                    >
+                      <RefreshCw className="w-3 h-3" /> Buscar novamente
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {knowledgeDocs.map((doc: any) => (
+                      <Card key={doc.id} className="border-primary/20">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="shrink-0 mt-0.5">
+                              {doc.doc_type === "diagrama" ? (
+                                <FileText className="w-5 h-5 text-primary" />
+                              ) : doc.doc_type === "procedimento" ? (
+                                <CheckSquare className="w-5 h-5 text-hexa-green" />
+                              ) : (
+                                <BookOpen className="w-5 h-5 text-hexa-amber" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-medium truncate">{doc.title}</p>
+                                <Badge variant="outline" className="text-[10px] shrink-0">{doc.doc_type}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
+                                {doc.content?.slice(0, 300)}{doc.content?.length > 300 ? "..." : ""}
+                              </p>
+                              <div className="flex items-center gap-2 mt-2">
+                                {doc.equipment_brand && (
+                                  <Badge variant="secondary" className="text-[10px]">{doc.equipment_brand}</Badge>
+                                )}
+                                {doc.equipment_model && (
+                                  <Badge variant="secondary" className="text-[10px]">{doc.equipment_model}</Badge>
+                                )}
+                                {doc.source_file && (
+                                  <span className="text-[10px] text-muted-foreground">📄 {doc.source_file}</span>
+                                )}
+                              </div>
+                              {doc.source_url && (
+                                <a href={doc.source_url} target="_blank" rel="noreferrer"
+                                  className="text-xs text-primary underline mt-1 inline-block">
+                                  Abrir documento completo →
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
