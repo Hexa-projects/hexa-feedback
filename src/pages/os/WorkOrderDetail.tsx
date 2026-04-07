@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, Plus, CheckSquare, Clock, AlertTriangle,
-  Wrench, Package, Camera, FileText, User
+  Wrench, Package, Camera, FileText, User, Brain, BookOpen, Loader2
 } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 
@@ -42,6 +42,10 @@ export default function WorkOrderDetail() {
   // Peças usadas
   const [pecas, setPecas] = useState<PecaUsada[]>([]);
   const [newPeca, setNewPeca] = useState({ nome: "", quantidade: 1, serial: "" });
+
+  // Copiloto Técnico
+  const [knowledgeDocs, setKnowledgeDocs] = useState<any[]>([]);
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
 
   useEffect(() => {
     if (!id) return;
