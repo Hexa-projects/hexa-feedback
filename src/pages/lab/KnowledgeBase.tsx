@@ -16,8 +16,7 @@ export default function KnowledgeBase() {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load knowledge chunks that are "manual" docs
-  useState(() => {
+  useEffect(() => {
     if (!user) return;
     supabase
       .from("knowledge_chunks")
@@ -28,7 +27,7 @@ export default function KnowledgeBase() {
         setFiles(data || []);
         setLoading(false);
       });
-  });
+  }, [user]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
