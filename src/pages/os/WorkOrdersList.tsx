@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Eye, Wrench, Clock } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
+import AISmartBadge from "@/components/AISmartBadge";
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberto": "bg-blue-100 text-blue-800",
@@ -100,7 +101,12 @@ export default function WorkOrdersList() {
                 <TableBody>
                   {filtered.map(os => (
                     <TableRow key={os.id}>
-                      <TableCell className="font-mono text-sm">{os.numero_os || "—"}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        <div className="flex items-center gap-2">
+                          {os.numero_os || "—"}
+                          {getSlaColor(os) === "text-destructive" && <AISmartBadge agent="Gear" />}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{os.cliente}</TableCell>
                       <TableCell>{os.equipamento}</TableCell>
                       <TableCell>

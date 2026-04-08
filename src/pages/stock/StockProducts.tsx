@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Package, LayoutGrid, List, AlertTriangle } from "lucide-react";
+import AISmartBadge from "@/components/AISmartBadge";
 
 const STATUS_COLORS: Record<string, string> = {
   "Disponível": "bg-green-100 text-green-800",
