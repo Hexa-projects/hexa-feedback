@@ -12,7 +12,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -48,22 +49,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        hexa: {
-          amber: "hsl(var(--hexa-amber))",
-          "amber-light": "hsl(var(--hexa-amber-light))",
-          "amber-dark": "hsl(var(--hexa-amber-dark))",
-          gold: "hsl(var(--hexa-gold))",
-          warm: "hsl(var(--hexa-warm))",
-          charcoal: "hsl(var(--hexa-charcoal))",
-          slate: "hsl(var(--hexa-slate))",
-          green: "hsl(var(--hexa-green))",
-          purple: "hsl(var(--hexa-purple))",
-          red: "hsl(var(--hexa-red))",
-          blue: "hsl(var(--hexa-blue))",
-          teal: "hsl(var(--hexa-teal))",
-          orange: "hsl(var(--hexa-orange))",
-          yellow: "hsl(var(--hexa-yellow))",
-          navy: "hsl(var(--hexa-navy))",
+        agent: {
+          focus: "hsl(var(--agent-focus))",
+          hunter: "hsl(var(--agent-hunter))",
+          gear: "hsl(var(--agent-gear))",
+          tracker: "hsl(var(--agent-tracker))",
+          ledger: "hsl(var(--agent-ledger))",
+        },
+        neon: {
+          cyan: "hsl(var(--neon-cyan))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
