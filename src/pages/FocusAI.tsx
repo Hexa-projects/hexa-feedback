@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Brain, Shield, CheckCircle2, XCircle, Send,
   AlertTriangle, Lightbulb, Terminal, Eye,
-  TrendingUp, Clock, Zap, Activity
+  TrendingUp, Clock, Zap, Activity,
+  Target, Wrench, Package, DollarSign, Bot
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -59,6 +60,15 @@ interface ChatMessage {
   metadata: any;
 }
 
+// Agent definitions
+const AGENTS = [
+  { key: "focus", name: "Focus AI", role: "Orquestrador & Estratégia", icon: Brain, color: "from-purple-500 to-violet-600", pulse: "bg-purple-400", badge: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
+  { key: "hunter", name: "Hunter", role: "Comercial & CRM", icon: Target, color: "from-orange-500 to-amber-600", pulse: "bg-orange-400", badge: "bg-orange-500/20 text-orange-300 border-orange-500/30" },
+  { key: "gear", name: "Gear", role: "Operações & SLA", icon: Wrench, color: "from-blue-500 to-cyan-600", pulse: "bg-blue-400", badge: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
+  { key: "tracker", name: "Tracker", role: "Estoque & Laboratório", icon: Package, color: "from-emerald-500 to-green-600", pulse: "bg-emerald-400", badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  { key: "ledger", name: "Ledger", role: "Financeiro & Rentabilidade", icon: DollarSign, color: "from-yellow-500 to-amber-500", pulse: "bg-yellow-400", badge: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" },
+];
+
 export default function FocusAI() {
   const { user, role } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -79,9 +89,7 @@ export default function FocusAI() {
   }, [user, role]);
 
   useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = 0;
-    }
+    if (terminalRef.current) terminalRef.current.scrollTop = 0;
   }, [logs]);
 
   useEffect(() => {
@@ -95,47 +103,29 @@ export default function FocusAI() {
   };
 
   const loadLogs = async () => {
-    const { data } = await supabase
-      .from("focus_ai_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(80);
+    const { data } = await supabase.from("focus_ai_logs").select("*").order("created_at", { ascending: false }).limit(80);
     if (data) setLogs(data as any);
   };
 
   const loadActions = async () => {
-    const { data } = await supabase
-      .from("ai_action_requests")
-      .select("*")
-      .in("status", ["pending", "pending_approval"])
-      .order("created_at", { ascending: false })
-      .limit(20);
+    const { data } = await supabase.from("ai_action_requests").select("*").in("status", ["pending", "pending_approval"]).order("created_at", { ascending: false }).limit(20);
     if (data) setActions(data as any);
   };
 
   const loadInsights = async () => {
-    const { data } = await supabase
-      .from("focus_ai_insights")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(30);
+    const { data } = await supabase.from("focus_ai_insights").select("*").order("created_at", { ascending: false }).limit(30);
     if (data) setInsights(data as any);
   };
 
   const loadMessages = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("ai_chat_messages")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .limit(50);
+    const { data } = await supabase.from("ai_chat_messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }).limit(50);
     if (data) setMessages(data as any);
   };
 
   const handleApprove = async (id: string) => {
     await supabase.from("ai_action_requests").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", id);
-    toast.success("Ação aprovada — Hermes executará em breve.");
+    toast.success("Ação aprovada — o agente executará em breve.");
     setActions(prev => prev.filter(a => a.id !== id));
   };
 
@@ -156,17 +146,14 @@ export default function FocusAI() {
 
     await supabase.from("ai_chat_messages").insert({ user_id: user.id, role: "user", content, metadata: { source: "focus_command" } });
 
-    // Placeholder: the VPS agent will pick this up and respond
     const ackMsg = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content: "📡 Comando recebido. Hermes processará sua solicitação.",
+      id: crypto.randomUUID(), role: "assistant",
+      content: "📡 Comando recebido. O agente processará sua solicitação.",
       created_at: new Date().toISOString(),
       metadata: { actor_id: "focus_ai" },
     };
     setMessages(prev => [...prev, ackMsg as any]);
     await supabase.from("ai_chat_messages").insert({ user_id: user.id, role: "assistant", content: ackMsg.content, metadata: ackMsg.metadata });
-
     setSending(false);
   };
 
@@ -226,13 +213,13 @@ export default function FocusAI() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Brain className="w-5 h-5 text-white" />
+              <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                HERMES <span className="text-xs font-normal text-cyan-400 tracking-widest">COMMAND CENTER</span>
+                THE SWARM <span className="text-xs font-normal text-cyan-400 tracking-widest">COMMAND CENTER</span>
               </h1>
-              <p className="text-xs text-slate-400">Agente autônomo • VPS ativa • Monitoramento 24/7</p>
+              <p className="text-xs text-slate-400">Ecossistema Multi-Agentes • Monitoramento 24/7</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -243,14 +230,37 @@ export default function FocusAI() {
           </div>
         </div>
 
-        {/* 4-panel grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-200px)] min-h-[600px]">
+        {/* Agent Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+          {AGENTS.map(agent => (
+            <Card key={agent.key} className="bg-slate-900/60 border-slate-700/50 hover:border-slate-600 transition-colors">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${agent.color} flex items-center justify-center`}>
+                    <agent.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-white truncate">{agent.name}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{agent.role}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${agent.pulse} animate-pulse`} />
+                  <span className="text-[10px] text-slate-400">Monitorando</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-          {/* 1. TERMINAL DE PENSAMENTO */}
+        {/* 4-panel grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-380px)] min-h-[500px]">
+
+          {/* 1. ACTIVITY FEED */}
           <div className="hermes-panel flex flex-col">
             <div className="hermes-panel-header">
               <Terminal className="w-4 h-4 text-cyan-400" />
-              <span>Terminal de Pensamento</span>
+              <span>Activity Feed (Logs)</span>
               <Activity className="w-3 h-3 text-emerald-400 animate-pulse ml-auto" />
             </div>
             <div ref={terminalRef} className="hermes-terminal flex-1 overflow-y-auto">
@@ -306,13 +316,9 @@ export default function FocusAI() {
                           {action.risk_level || "low"}
                         </Badge>
                       </div>
-                      {action.description && (
-                        <p className="text-xs text-slate-300 line-clamp-2">{action.description}</p>
-                      )}
+                      {action.description && <p className="text-xs text-slate-300 line-clamp-2">{action.description}</p>}
                       <p className="text-xs text-slate-400 italic">Razão: {action.reason}</p>
-                      {action.estimated_impact && (
-                        <p className="text-[10px] text-cyan-300">⚡ Impacto: {action.estimated_impact}</p>
-                      )}
+                      {action.estimated_impact && <p className="text-[10px] text-cyan-300">⚡ Impacto: {action.estimated_impact}</p>}
                       <div className="flex gap-2 pt-1">
                         <Button size="sm" onClick={() => handleApprove(action.id)}
                           className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1">
@@ -330,7 +336,7 @@ export default function FocusAI() {
             </ScrollArea>
           </div>
 
-          {/* 3. MAPA DE INSIGHTS */}
+          {/* 3. INSIGHTS & GARGALOS */}
           <div className="hermes-panel flex flex-col">
             <div className="hermes-panel-header">
               <Lightbulb className="w-4 h-4 text-purple-400" />
@@ -353,9 +359,7 @@ export default function FocusAI() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-white truncate">{ins.titulo}</p>
                             {ins.status && (
-                              <Badge variant="outline" className="text-[10px] shrink-0 border-slate-600 text-slate-400">
-                                {ins.status}
-                              </Badge>
+                              <Badge variant="outline" className="text-[10px] shrink-0 border-slate-600 text-slate-400">{ins.status}</Badge>
                             )}
                           </div>
                           {ins.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{ins.descricao}</p>}
@@ -393,7 +397,7 @@ export default function FocusAI() {
                 {messages.length === 0 && (
                   <div className="text-center py-12">
                     <Send className="w-8 h-8 text-blue-500/20 mx-auto mb-2" />
-                    <p className="text-slate-500 text-xs">Envie uma ordem para o Hermes.</p>
+                    <p className="text-slate-500 text-xs">Envie uma ordem ao sistema.</p>
                     <p className="text-slate-600 text-[10px] mt-1">Ex: "Resumo das OS de hoje" ou "Analise o onboarding do João"</p>
                   </div>
                 )}
@@ -406,9 +410,7 @@ export default function FocusAI() {
                     }`}>
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                       {msg.created_at && (
-                        <p className="text-[10px] text-slate-500 mt-1 text-right">
-                          {format(new Date(msg.created_at), "HH:mm")}
-                        </p>
+                        <p className="text-[10px] text-slate-500 mt-1 text-right">{format(new Date(msg.created_at), "HH:mm")}</p>
                       )}
                     </div>
                   </div>
@@ -422,7 +424,7 @@ export default function FocusAI() {
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendCommand(); } }}
-                  placeholder="Envie uma ordem ao Hermes..."
+                  placeholder="Envie uma ordem..."
                   className="hermes-input min-h-[36px] max-h-[80px] resize-none text-xs"
                   rows={1}
                 />
