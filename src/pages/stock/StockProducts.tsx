@@ -127,6 +127,7 @@ export default function StockProducts() {
                         <div>
                           <p className="font-medium text-sm">{p.nome}</p>
                           {p.hexa_id && <p className="text-xs text-muted-foreground">{p.hexa_id}</p>}
+                          {(p.quantidade === 0 || p.quantidade <= (p.quantidade_minima || 0)) && <AISmartBadge agent="Tracker" />}
                         </div>
                       </div>
                     </TableCell>
