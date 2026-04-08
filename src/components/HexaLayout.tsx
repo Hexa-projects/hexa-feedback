@@ -62,7 +62,6 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Funil Kanban", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
-      { to: "/playbook", label: "Playbook SDR", icon: Zap },
     ],
   },
   {
@@ -226,7 +225,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     // Group with children
     const isAnyChildActive = item.children.some(c => isChildActive(c.to));
     const isOpen = openGroups[item.id] ?? false;
-    const isHighlighted = item.id === "ia";
+    const isHighlighted = item.id === "nucleo_ai";
 
     return (
       <div key={item.id}>
