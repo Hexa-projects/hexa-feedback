@@ -5,8 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, User, DollarSign, TrendingUp, Users, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ArrowLeft, User, DollarSign, TrendingUp, Users, Target, Bot, Zap } from "lucide-react";
 import { toast } from "sonner";
+import AISmartBadge from "@/components/AISmartBadge";
+import { differenceInHours } from "date-fns";
 
 const COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
 
@@ -24,6 +27,7 @@ export default function KanbanFunnel() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [winModalLead, setWinModalLead] = useState<any | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -34,12 +38,42 @@ export default function KanbanFunnel() {
 
   const handleDrop = async (newStatus: string) => {
     if (!draggedId) return;
+    const lead = leads.find(l => l.id === draggedId);
+
+    // If moving to "Ganho", show the AI modal
+    if (newStatus === "Ganho" && lead?.status !== "Ganho") {
+      setWinModalLead(lead);
+      // Update locally first
+      setLeads(prev => prev.map(l => l.id === draggedId ? { ...l, status: "Ganho" } : l));
+      await supabase.from("leads").update({ status: "Ganho" } as any).eq("id", draggedId);
+      setDraggedId(null);
+      return;
+    }
+
     const { error } = await supabase.from("leads").update({ status: newStatus } as any).eq("id", draggedId);
     if (!error) {
       setLeads(prev => prev.map(l => l.id === draggedId ? { ...l, status: newStatus } : l));
       toast.success(`Lead movido para ${newStatus}`);
     }
     setDraggedId(null);
+  };
+
+  const handleAutoGenerate = async () => {
+    if (!winModalLead || !user) return;
+    // Insert an ai_action_request for Hunter to generate OS + notify
+    await supabase.from("ai_action_requests").insert({
+      action_type: "generate_os_from_deal",
+      domain: "comercial",
+      title: `Gerar OS de Instalação para ${winModalLead.nome}`,
+      description: `Lead ${winModalLead.nome} (${winModalLead.empresa || ""}) foi marcado como Ganho. Criar OS de instalação e notificar equipe técnica e financeira no MS Teams.`,
+      reason: "Lead movido para Ganho no Kanban",
+      risk_level: "low",
+      status: "pending",
+      requires_approval: false,
+      estimated_impact: `Valor: R$ ${Number(winModalLead.valor_estimado || 0).toLocaleString("pt-BR")}`,
+    } as any);
+    toast.success("Hunter notificado! OS de instalação e notificação no Teams serão gerados automaticamente.");
+    setWinModalLead(null);
   };
 
   // KPIs
@@ -121,42 +155,75 @@ export default function KanbanFunnel() {
               >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold">{col}</h3>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs bg-muted rounded-full px-2 py-0.5">{colLeads.length}</span>
-                  </div>
+                  <span className="text-xs bg-muted rounded-full px-2 py-0.5">{colLeads.length}</span>
                 </div>
                 {colValue > 0 && (
                   <p className="text-xs text-muted-foreground mb-2">R$ {colValue.toLocaleString("pt-BR")}</p>
                 )}
                 <div className="space-y-2">
-                  {colLeads.map(lead => (
-                    <Link
-                      key={lead.id}
-                      to={`/crm/${lead.id}`}
-                      draggable
-                      onDragStart={() => setDraggedId(lead.id)}
-                      className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                    >
-                      <p className="text-sm font-medium truncate">{lead.nome}</p>
-                      {lead.empresa && <p className="text-xs text-muted-foreground">{lead.empresa}</p>}
-                      <div className="flex items-center gap-3 mt-2">
-                        {lead.valor_estimado > 0 && (
-                          <span className="text-xs text-hexa-green flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />
-                            R$ {Number(lead.valor_estimado).toLocaleString("pt-BR")}
-                          </span>
-                        )}
-                        {lead.origem && (
-                          <span className="text-xs text-muted-foreground">{lead.origem}</span>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
+                  {colLeads.map(lead => {
+                    const lastContact = lead.ultimo_contato || lead.created_at;
+                    const hoursInactive = differenceInHours(new Date(), new Date(lastContact));
+                    const isInactive = hoursInactive > 72 && !["Ganho", "Perdido"].includes(lead.status);
+                    return (
+                      <Link
+                        key={lead.id}
+                        to={`/crm/${lead.id}`}
+                        draggable
+                        onDragStart={() => setDraggedId(lead.id)}
+                        className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="text-sm font-medium truncate">{lead.nome}</p>
+                          {isInactive && <AISmartBadge agent="Hunter" />}
+                        </div>
+                        {lead.empresa && <p className="text-xs text-muted-foreground">{lead.empresa}</p>}
+                        <div className="flex items-center gap-3 mt-2">
+                          {lead.valor_estimado > 0 && (
+                            <span className="text-xs text-hexa-green flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              R$ {Number(lead.valor_estimado).toLocaleString("pt-BR")}
+                            </span>
+                          )}
+                          {lead.origem && (
+                            <span className="text-xs text-muted-foreground">{lead.origem}</span>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Win Modal — Hunter auto-generate */}
+        <Dialog open={!!winModalLead} onOpenChange={(open) => { if (!open) setWinModalLead(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-orange-400" /> Hunter — Contrato Fechado! 🎉
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                O lead <strong>{winModalLead?.nome}</strong> foi marcado como <strong>Ganho</strong>.
+              </p>
+              <p className="text-sm">
+                Deseja que a IA (Hunter) gere a <strong>Ordem de Serviço de Instalação</strong> e notifique a equipe técnica e financeira no <strong>MS Teams</strong>?
+              </p>
+            </div>
+            <DialogFooter className="flex gap-2 sm:gap-2">
+              <Button variant="outline" onClick={() => setWinModalLead(null)}>
+                Apenas Mover Card
+              </Button>
+              <Button onClick={handleAutoGenerate} className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+                <Zap className="w-4 h-4" /> Gerar Tudo Automático
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </HexaLayout>
   );

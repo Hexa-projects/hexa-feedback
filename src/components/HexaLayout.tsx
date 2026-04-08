@@ -81,7 +81,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: FlaskConical,
     children: [
       { to: "/lab", label: "Peças em Reparo", icon: Wrench },
-      { to: "/lab/stock", label: "Estoque", icon: Package, wip: true },
+      { to: "/lab/knowledge", label: "Base de Conhecimento", icon: BookOpen },
       { to: "/lab/new", label: "Registrar Peça", icon: FlaskConical },
       { to: "/lab/import", label: "Importar Dados (ETL)", icon: ArrowDownToLine },
     ],
@@ -108,15 +108,6 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/finance/costs", label: "Custos", icon: TrendingDown, wip: true },
       { to: "/finance/overdue", label: "Inadimplência", icon: AlertTriangle, wip: true },
       { to: "/finance/cashflow", label: "Fluxo de Caixa", icon: Wallet, wip: true },
-    ],
-  },
-  {
-    id: "comunicacao",
-    label: "Teams Interno",
-    icon: MessageCircle,
-    children: [
-      { to: "/canais", label: "Times & Canais", icon: Hash },
-      { to: "/chat-ia", label: "Chat IA", icon: Bot },
     ],
   },
   {
@@ -158,20 +149,20 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback", "ia", "settings"],
-  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback"],
-  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "comunicacao", "feedback"],
+  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback", "ia", "settings"],
+  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback"],
+  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "feedback"],
 };
 
 // Setor-specific visibility overrides
 const SETOR_GROUPS: Record<string, string[]> = {
-  Comercial: ["dashboard", "comercial", "comunicacao", "feedback"],
-  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "comunicacao", "feedback"],
-  "Laboratório": ["dashboard", "laboratorio", "estoque", "comunicacao", "feedback"],
-  Financeiro: ["dashboard", "financeiro", "comunicacao", "feedback"],
-  "Logística": ["dashboard", "operacoes", "estoque", "comunicacao", "feedback"],
-  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "comunicacao", "feedback", "ia", "settings"],
+  Comercial: ["dashboard", "comercial", "feedback"],
+  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "feedback"],
+  "Laboratório": ["dashboard", "laboratorio", "estoque", "feedback"],
+  Financeiro: ["dashboard", "financeiro", "feedback"],
+  "Logística": ["dashboard", "operacoes", "estoque", "feedback"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback", "ia", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {

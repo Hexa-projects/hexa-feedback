@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Package, LayoutGrid, List, AlertTriangle } from "lucide-react";
+import AISmartBadge from "@/components/AISmartBadge";
 
 const STATUS_COLORS: Record<string, string> = {
   "Disponível": "bg-green-100 text-green-800",
@@ -126,6 +127,7 @@ export default function StockProducts() {
                         <div>
                           <p className="font-medium text-sm">{p.nome}</p>
                           {p.hexa_id && <p className="text-xs text-muted-foreground">{p.hexa_id}</p>}
+                          {(p.quantidade === 0 || p.quantidade <= (p.quantidade_minima || 0)) && <AISmartBadge agent="Tracker" />}
                         </div>
                       </div>
                     </TableCell>

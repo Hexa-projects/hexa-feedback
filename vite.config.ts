@@ -23,8 +23,6 @@ export default defineConfig(({ mode }) => ({
     include: [
       "react",
       "react-dom",
-      "@livekit/components-react",
-      "livekit-client",
     ],
   },
 }));

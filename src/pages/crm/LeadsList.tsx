@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Eye, Users, Phone, Clock, AlertTriangle } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { toast } from "sonner";
+import AISmartBadge from "@/components/AISmartBadge";
 
 const STATUS_COLORS: Record<string, string> = {
   "Qualificação": "bg-blue-100 text-blue-800",
@@ -147,8 +148,10 @@ export default function LeadsList() {
                     return (
                       <TableRow key={lead.id} className={isAtRisk ? "bg-destructive/5" : ""}>
                         <TableCell className="font-medium">
-                          {lead.nome}
-                          {isAtRisk && <AlertTriangle className="w-3.5 h-3.5 text-destructive inline ml-1" />}
+                          <div className="flex items-center gap-2">
+                            {lead.nome}
+                            {isAtRisk && <AISmartBadge agent="Hunter" />}
+                          </div>
                         </TableCell>
                         <TableCell>{lead.empresa}</TableCell>
                         <TableCell>

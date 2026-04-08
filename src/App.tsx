@@ -24,6 +24,7 @@ const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
 const LabPartsList = lazy(() => import("./pages/lab/LabPartsList"));
 const LabPartForm = lazy(() => import("./pages/lab/LabPartForm"));
 const DataImporter = lazy(() => import("./pages/lab/DataImporter"));
+const KnowledgeBase = lazy(() => import("./pages/lab/KnowledgeBase"));
 const StockDashboard = lazy(() => import("./pages/stock/StockDashboard"));
 const StockProducts = lazy(() => import("./pages/stock/StockProducts"));
 const StockProductForm = lazy(() => import("./pages/stock/StockProductForm"));
@@ -42,8 +43,7 @@ const Suggestions = lazy(() => import("./pages/Suggestions"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const FocusAI = lazy(() => import("./pages/FocusAI"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const AIChat = lazy(() => import("./pages/AIChat"));
-const CorporateChannels = lazy(() => import("./pages/CorporateChannels"));
+// AIChat and CorporateChannels removed — MS Teams is external
 const AgentsDashboard = lazy(() => import("./pages/AgentsDashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
@@ -118,6 +118,7 @@ const AppRoutes = () => (
       <Route path="/lab" element={<PrivateRoute><LabPartsList /></PrivateRoute>} />
       <Route path="/lab/new" element={<PrivateRoute><LabPartForm /></PrivateRoute>} />
       <Route path="/lab/import" element={<PrivateRoute><DataImporter /></PrivateRoute>} />
+      <Route path="/lab/knowledge" element={<PrivateRoute><KnowledgeBase /></PrivateRoute>} />
 
       {/* Estoque Inteligente */}
       <Route path="/stock" element={<PrivateRoute><StockDashboard /></PrivateRoute>} />
@@ -134,8 +135,7 @@ const AppRoutes = () => (
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
       <Route path="/api-docs" element={<PrivateRoute><ApiDocsPage /></PrivateRoute>} />
       <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
-      <Route path="/chat-ia" element={<PrivateRoute><AIChat /></PrivateRoute>} />
-      <Route path="/canais" element={<PrivateRoute><CorporateChannels /></PrivateRoute>} />
+      {/* chat-ia and canais routes removed — MS Teams is the external channel */}
       <Route path="/agentes" element={<PrivateRoute><AgentsDashboard /></PrivateRoute>} />
       <Route path="/ops" element={<PrivateRoute><OpsDashboard /></PrivateRoute>} />
 
