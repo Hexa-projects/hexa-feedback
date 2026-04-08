@@ -62,7 +62,6 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Funil Kanban", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
-      { to: "/playbook", label: "Playbook SDR", icon: Zap },
     ],
   },
   {
@@ -111,31 +110,23 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    id: "feedback",
-    label: "Feedback & Processos",
-    icon: ClipboardList,
-    children: [
-      { to: "/daily", label: "Meu Dia a Dia", icon: ClipboardList },
-      { to: "/processes", label: "Processos Repetitivos", icon: Repeat },
-      { to: "/bottlenecks", label: "Gargalos", icon: AlertTriangle },
-      { to: "/suggestions", label: "Sugestões", icon: Lightbulb },
-      { to: "/tools", label: "Ferramentas & Planilhas", icon: Wrench },
-      { to: "/history", label: "Histórico", icon: History },
-    ],
-  },
-  {
-    id: "ia",
-    label: "IA & Automação",
+    id: "nucleo_ai",
+    label: "Núcleo AI",
     icon: Brain,
     roles: ["admin"],
     children: [
-      { to: "/focus-ai", label: "Focus AI", icon: Brain },
-      { to: "/agentes", label: "Agentes IA", icon: Bot },
-      { to: "/ops", label: "Painel de Operações", icon: Zap },
-      { to: "/openclaw/kpis", label: "KPIs OpenClaw", icon: BarChart3 },
-      { to: "/openclaw/audit", label: "Auditoria Agente", icon: BookOpen },
-      { to: "/openclaw/console", label: "Console Ops", icon: ClipboardList },
-      { to: "/api-docs", label: "API & Webhooks", icon: BookOpen },
+      { to: "/focus-ai", label: "The Swarm", icon: Brain },
+      { to: "/automations", label: "Regras & MS Teams", icon: Zap },
+    ],
+  },
+  {
+    id: "auditoria",
+    label: "Auditoria Operacional",
+    icon: ClipboardList,
+    children: [
+      { to: "/gargalos", label: "Mapa de Gargalos", icon: AlertTriangle },
+      { to: "/coleta", label: "Coleta de Dados", icon: ClipboardList },
+      { to: "/history", label: "Histórico", icon: History },
     ],
   },
   {
@@ -149,20 +140,20 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback", "ia", "settings"],
-  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback"],
-  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "feedback"],
+  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "auditoria"],
+  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "auditoria"],
 };
 
 // Setor-specific visibility overrides
 const SETOR_GROUPS: Record<string, string[]> = {
-  Comercial: ["dashboard", "comercial", "feedback"],
-  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "feedback"],
-  "Laboratório": ["dashboard", "laboratorio", "estoque", "feedback"],
-  Financeiro: ["dashboard", "financeiro", "feedback"],
-  "Logística": ["dashboard", "operacoes", "estoque", "feedback"],
-  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "feedback", "ia", "settings"],
+  Comercial: ["dashboard", "comercial", "auditoria"],
+  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "auditoria"],
+  "Laboratório": ["dashboard", "laboratorio", "estoque", "auditoria"],
+  Financeiro: ["dashboard", "financeiro", "auditoria"],
+  "Logística": ["dashboard", "operacoes", "estoque", "auditoria"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "auditoria"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
@@ -234,7 +225,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     // Group with children
     const isAnyChildActive = item.children.some(c => isChildActive(c.to));
     const isOpen = openGroups[item.id] ?? false;
-    const isHighlighted = item.id === "ia";
+    const isHighlighted = item.id === "nucleo_ai";
 
     return (
       <div key={item.id}>

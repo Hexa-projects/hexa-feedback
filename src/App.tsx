@@ -35,26 +35,16 @@ const ProjectsList = lazy(() => import("./pages/projects/ProjectsList"));
 const ProjectForm = lazy(() => import("./pages/projects/ProjectForm"));
 const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
-const DailyForm = lazy(() => import("./pages/DailyForm"));
-const RepetitiveProcesses = lazy(() => import("./pages/RepetitiveProcesses"));
-const ToolsMapping = lazy(() => import("./pages/ToolsMapping"));
-const Bottlenecks = lazy(() => import("./pages/Bottlenecks"));
-const Suggestions = lazy(() => import("./pages/Suggestions"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const FocusAI = lazy(() => import("./pages/FocusAI"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-// AIChat and CorporateChannels removed — MS Teams is external
-const AgentsDashboard = lazy(() => import("./pages/AgentsDashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
-const OpsDashboard = lazy(() => import("./pages/OpsDashboard"));
-const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
-const SDRPlaybook = lazy(() => import("./pages/SDRPlaybook"));
-const OpenClawKpiDashboard = lazy(() => import("./pages/OpenClawKpiDashboard"));
-const OpenClawAgentAudit = lazy(() => import("./pages/OpenClawAgentAudit"));
-const OpenClawOpsConsole = lazy(() => import("./pages/OpenClawOpsConsole"));
 const ExecutiveDashboard = lazy(() => import("./pages/ExecutiveDashboard"));
+const AutomationsPage = lazy(() => import("./pages/AutomationsPage"));
+const GargalosMap = lazy(() => import("./pages/GargalosMap"));
+const DataCollection = lazy(() => import("./pages/DataCollection"));
+const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -131,36 +121,38 @@ const AppRoutes = () => (
       {/* Financeiro */}
       <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
 
-      {/* AI & Tools */}
-      <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-      <Route path="/api-docs" element={<PrivateRoute><ApiDocsPage /></PrivateRoute>} />
+      {/* NÚCLEO AI */}
       <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
-      {/* chat-ia and canais routes removed — MS Teams is the external channel */}
-      <Route path="/agentes" element={<PrivateRoute><AgentsDashboard /></PrivateRoute>} />
-      <Route path="/ops" element={<PrivateRoute><OpsDashboard /></PrivateRoute>} />
+      <Route path="/automations" element={<PrivateRoute><AutomationsPage /></PrivateRoute>} />
+
+      {/* AUDITORIA OPERACIONAL */}
+      <Route path="/gargalos" element={<PrivateRoute><GargalosMap /></PrivateRoute>} />
+      <Route path="/coleta" element={<PrivateRoute><DataCollection /></PrivateRoute>} />
+
+      {/* Configurações */}
+      <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
 
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
 
-      {/* Playbook SDR */}
-      <Route path="/playbook" element={<PrivateRoute><SDRPlaybook /></PrivateRoute>} />
-
-      {/* OpenClaw Integration */}
-      <Route path="/openclaw/kpis" element={<PrivateRoute><OpenClawKpiDashboard /></PrivateRoute>} />
-      <Route path="/openclaw/audit" element={<PrivateRoute><OpenClawAgentAudit /></PrivateRoute>} />
-      <Route path="/openclaw/console" element={<PrivateRoute><OpenClawOpsConsole /></PrivateRoute>} />
-
       {/* Reports = existing dashboard */}
       <Route path="/reports" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
-      {/* Legacy feedback routes */}
-      <Route path="/daily" element={<PrivateRoute><DailyForm /></PrivateRoute>} />
-      <Route path="/tools" element={<PrivateRoute><ToolsMapping /></PrivateRoute>} />
-      <Route path="/processes" element={<PrivateRoute><RepetitiveProcesses /></PrivateRoute>} />
-      <Route path="/bottlenecks" element={<PrivateRoute><Bottlenecks /></PrivateRoute>} />
-      <Route path="/suggestions" element={<PrivateRoute><Suggestions /></PrivateRoute>} />
+      {/* Legacy redirects */}
+      <Route path="/daily" element={<Navigate to="/coleta" replace />} />
+      <Route path="/bottlenecks" element={<Navigate to="/gargalos" replace />} />
       <Route path="/history" element={<PrivateRoute><HistoryPage /></PrivateRoute>} />
       <Route path="/dashboard" element={<Navigate to="/reports" replace />} />
+
+      {/* Removed routes redirect to home */}
+      <Route path="/agentes" element={<Navigate to="/focus-ai" replace />} />
+      <Route path="/ops" element={<Navigate to="/focus-ai" replace />} />
+      <Route path="/openclaw/*" element={<Navigate to="/focus-ai" replace />} />
+      <Route path="/api-docs" element={<Navigate to="/settings" replace />} />
+      <Route path="/playbook" element={<Navigate to="/crm" replace />} />
+      <Route path="/tools" element={<Navigate to="/coleta" replace />} />
+      <Route path="/processes" element={<Navigate to="/coleta" replace />} />
+      <Route path="/suggestions" element={<Navigate to="/coleta" replace />} />
 
       <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
     </Routes>
