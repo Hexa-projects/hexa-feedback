@@ -22,7 +22,7 @@ export default function FinanceDashboard() {
     else acc[key].custo += Number(r.valor) || 0;
     return acc;
   }, {});
-  const chartData = Object.values(monthly).sort((a, b) => a.month.localeCompare(b.month));
+  const chartData = Object.values(monthly).sort((a, b) => (a as any).month.localeCompare((b as any).month));
   const totalR = records.filter((r: any) => r.tipo === "receita").reduce((s: number, r: any) => s + (Number(r.valor) || 0), 0);
   const totalC = records.filter((r: any) => r.tipo !== "receita").reduce((s: number, r: any) => s + (Number(r.valor) || 0), 0);
 
