@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import logoHexamedical from "@/assets/logo-hexamedical.png";
 import {
   Brain, Target, Wrench, Package, DollarSign, ClipboardList,
   Settings, LogOut, Menu, X, User, ChevronDown,
@@ -146,9 +147,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
   const sidebarContent = (
     <>
       <div className="p-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Brain className="w-4 h-4 text-primary" />
-        </div>
+        <img src={logoHexamedical} alt="HexaOS" className="w-8 h-8 object-contain" />
         <div>
           <span className="text-base font-bold text-foreground tracking-tight">Hexa</span>
           <span className="text-base font-bold text-primary tracking-tight">OS</span>
