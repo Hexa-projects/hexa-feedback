@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,56 +6,56 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 20% 90%;
+    --background: 30 10% 6%;
+    --foreground: 35 15% 90%;
 
-    --card: 222 40% 8%;
-    --card-foreground: 210 20% 90%;
+    --card: 30 12% 8%;
+    --card-foreground: 35 15% 90%;
 
-    --popover: 222 40% 10%;
-    --popover-foreground: 210 20% 90%;
+    --popover: 30 12% 10%;
+    --popover-foreground: 35 15% 90%;
 
-    --primary: 192 90% 50%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 32 95% 52%;
+    --primary-foreground: 30 10% 6%;
 
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 20% 80%;
+    --secondary: 30 10% 14%;
+    --secondary-foreground: 35 15% 80%;
 
-    --muted: 222 25% 12%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 30 8% 12%;
+    --muted-foreground: 30 10% 50%;
 
-    --accent: 222 30% 14%;
-    --accent-foreground: 192 80% 60%;
+    --accent: 30 12% 14%;
+    --accent-foreground: 32 90% 60%;
 
     --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 20% 16%;
-    --input: 222 20% 16%;
-    --ring: 192 90% 50%;
+    --border: 30 8% 16%;
+    --input: 30 8% 16%;
+    --ring: 32 95% 52%;
 
     --radius: 0.625rem;
 
     /* Agent colors */
     --agent-focus: 270 60% 60%;
-    --agent-hunter: 25 90% 55%;
+    --agent-hunter: 32 95% 55%;
     --agent-gear: 210 80% 55%;
     --agent-tracker: 152 55% 50%;
     --agent-ledger: 45 90% 55%;
 
-    /* Neon glow */
-    --neon-cyan: 192 90% 50%;
-    --neon-glow: 0 0 12px hsl(192 90% 50% / 0.3);
+    /* Brand glow */
+    --neon-cyan: 32 95% 52%;
+    --neon-glow: 0 0 12px hsl(32 95% 52% / 0.3);
 
     /* Sidebar */
-    --sidebar-background: 222 47% 5%;
-    --sidebar-foreground: 210 15% 75%;
-    --sidebar-primary: 192 90% 55%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 10%;
-    --sidebar-accent-foreground: 192 80% 65%;
-    --sidebar-border: 222 20% 12%;
-    --sidebar-ring: 192 90% 50%;
+    --sidebar-background: 30 10% 5%;
+    --sidebar-foreground: 30 10% 75%;
+    --sidebar-primary: 32 95% 55%;
+    --sidebar-primary-foreground: 30 10% 6%;
+    --sidebar-accent: 30 12% 10%;
+    --sidebar-accent-foreground: 32 90% 65%;
+    --sidebar-border: 30 8% 12%;
+    --sidebar-ring: 32 95% 52%;
   }
 }
 
@@ -65,7 +65,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 }
 
@@ -74,7 +74,7 @@
     @apply bg-card/60 rounded-lg border border-border/60 backdrop-blur-sm;
   }
   .cyber-glow {
-    box-shadow: 0 0 20px hsl(192 90% 50% / 0.06), inset 0 1px 0 hsl(192 90% 50% / 0.05);
+    box-shadow: 0 0 20px hsl(32 95% 52% / 0.06), inset 0 1px 0 hsl(32 95% 52% / 0.05);
   }
   .agent-pulse {
     @apply relative;
@@ -88,6 +88,16 @@
   .status-badge {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
   }
+  .hermes-shell {
+    @apply bg-background min-h-screen text-foreground;
+  }
+  .hermes-panel {
+    @apply bg-card/50 rounded-xl border border-border/50 backdrop-blur-sm overflow-hidden;
+  }
+  .hermes-terminal {
+    @apply bg-background/80 rounded-lg border border-border/40 font-mono text-xs p-3 overflow-y-auto scrollbar-thin;
+    max-height: 420px;
+  }
 }
 
 @layer utilities {
@@ -99,7 +109,7 @@
   }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(222 20% 16%) transparent;
+    scrollbar-color: hsl(30 8% 16%) transparent;
   }
 }
 
