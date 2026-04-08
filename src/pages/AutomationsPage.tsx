@@ -134,12 +134,13 @@ export default function AutomationsPage() {
     onError: () => toast.error("Erro ao atualizar regra"),
   });
 
-  const groupedRules = rules.reduce((acc, rule) => {
+  type RuleRow = typeof rules[number];
+  const groupedRules = rules.reduce<Record<string, RuleRow[]>>((acc, rule) => {
     const d = rule.domain || "general";
     if (!acc[d]) acc[d] = [];
     acc[d].push(rule);
     return acc;
-  }, {} as Record<string, typeof rules>);
+  }, {});
 
   const webhookFields = [
     { key: "diretoria", label: "Canal Diretoria (Focus AI)" },
