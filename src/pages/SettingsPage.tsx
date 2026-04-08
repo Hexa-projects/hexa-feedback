@@ -644,7 +644,105 @@ function AutomationsTab() {
 }
 
 // ═══════════════════════════════════════════════════
+// TAB: MS Teams
+// ═══════════════════════════════════════════════════
 
+const TEAMS_WEBHOOKS = [
+  { key: "webhook_diretoria", label: "Webhook Diretoria (Focus AI)", description: "Alertas estratégicos e relatórios proativos" },
+  { key: "webhook_comercial", label: "Webhook Comercial (Hunter)", description: "Alertas de leads, propostas e contratos" },
+  { key: "webhook_operacoes", label: "Webhook Operações (Gear)", description: "Alertas de OS, SLA e agendamentos" },
+  { key: "webhook_laboratorio", label: "Webhook Laboratório (Tracker)", description: "Alertas de estoque, peças e manutenção" },
+  { key: "webhook_financeiro", label: "Webhook Financeiro (Ledger)", description: "Alertas de pagamento, inadimplência e fluxo de caixa" },
+];
+
+function MSTeamsTab() {
+  const [webhooks, setWebhooks] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from("integration_configs").select("*").eq("integration_name", "msteams").single().then(({ data }) => {
+      if (data?.config) setWebhooks(data.config as Record<string, string>);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("integration_configs").upsert({
+      integration_name: "msteams",
+      config: webhooks,
+      updated_at: new Date().toISOString(),
+    } as any, { onConflict: "integration_name" });
+    if (error) toast.error("Erro: " + error.message);
+    else toast.success("Webhooks do MS Teams salvos!");
+    setSaving(false);
+  };
+
+  const testWebhook = async (key: string) => {
+    const url = webhooks[key];
+    if (!url) { toast.error("URL vazia"); return; }
+    setTesting(key);
+    try {
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          "@type": "MessageCard",
+          summary: "Teste HexaOS",
+          title: "✅ HexaOS — Teste de Conexão",
+          text: `Webhook "${key}" conectado com sucesso ao HexaOS.`,
+        }),
+      });
+      toast.success("Mensagem de teste enviada!");
+    } catch {
+      toast.error("Falha ao enviar. Verifique a URL do webhook.");
+    }
+    setTesting(null);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <MessageSquare className="w-5 h-5" /> Integração Microsoft Teams
+        </CardTitle>
+        <CardDescription>
+          Configure as URLs de Webhook do MS Teams para que os agentes de IA enviem alertas e relatórios automaticamente.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {TEAMS_WEBHOOKS.map(wh => (
+          <div key={wh.key} className="space-y-1.5">
+            <Label className="text-sm font-medium">{wh.label}</Label>
+            <p className="text-xs text-muted-foreground">{wh.description}</p>
+            <div className="flex gap-2">
+              <Input
+                value={webhooks[wh.key] || ""}
+                onChange={e => setWebhooks(prev => ({ ...prev, [wh.key]: e.target.value }))}
+                placeholder="https://outlook.office.com/webhook/..."
+                className="flex-1 font-mono text-xs"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => testWebhook(wh.key)}
+                disabled={!webhooks[wh.key] || testing === wh.key}
+                className="shrink-0"
+              >
+                {testing === wh.key ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Testar"}
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Save className="w-4 h-4" /> {saving ? "Salvando..." : "Salvar Webhooks"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════
 
 
 function IntegrationsTab() {
