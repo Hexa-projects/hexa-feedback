@@ -1,108 +1,121 @@
 
 
-# HexaOS Sync 2.0 — Plano de Implementação
+## Plan: Reinvention of "IA & Automação" and "Feedback & Processos" Sections
 
-## Resumo
-
-Consolidar a infraestrutura existente de fila (`openclaw_event_queue`) em uma arquitetura event-driven robusta: criar uma view de compatibilidade (`openclaw_sync_queue`), um worker agendado dedicado (`sync-openclaw-events`), eliminar polling de health-check, refatorar o painel de integração e emitir eventos automaticamente no CRM.
+### Overview
+Clean up two polluted sidebar sections, replacing them with two focused hubs: **NÚCLEO AI** (2 items) and **AUDITORIA OPERACIONAL** (2 items). Remove 8 obsolete routes and create 3 new pages.
 
 ---
 
-## 1. Migração SQL
+### Step 1: Route & Sidebar Cleanup
 
-Criar uma **view** `openclaw_sync_queue` com aliases exatos:
+**Remove from sidebar and routes (App.tsx):**
+- `/agentes` (AgentsDashboard)
+- `/ops` (OpsDashboard)
+- `/openclaw/kpis` (OpenClawKpiDashboard)
+- `/openclaw/audit` (OpenClawAgentAudit)
+- `/openclaw/console` (OpenClawOpsConsole)
+- `/api-docs` (ApiDocsPage)
+- `/playbook` (SDRPlaybook)
+- `/tools` (ToolsMapping)
+- `/processes` (RepetitiveProcesses)
+- `/suggestions` (Suggestions)
 
-```sql
-CREATE OR REPLACE VIEW public.openclaw_sync_queue AS
-SELECT id, event_type, data AS payload, status,
-       attempts AS retry_count, last_error,
-       next_retry_at AS scheduled_for, created_at
-FROM public.openclaw_event_queue;
+**Keep:** `/focus-ai`, `/daily`, `/bottlenecks`, `/history`, `/settings`
+
+Remove the lazy imports for deleted routes. Remove `Playbook SDR` from Comercial group.
+
+---
+
+### Step 2: Update Sidebar Navigation (HexaLayout.tsx)
+
+Replace the `feedback` and `ia` groups with:
+
+```text
+NÚCLEO AI (Brain icon, admin only)
+├── The Swarm          → /focus-ai
+└── Regras & MS Teams  → /automations
+
+AUDITORIA OPERACIONAL (ClipboardList icon)
+├── Mapa de Gargalos   → /gargalos
+└── Coleta de Dados    → /coleta
 ```
 
-A tabela base já possui todas as colunas necessárias (`attempts`, `next_retry_at`, `last_error`, `max_attempts`). Nenhuma alteração de schema na tabela original.
-
-Adicionar policy de service_role para a edge function do worker:
-
-```sql
-CREATE POLICY "service_role_all_queue"
-ON public.openclaw_event_queue FOR ALL TO service_role
-USING (true) WITH CHECK (true);
-```
+Update `ROLE_GROUPS` and `SETOR_GROUPS` to replace `feedback`/`ia` with `nucleo_ai`/`auditoria`.
 
 ---
 
-## 2. Edge Function: `sync-openclaw-events`
+### Step 3: Create `/automations` Page (AutomationsPage.tsx)
 
-Novo worker dedicado que:
-- Busca até 50 eventos `pending` ou `failed` onde `next_retry_at IS NULL OR next_retry_at <= now()`
-- Lê config de `focus_ai_config` (url, token, ativo)
-- Para cada evento, faz POST para `{OPENCLAW_BASE_URL}/api/chat` com timeout de 8s
-- **Sucesso**: marca `status = 'delivered'`, grava `delivered_at`
-- **Falha**: incrementa `attempts`, calcula backoff exponencial (`2^attempts * 1000 + random`), grava `next_retry_at` e `last_error` com a mensagem exata da exceção
-- **Cap 5 retries**: move para `status = 'dlq'`
-- Atualiza `openclaw_sync_status` com resultado
+New page with two tabs (shadcn Tabs):
 
-A lógica é extraída do `openclaw-sync` existente (action `process_queue`) para funcionar de forma autônoma, sem depender de chamada manual.
+**Tab 1 — "Webhooks do Teams":**
+- 4 input fields for webhook URLs: Diretoria, Comercial, Operações, Laboratório
+- Reads/writes `integration_configs` (integration_name = `ms_teams_webhooks`)
+- "Testar Conexão" button per field
+- "Salvar" button
 
----
-
-## 3. Agendamento pg_cron
-
-Após deploy da edge function, agendar via SQL insert (não migração):
-
-```sql
-SELECT cron.schedule(
-  'sync-openclaw-worker',
-  '*/1 * * * *',
-  $$ SELECT net.http_post(
-    url:='https://fevmcjnaeuxydmxmkarw.supabase.co/functions/v1/sync-openclaw-events',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer <ANON_KEY>"}'::jsonb,
-    body:='{"source":"pg_cron"}'::jsonb
-  ) AS request_id; $$
-);
-```
+**Tab 2 — "Matriz de Autonomia":**
+- Reads `autonomy_rules` table
+- Renders each rule as a card with: name, description, domain badge, and a `Switch` toggle
+- Toggle updates `ativo` field on `autonomy_rules`
+- Grouped visually by domain (comercial, operacoes, laboratorio, geral)
 
 ---
 
-## 4. Refatorar `OpenClawSyncPanel.tsx`
+### Step 4: Create `/gargalos` Page (GargalosMap.tsx)
 
-Substituir o painel atual por:
-
-**Indicadores de Saúde** (derivados dos eventos, sem polling `/health`):
-- Status de conexão derivado dos últimos 10 eventos: todos `delivered` = "Ativo" (verde), algum `failed` = "Degradado" (amarelo), nenhum `delivered` recente = "Inativo" (cinza)
-- Contagem de pendentes na fila
-- Falhas nas últimas 24h
-
-**Log de Auditoria** (tabela com Table components):
-- Colunas: Data | Tipo de Evento | Status | Erro | Ações
-- Botão [Reenviar] por evento (reseta status para `pending`, zera `attempts`)
-- Botão [Ver Erro] com Dialog mostrando `last_error` completo
-
-**Ações mantidas**: Processar Fila, Evento Teste, Reprocessar DLQ, Atualizar
+- Reads `focus_ai_insights` table
+- Groups insights by `domain` (Comercial, Operações, Laboratório, Geral)
+- Each domain is a column (masonry/grid layout, 2-3 cols on desktop)
+- Each insight card shows:
+  - `titulo` (bold)
+  - `causa_provavel`
+  - `acao_recomendada`
+  - Priority badge from `prioridade`
+  - "Resolver" button → updates `status` to `resolvido`
 
 ---
 
-## 5. Emissão de Eventos no CRM
+### Step 5: Create `/coleta` Page (DataCollection.tsx)
 
-Adicionar `createSalesEvent("lead_created", ...)` no `LeadForm.tsx` após inserção bem-sucedida do lead. Fire-and-forget (não bloqueia o usuário).
+Page with two shadcn Tabs:
+
+**Tab 1 — "Raio-X (Onboarding)":**
+- Embeds the existing onboarding wizard steps (StepIdentidade, StepRotina, StepProcessos, StepGargalos, StepContato)
+- Writes to `onboarding_responses` table
+- Reuses existing onboarding components
+
+**Tab 2 — "Meu Dia (Daily)":**
+- Simplified mobile-first form: "O que fiz hoje" (Textarea), "Impedimentos" (Textarea), optional audio recorder
+- Large touch-friendly buttons
+- Writes to `daily_forms` table
+- Reuses logic from existing DailyForm but in a slimmed-down UI
 
 ---
 
-## 6. Atualizar `openclaw-events.ts`
+### Step 6: Update App.tsx Routes
 
-Adicionar função `retryEvent(eventId)` para o botão de reenvio individual no painel.
+Add new routes:
+- `/automations` → AutomationsPage
+- `/gargalos` → GargalosMap
+- `/coleta` → DataCollection
+
+Redirect old routes to new ones:
+- `/daily` → `/coleta`
+- `/bottlenecks` → `/gargalos`
 
 ---
 
-## Arquivos Afetados
+### Files to Create
+- `src/pages/AutomationsPage.tsx`
+- `src/pages/GargalosMap.tsx`
+- `src/pages/DataCollection.tsx`
 
-| Arquivo | Ação |
-|---|---|
-| Nova migração SQL | View + policy service_role |
-| `supabase/functions/sync-openclaw-events/index.ts` | Criar worker |
-| `src/components/OpenClawSyncPanel.tsx` | Refatorar UI completa |
-| `src/lib/openclaw-events.ts` | Adicionar `retryEvent()` |
-| `src/pages/crm/LeadForm.tsx` | Emitir `lead_created` |
-| pg_cron (via insert tool) | Agendar a cada 1 minuto |
+### Files to Edit
+- `src/components/HexaLayout.tsx` (sidebar restructure)
+- `src/App.tsx` (route cleanup + new routes + redirects)
+
+### No Database Changes Required
+All tables already exist: `integration_configs`, `autonomy_rules`, `focus_ai_insights`, `onboarding_responses`, `daily_forms`.
 
