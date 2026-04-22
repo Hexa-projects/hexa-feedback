@@ -1995,6 +1995,262 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_insights: {
+        Row: {
+          ai_confidence: number | null
+          automation_opportunities: Json | null
+          created_at: string
+          id: string
+          key_bottlenecks: Json | null
+          key_risks: Json | null
+          session_id: string
+          standardization_opportunities: Json | null
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          automation_opportunities?: Json | null
+          created_at?: string
+          id?: string
+          key_bottlenecks?: Json | null
+          key_risks?: Json | null
+          session_id: string
+          standardization_opportunities?: Json | null
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          automation_opportunities?: Json | null
+          created_at?: string
+          id?: string
+          key_bottlenecks?: Json | null
+          key_risks?: Json | null
+          session_id?: string
+          standardization_opportunities?: Json | null
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_insights_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_messages: {
+        Row: {
+          content: string
+          created_at: string
+          extracted_payload: Json | null
+          id: string
+          message_type: string | null
+          metadata: Json | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          extracted_payload?: Json | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          extracted_payload?: Json | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_process_maps: {
+        Row: {
+          confidence: number | null
+          controls_json: Json | null
+          created_at: string
+          dependencies_json: Json | null
+          description: string | null
+          frequency: string | null
+          id: string
+          improvements_json: Json | null
+          indicators_json: Json | null
+          inputs_json: Json | null
+          objective: string | null
+          outputs_json: Json | null
+          owner_name: string | null
+          process_category: string | null
+          process_name: string
+          risks_json: Json | null
+          session_id: string
+          tools_json: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          controls_json?: Json | null
+          created_at?: string
+          dependencies_json?: Json | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          improvements_json?: Json | null
+          indicators_json?: Json | null
+          inputs_json?: Json | null
+          objective?: string | null
+          outputs_json?: Json | null
+          owner_name?: string | null
+          process_category?: string | null
+          process_name: string
+          risks_json?: Json | null
+          session_id: string
+          tools_json?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          controls_json?: Json | null
+          created_at?: string
+          dependencies_json?: Json | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          improvements_json?: Json | null
+          indicators_json?: Json | null
+          inputs_json?: Json | null
+          objective?: string | null
+          outputs_json?: Json | null
+          owner_name?: string | null
+          process_category?: string | null
+          process_name?: string
+          risks_json?: Json | null
+          session_id?: string
+          tools_json?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_process_maps_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_profiles: {
+        Row: {
+          consentimento: boolean | null
+          created_at: string
+          funcao: string | null
+          id: string
+          responsabilidades: string | null
+          resumo_geral: string | null
+          session_id: string
+          setor: string | null
+          tempo_casa: string | null
+          unidade: string | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          consentimento?: boolean | null
+          created_at?: string
+          funcao?: string | null
+          id?: string
+          responsabilidades?: string | null
+          resumo_geral?: string | null
+          session_id: string
+          setor?: string | null
+          tempo_casa?: string | null
+          unidade?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          consentimento?: boolean | null
+          created_at?: string
+          funcao?: string | null
+          id?: string
+          responsabilidades?: string | null
+          resumo_geral?: string | null
+          session_id?: string
+          setor?: string | null
+          tempo_casa?: string | null
+          unidade?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_profiles_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "onboarding_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_response_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          structured_state: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          structured_state?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          structured_state?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_response_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_responses: {
         Row: {
           analisado_por_ia: boolean | null
@@ -2067,6 +2323,48 @@ export type Database = {
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      onboarding_sessions: {
+        Row: {
+          ai_version: string | null
+          completed_at: string | null
+          completion_percentage: number
+          created_at: string
+          current_stage: string | null
+          id: string
+          metadata: Json | null
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_version?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          created_at?: string
+          current_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_version?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          created_at?: string
+          current_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
