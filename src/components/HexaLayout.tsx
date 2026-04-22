@@ -124,6 +124,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Auditoria Operacional",
     icon: ClipboardList,
     children: [
+      { to: "/onboarding", label: "Chat de Processos (IA)", icon: Bot },
       { to: "/gargalos", label: "Mapa de Gargalos", icon: AlertTriangle },
       { to: "/coleta", label: "Coleta de Dados", icon: ClipboardList },
       { to: "/history", label: "Histórico", icon: History },
