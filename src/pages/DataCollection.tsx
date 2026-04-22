@@ -188,93 +188,36 @@ export default function DataCollection() {
             )}
           </TabsContent>
 
-          {/* --- RAIO-X (ONBOARDING) --- */}
+          {/* --- RAIO-X (NOVO ONBOARDING CONVERSACIONAL) --- */}
           <TabsContent value="raioxe" className="mt-6">
-            {onbSent ? (
-              <Card>
-                <CardContent className="py-16 text-center">
-                  <CheckCircle2 className="w-16 h-16 mx-auto text-green-500 mb-4" />
-                  <h3 className="text-lg font-bold">Raio-X enviado!</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    A IA analisará seu feedback para identificar padrões e melhorias.
-                  </p>
-                  <Button className="mt-6" onClick={() => { setOnbSent(false); setOnb(prev => ({ ...prev, tarefas_repetitivas: "", principal_gargalo: "", sugestao_melhoria: "" })); }}>
-                    Novo Raio-X
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Raio-X Operacional</CardTitle>
-                  <CardDescription>
-                    Mapeie seus processos, gargalos e tarefas repetitivas para que a IA encontre oportunidades.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Setor</Label>
-                      <Select value={onb.setor} onValueChange={(v) => setOnb(p => ({ ...p, setor: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Função</Label>
-                      <input
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        placeholder="Ex: Analista Comercial"
-                        value={onb.funcao}
-                        onChange={(e) => setOnb(p => ({ ...p, funcao: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Tarefas Repetitivas *</Label>
-                    <Textarea
-                      placeholder="Quais tarefas você faz todos os dias que poderiam ser automatizadas?"
-                      rows={4}
-                      value={onb.tarefas_repetitivas}
-                      onChange={(e) => setOnb(p => ({ ...p, tarefas_repetitivas: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Principal Gargalo *</Label>
-                    <Textarea
-                      placeholder="Qual o maior problema/atraso no seu dia a dia?"
-                      rows={3}
-                      value={onb.principal_gargalo}
-                      onChange={(e) => setOnb(p => ({ ...p, principal_gargalo: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Sugestão de Melhoria</Label>
-                    <Textarea
-                      placeholder="Se pudesse mudar algo, o que seria?"
-                      rows={3}
-                      value={onb.sugestao_melhoria}
-                      onChange={(e) => setOnb(p => ({ ...p, sugestao_melhoria: e.target.value }))}
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleOnbSubmit}
-                    disabled={onbSaving}
-                    className="w-full h-12 text-base font-semibold"
-                    size="lg"
-                  >
-                    {onbSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                    Enviar Raio-X
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Mic className="w-5 h-5 text-primary" /> Raio-X Conversacional com a Maya
+                </CardTitle>
+                <CardDescription>
+                  O mapeamento de processos agora é uma conversa natural com a IA da Hexamedical.
+                  A Maya conduz uma entrevista guiada, identifica gargalos e estrutura tudo automaticamente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-xl border bg-muted/30 p-4 space-y-2">
+                  <p className="text-sm font-medium">O que você vai conseguir:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1.5">
+                    <li>• Mapear seus processos críticos sem preencher formulários</li>
+                    <li>• Identificar oportunidades de automação automaticamente</li>
+                    <li>• Gerar um relatório executivo do seu setor</li>
+                  </ul>
+                </div>
+                <Button
+                  onClick={() => (window.location.href = "/onboarding")}
+                  className="w-full h-12 text-base font-semibold"
+                  size="lg"
+                >
+                  Iniciar conversa com a Maya →
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
