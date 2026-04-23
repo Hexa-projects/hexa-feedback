@@ -170,23 +170,41 @@ export default function OnboardingChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/[0.03] relative">
+      {/* Decorative gradient blobs */}
+      <div className="fixed top-0 right-0 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px] pointer-events-none -z-0" />
+      <div className="fixed bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-amber-500/5 blur-[120px] pointer-events-none -z-0" />
+
       {/* Header */}
-      <header className="border-b bg-card/60 backdrop-blur-sm sticky top-0 z-10">
-        <div className="px-4 lg:px-8 py-3 flex items-center justify-between">
+      <header className="border-b border-border/40 bg-background/70 backdrop-blur-xl sticky top-0 z-20">
+        <div className="px-4 lg:px-8 py-3.5 flex items-center justify-between max-w-[1600px] mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary" />
+            <div className="relative">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30">
+                <Sparkles className="w-4.5 h-4.5 text-primary-foreground" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-background" />
             </div>
             <div>
-              <h1 className="text-base font-semibold leading-tight">Mapeamento conversacional</h1>
-              <p className="text-xs text-muted-foreground">Guiado pela Maya · Baseado em ISO 9001</p>
+              <h1 className="text-base font-bold leading-tight tracking-tight">
+                Mapeamento conversacional
+              </h1>
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <span>Guiado pela Maya</span>
+                <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/60" />
+                <span>Baseado em ISO 9001</span>
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {completionReady && (
-              <Button onClick={() => setShowReview(true)} variant="default" size="sm" className="gap-2">
+              <Button
+                onClick={() => setShowReview(true)}
+                size="sm"
+                className="gap-2 bg-gradient-to-r from-primary to-primary/85 shadow-md shadow-primary/30 hover:shadow-lg hover:shadow-primary/40 transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
                 Revisar e concluir
               </Button>
             )}
@@ -203,7 +221,7 @@ export default function OnboardingChatPage() {
       </header>
 
       {/* 3-col layout */}
-      <div className="px-4 lg:px-8 py-6 flex flex-col lg:flex-row gap-6 max-w-[1600px] mx-auto">
+      <div className="relative px-4 lg:px-8 py-6 flex flex-col lg:flex-row gap-5 max-w-[1600px] mx-auto">
         <OnboardingProgressRail
           currentStage={currentStage}
           progress={progress}
