@@ -108,8 +108,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurado");
+    const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+    if (!DEEPSEEK_API_KEY) throw new Error("DEEPSEEK_API_KEY não configurado");
 
     const authHeader = req.headers.get("Authorization");
     const supabase = createClient(
@@ -199,14 +199,14 @@ serve(async (req) => {
       messages.push({ role: "user", content: "[Início da sessão — apresente-se e comece a entrevista]" });
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "deepseek-chat",
         messages,
         tools: [TOOL_SCHEMA],
         tool_choice: { type: "function", function: { name: "update_onboarding_state" } },
