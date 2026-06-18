@@ -206,7 +206,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "deepseek-v4-flash",
         messages,
         tools: [TOOL_SCHEMA],
         tool_choice: { type: "function", function: { name: "update_onboarding_state" } },
