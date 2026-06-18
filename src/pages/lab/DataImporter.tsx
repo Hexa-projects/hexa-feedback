@@ -237,7 +237,7 @@ export default function DataImporter() {
     .every(c => Object.values(columnMap).includes(c.key));
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto w-full space-y-6 p-4 md:p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Importação Inteligente (ETL)</h1>
         <p className="text-muted-foreground text-sm mt-1">
