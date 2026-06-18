@@ -63,14 +63,14 @@ serve(async (req) => {
 
     const userPrompt = `PERFIL:\n${JSON.stringify(profile, null, 2)}\n\nPROCESSOS MAPEADOS:\n${JSON.stringify(processes, null, 2)}`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "deepseek-chat",
         messages: [
           { role: "system", content: FINALIZE_PROMPT },
           { role: "user", content: userPrompt },
