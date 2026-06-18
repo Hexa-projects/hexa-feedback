@@ -199,14 +199,14 @@ serve(async (req) => {
       messages.push({ role: "user", content: "[Início da sessão — apresente-se e comece a entrevista]" });
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "deepseek-chat",
         messages,
         tools: [TOOL_SCHEMA],
         tool_choice: { type: "function", function: { name: "update_onboarding_state" } },
