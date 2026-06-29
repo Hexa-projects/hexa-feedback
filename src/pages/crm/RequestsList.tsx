@@ -610,12 +610,11 @@ export default function RequestsList() {
             {/* Condições */}
             <Section title="Condições Comerciais">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Preço (R$)">
+                <Field label="Preço">
                   <Input
-                    type="number"
-                    step="0.01"
+                    placeholder="R$ 0,00"
                     value={form.preco}
-                    onChange={(e) => setForm({ ...form, preco: e.target.value })}
+                    onChange={(e) => setForm({ ...form, preco: maskCurrency(e.target.value) })}
                   />
                 </Field>
                 <Field label="Condições de pagamento">
