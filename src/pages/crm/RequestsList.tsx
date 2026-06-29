@@ -94,6 +94,7 @@ const emptyForm = {
   frete: "",
   comissao: "",
   origem: "",
+  origem_outro: "",
   prioridade: "media",
   status: "pendente",
   observacoes: "",
