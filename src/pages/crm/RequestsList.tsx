@@ -55,18 +55,18 @@ const TIPO_OPTIONS = [
 ];
 
 const PRIORIDADE_COLORS: Record<string, string> = {
-  baixa: "bg-slate-500/20 text-slate-300 border-slate-500/30",
-  media: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  alta: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  critica: "bg-red-500/20 text-red-300 border-red-500/30",
+  baixa: "bg-blue-100 text-blue-800",
+  media: "bg-yellow-100 text-yellow-800",
+  alta: "bg-orange-100 text-orange-800",
+  critica: "bg-red-100 text-red-800",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pendente: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  em_analise: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  aprovada: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  recusada: "bg-red-500/20 text-red-300 border-red-500/30",
-  rascunho: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  pendente: "bg-yellow-100 text-yellow-800",
+  em_analise: "bg-blue-100 text-blue-800",
+  aprovada: "bg-green-100 text-green-800",
+  recusada: "bg-red-100 text-red-800",
+  rascunho: "bg-slate-100 text-slate-800",
 };
 
 const emptyForm = {
@@ -163,28 +163,24 @@ export default function RequestsList() {
 
   return (
     <HexaLayout>
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 animate-slide-up">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <FileText className="text-cyan-400" />
-              Solicitações
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FileText className="w-6 h-6 text-primary" /> Solicitações
             </h1>
-            <p className="text-slate-400 mt-1">
+            <p className="text-sm text-muted-foreground">
               Registre e acompanhe solicitações comerciais de clientes.
             </p>
           </div>
-          <Button
-            onClick={() => setOpen(true)}
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90"
-          >
+          <Button onClick={() => setOpen(true)} className="gap-1">
             <Plus className="mr-2 h-4 w-4" />
             Nova Solicitação
           </Button>
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Kpi label="Total" value={kpis.total} />
           <Kpi label="Pendentes" value={kpis.pendentes} tone="amber" />
           <Kpi label="Aprovadas" value={kpis.aprovadas} tone="emerald" />
@@ -196,19 +192,19 @@ export default function RequestsList() {
         </div>
 
         {/* Filtros */}
-        <Card className="bg-slate-900/50 border-slate-800">
+        <Card>
           <CardContent className="p-4 flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por empresa, equipamento ou tipo..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-slate-950/50 border-slate-800"
+                className="pl-9"
               />
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full md:w-48 bg-slate-950/50 border-slate-800">
+              <SelectTrigger className="w-full md:w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -224,76 +220,78 @@ export default function RequestsList() {
         </Card>
 
         {/* Tabela */}
-        <Card className="bg-slate-900/50 border-slate-800">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white text-lg">
+            <CardTitle className="text-lg">
               {loading ? "Carregando..." : `${filtered.length} solicitação(ões)`}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-slate-800">
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Equipamento</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Prioridade</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((r) => (
-                    <TableRow key={r.id} className="border-slate-800">
-                      <TableCell className="font-medium text-slate-200 max-w-[240px] truncate">
-                        {r.tipo}
-                      </TableCell>
-                      <TableCell>{r.empresa}</TableCell>
-                      <TableCell className="text-slate-400">{r.equipamento || "-"}</TableCell>
-                      <TableCell>
-                        {r.preco
-                          ? Number(r.preco).toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={PRIORIDADE_COLORS[r.prioridade]}>
-                          {r.prioridade}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={STATUS_COLORS[r.status]}>
-                          {r.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-slate-400 text-sm">
-                        {format(new Date(r.created_at), "dd/MM/yyyy")}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!loading && filtered.length === 0 && (
+          <CardContent className="p-0">
+            {loading ? (
+              <p className="text-sm text-muted-foreground p-6">Carregando...</p>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">Nenhuma solicitação encontrada.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-slate-500 py-10">
-                        Nenhuma solicitação encontrada.
-                      </TableCell>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead>Equipamento</TableHead>
+                      <TableHead>Preço</TableHead>
+                      <TableHead>Prioridade</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Data</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium max-w-[240px] truncate">
+                          {r.tipo}
+                        </TableCell>
+                        <TableCell>{r.empresa}</TableCell>
+                        <TableCell className="text-muted-foreground">{r.equipamento || "-"}</TableCell>
+                        <TableCell>
+                          {r.preco
+                            ? Number(r.preco).toLocaleString("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              })
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={PRIORIDADE_COLORS[r.prioridade]}>
+                            {r.prioridade}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={STATUS_COLORS[r.status]}>
+                            {r.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {format(new Date(r.created_at), "dd/MM/yyyy")}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Modal nova solicitação */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-950 border-slate-800">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white">Nova Solicitação</DialogTitle>
+            <DialogTitle>Nova Solicitação</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Identificação */}
@@ -307,9 +305,9 @@ export default function RequestsList() {
                         type="button"
                         variant="outline"
                         role="combobox"
-                        className="w-full justify-between bg-slate-950/50 border-slate-800 font-normal"
+                        className="w-full justify-between font-normal"
                       >
-                        <span className={cn("truncate", !form.tipo && "text-slate-500")}>
+                        <span className={cn("truncate", !form.tipo && "text-muted-foreground")}>
                           {form.tipo || "Digite para filtrar..."}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50 shrink-0" />
@@ -466,7 +464,7 @@ export default function RequestsList() {
                     value={form.frete}
                     onValueChange={(v) => setForm({ ...form, frete: v })}
                   >
-                    <SelectTrigger className="bg-slate-950/50 border-slate-800">
+                    <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -489,7 +487,7 @@ export default function RequestsList() {
                     value={form.origem}
                     onValueChange={(v) => setForm({ ...form, origem: v })}
                   >
-                    <SelectTrigger className="bg-slate-950/50 border-slate-800">
+                    <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -512,7 +510,7 @@ export default function RequestsList() {
                     value={form.prioridade}
                     onValueChange={(v) => setForm({ ...form, prioridade: v })}
                   >
-                    <SelectTrigger className="bg-slate-950/50 border-slate-800">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -528,7 +526,7 @@ export default function RequestsList() {
                     value={form.status}
                     onValueChange={(v) => setForm({ ...form, status: v })}
                   >
-                    <SelectTrigger className="bg-slate-950/50 border-slate-800">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -556,11 +554,7 @@ export default function RequestsList() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600"
-              >
+              <Button type="submit" disabled={saving}>
                 {saving ? "Salvando..." : "Criar Solicitação"}
               </Button>
             </DialogFooter>
@@ -571,18 +565,18 @@ export default function RequestsList() {
   );
 }
 
-function Kpi({ label, value, tone = "slate" }: { label: string; value: any; tone?: string }) {
+function Kpi({ label, value, tone = "default" }: { label: string; value: any; tone?: string }) {
   const tones: Record<string, string> = {
-    slate: "text-white",
-    amber: "text-amber-300",
-    emerald: "text-emerald-300",
-    cyan: "text-cyan-300",
+    default: "text-foreground",
+    amber: "text-amber-600",
+    emerald: "text-emerald-600",
+    cyan: "text-cyan-600",
   };
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
+    <Card>
       <CardContent className="p-4">
-        <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
-        <div className={cn("text-2xl font-bold mt-1", tones[tone])}>{value}</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className={cn("text-2xl font-bold mt-1", tones[tone] || tones.default)}>{value}</div>
       </CardContent>
     </Card>
   );
@@ -591,7 +585,7 @@ function Kpi({ label, value, tone = "slate" }: { label: string; value: any; tone
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-wider mb-3">
+      <h3 className="text-sm font-semibold uppercase tracking-wider mb-3">
         {title}
       </h3>
       {children}
@@ -602,7 +596,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-slate-300">{label}</Label>
+      <Label>{label}</Label>
       {children}
     </div>
   );
