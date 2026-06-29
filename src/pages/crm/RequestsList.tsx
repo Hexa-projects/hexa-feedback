@@ -160,6 +160,24 @@ export default function RequestsList() {
     }
   };
 
+  const fetchCNPJ = async (cnpj: string) => {
+    const clean = cnpj.replace(/\D/g, "");
+    if (clean.length !== 14) return;
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.razao_social) {
+        setForm((f) => ({ ...f, empresa: data.razao_social }));
+      }
+    } catch {
+      // falha silenciosa — mantém campo editável manualmente
+    } finally {
+      setCnpjLoading(false);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
