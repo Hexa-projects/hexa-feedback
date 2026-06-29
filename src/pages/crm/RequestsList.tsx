@@ -453,18 +453,6 @@ export default function RequestsList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Field label="Empresa *">
-                  <Input
-                    value={form.empresa}
-                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
-                  />
-                </Field>
-              </div>
-            </Section>
-
-            {/* Dados da empresa */}
-            <Section title="Dados da Empresa">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="CNPJ *">
                   <Input
                     placeholder="00.000.000/0000-00"
@@ -475,6 +463,18 @@ export default function RequestsList() {
                       setForm({ ...form, cnpj: masked });
                       if (isValidCNPJ(masked)) fetchCNPJ(masked);
                     }}
+                  />
+                </Field>
+              </div>
+            </Section>
+
+            {/* Dados da empresa */}
+            <Section title="Dados da Empresa">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Nome da empresa *">
+                  <Input
+                    value={form.empresa}
+                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
                   />
                 </Field>
                 <Field label="Telefone *">
