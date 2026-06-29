@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,9 @@ import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, User, DollarSign, TrendingUp, Users, Target, Bot, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { differenceInHours } from "date-fns";
