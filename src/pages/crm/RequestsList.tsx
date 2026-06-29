@@ -159,6 +159,7 @@ export default function RequestsList() {
   const [cepError, setCepError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
+  const [detail, setDetail] = useState<any | null>(null);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
