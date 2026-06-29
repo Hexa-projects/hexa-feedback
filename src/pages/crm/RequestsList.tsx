@@ -555,15 +555,24 @@ export default function RequestsList() {
                   />
                 </Field>
                 <Field label="CEP *">
-                  <Input
-                    placeholder="00000-000"
-                    value={form.cep}
-                    onChange={(e) => {
-                      const v = maskCEP(e.target.value);
-                      setForm({ ...form, cep: v });
-                      if (v.replace(/\D/g, "").length === 8) fetchCEP(v);
-                    }}
-                  />
+                  <div className="relative">
+                    <Input
+                      placeholder="00000-000"
+                      value={form.cep}
+                      onChange={(e) => {
+                        const v = maskCEP(e.target.value);
+                        setForm({ ...form, cep: v });
+                        setCepError(null);
+                        if (v.replace(/\D/g, "").length === 8) fetchCEP(v);
+                      }}
+                    />
+                    {cepLoading && (
+                      <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {cepError && (
+                    <p className="text-xs text-destructive mt-1">{cepError}</p>
+                  )}
                 </Field>
                 <Field label={cepLoading ? "Rua (buscando...)" : "Rua *"}>
                   <Input
