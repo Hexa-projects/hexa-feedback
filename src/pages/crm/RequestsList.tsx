@@ -446,33 +446,64 @@ export default function RequestsList() {
             {/* Dados da empresa */}
             <Section title="Dados da Empresa">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="CNPJ">
+                <Field label="CNPJ *">
                   <Input
+                    placeholder="00.000.000/0000-00"
                     value={form.cnpj}
-                    onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+                    onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })}
                   />
                 </Field>
-                <Field label="Telefone">
+                <Field label="Telefone *">
                   <Input
+                    placeholder="(00) 00000-0000"
                     value={form.telefone}
-                    onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
+                  />
+                </Field>
+                <Field label="CEP *">
+                  <Input
+                    placeholder="00000-000"
+                    value={form.cep}
+                    onChange={(e) => {
+                      const v = maskCEP(e.target.value);
+                      setForm({ ...form, cep: v });
+                      if (v.replace(/\D/g, "").length === 8) fetchCEP(v);
+                    }}
+                  />
+                </Field>
+                <Field label={cepLoading ? "Rua (buscando...)" : "Rua *"}>
+                  <Input
+                    value={form.rua}
+                    onChange={(e) => setForm({ ...form, rua: e.target.value })}
+                  />
+                </Field>
+                <Field label="Bairro *">
+                  <Input
+                    value={form.bairro}
+                    onChange={(e) => setForm({ ...form, bairro: e.target.value })}
+                  />
+                </Field>
+                <Field label="Cidade *">
+                  <Input
+                    value={form.cidade}
+                    onChange={(e) => setForm({ ...form, cidade: e.target.value })}
                   />
                 </Field>
                 <div className="md:col-span-2">
-                  <Field label="Endereço">
+                  <Field label="Complemento * (número, bloco, apto)">
                     <Input
-                      value={form.endereco}
-                      onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+                      value={form.complemento}
+                      onChange={(e) => setForm({ ...form, complemento: e.target.value })}
                     />
                   </Field>
                 </div>
-                <Field label="Contato">
+                <Field label="Contato *">
                   <Input
                     value={form.contato}
                     onChange={(e) => setForm({ ...form, contato: e.target.value })}
                   />
                 </Field>
-                <Field label="Responsável comercial">
+                <Field label="Vendedor(a) *">
                   <Input
                     value={form.responsavel_comercial}
                     onChange={(e) =>
