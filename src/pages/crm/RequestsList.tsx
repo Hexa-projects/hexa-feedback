@@ -654,23 +654,34 @@ export default function RequestsList() {
                     onChange={(e) => setForm({ ...form, comissao: maskPercent(e.target.value) })}
                   />
                 </Field>
-                <Field label="Origem">
-                  <Select
-                    value={form.origem}
-                    onValueChange={(v) => setForm({ ...form, origem: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Site">Site</SelectItem>
-                      <SelectItem value="Indicação">Indicação</SelectItem>
-                      <SelectItem value="Evento">Evento</SelectItem>
-                      <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                      <SelectItem value="Outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+                <div className="space-y-3">
+                  <Field label="Origem">
+                    <Select
+                      value={form.origem}
+                      onValueChange={(v) => setForm({ ...form, origem: v, origem_outro: "" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Site">Site</SelectItem>
+                        <SelectItem value="Indicação">Indicação</SelectItem>
+                        <SelectItem value="Evento">Evento</SelectItem>
+                        <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  {form.origem === "Outro" && (
+                    <Field label="Origem (especifique)">
+                      <Input
+                        placeholder="Digite a origem..."
+                        value={form.origem_outro}
+                        onChange={(e) => setForm({ ...form, origem_outro: e.target.value })}
+                      />
+                    </Field>
+                  )}
+                </div>
               </div>
             </Section>
 
