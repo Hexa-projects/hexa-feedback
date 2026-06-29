@@ -132,6 +132,7 @@ export default function RequestsList() {
   const [tipoOpen, setTipoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
 
   const fetchCEP = async (cep: string) => {
@@ -156,6 +157,24 @@ export default function RequestsList() {
       toast.error("Erro ao buscar CEP");
     } finally {
       setCepLoading(false);
+    }
+  };
+
+  const fetchCNPJ = async (cnpj: string) => {
+    const clean = cnpj.replace(/\D/g, "");
+    if (clean.length !== 14) return;
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.razao_social) {
+        setForm((f) => ({ ...f, empresa: data.razao_social }));
+      }
+    } catch {
+      // falha silenciosa — mantém campo editável manualmente
+    } finally {
+      setCnpjLoading(false);
     }
   };
 
@@ -450,7 +469,12 @@ export default function RequestsList() {
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
-                    onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })}
+                    disabled={cnpjLoading}
+                    onChange={(e) => {
+                      const masked = maskCNPJ(e.target.value);
+                      setForm({ ...form, cnpj: masked });
+                      if (isValidCNPJ(masked)) fetchCNPJ(masked);
+                    }}
                   />
                 </Field>
                 <Field label="Telefone *">
