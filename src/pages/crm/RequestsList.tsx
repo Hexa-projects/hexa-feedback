@@ -74,6 +74,12 @@ const emptyForm = {
   empresa: "",
   cnpj: "",
   telefone: "",
+  cep: "",
+  rua: "",
+  bairro: "",
+  cidade: "",
+  uf: "",
+  complemento: "",
   endereco: "",
   contato: "",
   responsavel_comercial: "",
@@ -93,6 +99,29 @@ const emptyForm = {
   observacoes: "",
 };
 
+const maskCNPJ = (v: string) =>
+  v.replace(/\D/g, "").slice(0, 14)
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+
+const isValidCNPJ = (v: string) => /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(v);
+
+const maskPhone = (v: string) => {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 10) {
+    return d.replace(/^(\d{0,2})(\d{0,4})(\d{0,4}).*/, (_, a, b, c) =>
+      [a && `(${a}`, a && a.length === 2 ? ") " : "", b, c && `-${c}`].filter(Boolean).join(""));
+  }
+  return d.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, "($1) $2-$3");
+};
+
+const isValidPhone = (v: string) => /^\(\d{2}\) \d{4,5}-\d{4}$/.test(v);
+
+const maskCEP = (v: string) =>
+  v.replace(/\D/g, "").slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
+
 export default function RequestsList() {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
@@ -102,7 +131,33 @@ export default function RequestsList() {
   const [open, setOpen] = useState(false);
   const [tipoOpen, setTipoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const fetchCEP = async (cep: string) => {
+    const clean = cep.replace(/\D/g, "");
+    if (clean.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        rua: data.logradouro || "",
+        bairro: data.bairro || "",
+        cidade: data.localidade || "",
+        uf: data.uf || "",
+      }));
+    } catch {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setCepLoading(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -143,15 +198,51 @@ export default function RequestsList() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.tipo) return toast.error("Selecione o tipo da solicitação");
-    if (!form.empresa.trim()) return toast.error("Informe a empresa");
+    const required: [string, string][] = [
+      ["tipo", "Tipo"],
+      ["empresa", "Empresa"],
+      ["cnpj", "CNPJ"],
+      ["telefone", "Telefone"],
+      ["cep", "CEP"],
+      ["rua", "Rua"],
+      ["bairro", "Bairro"],
+      ["cidade", "Cidade"],
+      ["complemento", "Complemento"],
+      ["contato", "Contato"],
+      ["responsavel_comercial", "Vendedor(a)"],
+      ["email_1", "E-mail 1"],
+      ["equipamento", "Equipamento"],
+      ["itens_inclusos", "Itens inclusos"],
+      ["itens_nao_inclusos", "Itens não inclusos"],
+      ["preco", "Preço"],
+      ["condicoes_pagamento", "Condições de pagamento"],
+      ["tempo_garantia", "Tempo de garantia"],
+      ["frete", "Frete"],
+      ["comissao", "Comissão"],
+      ["origem", "Origem"],
+      ["prioridade", "Prioridade"],
+      ["status", "Status"],
+      ["observacoes", "Observações"],
+    ];
+    for (const [k, label] of required) {
+      if (!String((form as any)[k] ?? "").trim()) {
+        return toast.error(`Campo obrigatório: ${label}`);
+      }
+    }
+    if (!isValidCNPJ(form.cnpj)) return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
+    if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
     setSaving(true);
+    const enderecoCompleto = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
     const payload: any = {
       ...form,
+      endereco: enderecoCompleto,
       preco: form.preco ? parseFloat(form.preco) : null,
       comissao: form.comissao ? parseFloat(form.comissao) : null,
       user_id: user!.id,
     };
+    // Remove campos que não existem na tabela
+    delete payload.cep; delete payload.rua; delete payload.bairro;
+    delete payload.cidade; delete payload.uf; delete payload.complemento;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
@@ -355,33 +446,64 @@ export default function RequestsList() {
             {/* Dados da empresa */}
             <Section title="Dados da Empresa">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="CNPJ">
+                <Field label="CNPJ *">
                   <Input
+                    placeholder="00.000.000/0000-00"
                     value={form.cnpj}
-                    onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+                    onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })}
                   />
                 </Field>
-                <Field label="Telefone">
+                <Field label="Telefone *">
                   <Input
+                    placeholder="(00) 00000-0000"
                     value={form.telefone}
-                    onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
+                  />
+                </Field>
+                <Field label="CEP *">
+                  <Input
+                    placeholder="00000-000"
+                    value={form.cep}
+                    onChange={(e) => {
+                      const v = maskCEP(e.target.value);
+                      setForm({ ...form, cep: v });
+                      if (v.replace(/\D/g, "").length === 8) fetchCEP(v);
+                    }}
+                  />
+                </Field>
+                <Field label={cepLoading ? "Rua (buscando...)" : "Rua *"}>
+                  <Input
+                    value={form.rua}
+                    onChange={(e) => setForm({ ...form, rua: e.target.value })}
+                  />
+                </Field>
+                <Field label="Bairro *">
+                  <Input
+                    value={form.bairro}
+                    onChange={(e) => setForm({ ...form, bairro: e.target.value })}
+                  />
+                </Field>
+                <Field label="Cidade *">
+                  <Input
+                    value={form.cidade}
+                    onChange={(e) => setForm({ ...form, cidade: e.target.value })}
                   />
                 </Field>
                 <div className="md:col-span-2">
-                  <Field label="Endereço">
+                  <Field label="Complemento * (número, bloco, apto)">
                     <Input
-                      value={form.endereco}
-                      onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+                      value={form.complemento}
+                      onChange={(e) => setForm({ ...form, complemento: e.target.value })}
                     />
                   </Field>
                 </div>
-                <Field label="Contato">
+                <Field label="Contato *">
                   <Input
                     value={form.contato}
                     onChange={(e) => setForm({ ...form, contato: e.target.value })}
                   />
                 </Field>
-                <Field label="Responsável comercial">
+                <Field label="Vendedor(a) *">
                   <Input
                     value={form.responsavel_comercial}
                     onChange={(e) =>
@@ -459,7 +581,7 @@ export default function RequestsList() {
                     onChange={(e) => setForm({ ...form, tempo_garantia: e.target.value })}
                   />
                 </Field>
-                <Field label="Frete">
+                <Field label="Frete *">
                   <Select
                     value={form.frete}
                     onValueChange={(v) => setForm({ ...form, frete: v })}
@@ -468,9 +590,8 @@ export default function RequestsList() {
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CIF">CIF</SelectItem>
-                      <SelectItem value="FOB">FOB</SelectItem>
                       <SelectItem value="Incluso">Incluso</SelectItem>
+                      <SelectItem value="Não incluso">Não incluso</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
