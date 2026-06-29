@@ -647,12 +647,11 @@ export default function RequestsList() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Comissão (%)">
+                <Field label="Comissão">
                   <Input
-                    type="number"
-                    step="0.01"
+                    placeholder="0%"
                     value={form.comissao}
-                    onChange={(e) => setForm({ ...form, comissao: e.target.value })}
+                    onChange={(e) => setForm({ ...form, comissao: maskPercent(e.target.value) })}
                   />
                 </Field>
                 <Field label="Origem">
