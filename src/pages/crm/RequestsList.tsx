@@ -471,16 +471,10 @@ export default function RequestsList() {
             {/* Dados da empresa */}
             <Section title="Dados da Empresa">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="CNPJ *">
+                <Field label="Nome da empresa *">
                   <Input
-                    placeholder="00.000.000/0000-00"
-                    value={form.cnpj}
-                    disabled={cnpjLoading}
-                    onChange={(e) => {
-                      const masked = maskCNPJ(e.target.value);
-                      setForm({ ...form, cnpj: masked });
-                      if (isValidCNPJ(masked)) fetchCNPJ(masked);
-                    }}
+                    value={form.empresa}
+                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
                   />
                 </Field>
                 <Field label="Telefone *">
