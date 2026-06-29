@@ -23,7 +23,7 @@ import {
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
-import { Plus, Search, FileText, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -156,32 +156,68 @@ export default function RequestsList() {
   const [tipoOpen, setTipoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const fetchWithTimeout = async (url: string, ms = 5000) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+      return await fetch(url, { signal: ctrl.signal });
+    } finally {
+      clearTimeout(t);
+    }
+  };
 
   const fetchCEP = async (cep: string) => {
     const clean = cep.replace(/\D/g, "");
     if (clean.length !== 8) return;
     setCepLoading(true);
+    setCepError(null);
+
+    // 1) ViaCEP
     try {
-      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-      const data = await res.json();
-      if (data.erro) {
-        toast.error("CEP não encontrado");
+      const res = await fetchWithTimeout(`https://viacep.com.br/ws/${clean}/json/`, 5000);
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.erro) {
+          setForm((f) => ({
+            ...f,
+            rua: data.logradouro || "",
+            bairro: data.bairro || "",
+            cidade: data.localidade || "",
+            uf: data.uf || "",
+          }));
+          setCepLoading(false);
+          return;
+        }
+      }
+    } catch {
+      /* fallback */
+    }
+
+    // 2) BrasilAPI fallback
+    try {
+      const res = await fetchWithTimeout(`https://brasilapi.com.br/api/cep/v1/${clean}`, 5000);
+      if (res.ok) {
+        const data = await res.json();
+        setForm((f) => ({
+          ...f,
+          rua: data.street || "",
+          bairro: data.neighborhood || "",
+          cidade: data.city || "",
+          uf: data.state || "",
+        }));
+        setCepLoading(false);
         return;
       }
-      setForm((f) => ({
-        ...f,
-        rua: data.logradouro || "",
-        bairro: data.bairro || "",
-        cidade: data.localidade || "",
-        uf: data.uf || "",
-      }));
     } catch {
-      toast.error("Erro ao buscar CEP");
-    } finally {
-      setCepLoading(false);
+      /* fall through */
     }
+
+    setCepError("Não foi possível buscar o endereço automaticamente, preencha manualmente");
+    setCepLoading(false);
   };
 
   const fetchCNPJ = async (cnpj: string) => {
@@ -519,15 +555,24 @@ export default function RequestsList() {
                   />
                 </Field>
                 <Field label="CEP *">
-                  <Input
-                    placeholder="00000-000"
-                    value={form.cep}
-                    onChange={(e) => {
-                      const v = maskCEP(e.target.value);
-                      setForm({ ...form, cep: v });
-                      if (v.replace(/\D/g, "").length === 8) fetchCEP(v);
-                    }}
-                  />
+                  <div className="relative">
+                    <Input
+                      placeholder="00000-000"
+                      value={form.cep}
+                      onChange={(e) => {
+                        const v = maskCEP(e.target.value);
+                        setForm({ ...form, cep: v });
+                        setCepError(null);
+                        if (v.replace(/\D/g, "").length === 8) fetchCEP(v);
+                      }}
+                    />
+                    {cepLoading && (
+                      <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {cepError && (
+                    <p className="text-xs text-destructive mt-1">{cepError}</p>
+                  )}
                 </Field>
                 <Field label={cepLoading ? "Rua (buscando...)" : "Rua *"}>
                   <Input
