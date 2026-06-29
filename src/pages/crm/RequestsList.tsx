@@ -165,10 +165,15 @@ export default function RequestsList() {
     if (clean.length !== 14) return;
     setCnpjLoading(true);
     try {
-      const res = await fetch(`https://receitaws.com.br/v1/cnpj/${clean}`);
+      const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`,
+        { headers: { Authorization: `Bearer ${anonKey}`, apikey: anonKey } }
+      );
       if (!res.ok) return;
       const data = await res.json();
-      if (data.nome) {
+      if (data?.nome) {
         setForm((f) => ({ ...f, empresa: data.nome }));
       }
     } catch {
