@@ -453,10 +453,16 @@ export default function RequestsList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Field label="Empresa *">
+                <Field label="CNPJ *">
                   <Input
-                    value={form.empresa}
-                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
+                    placeholder="00.000.000/0000-00"
+                    value={form.cnpj}
+                    disabled={cnpjLoading}
+                    onChange={(e) => {
+                      const masked = maskCNPJ(e.target.value);
+                      setForm({ ...form, cnpj: masked });
+                      if (isValidCNPJ(masked)) fetchCNPJ(masked);
+                    }}
                   />
                 </Field>
               </div>
