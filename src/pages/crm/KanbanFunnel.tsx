@@ -300,6 +300,43 @@ export default function KanbanFunnel() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Config Funnels Modal */}
+        <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-primary" /> Configurar funis
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {funnels.map((f, idx) => (
+                <div key={f.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-card">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Switch
+                      checked={f.enabled}
+                      onCheckedChange={(v) =>
+                        setFunnels((prev) => prev.map((x) => (x.id === f.id ? { ...x, enabled: v } : x)))
+                      }
+                    />
+                    <span className="text-sm truncate">{f.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveFunnel(idx, -1)} disabled={idx === 0}>
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveFunnel(idx, 1)} disabled={idx === funnels.length - 1}>
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => { setConfigOpen(false); toast.success("Funis atualizados"); }}>Concluir</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </HexaLayout>
   );
