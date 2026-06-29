@@ -123,6 +123,29 @@ const isValidPhone = (v: string) => /^\(\d{2}\) \d{4,5}-\d{4}$/.test(v);
 const maskCEP = (v: string) =>
   v.replace(/\D/g, "").slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
 
+const maskCurrency = (v: string) => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = Number(digits) / 100;
+  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+
+const parseCurrency = (v: string) => {
+  if (!v) return null;
+  return Number(v.replace(/\D/g, "")) / 100;
+};
+
+const maskPercent = (v: string) => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "";
+  return `${digits}%`;
+};
+
+const parsePercent = (v: string) => {
+  if (!v) return null;
+  return Number(v.replace(/\D/g, ""));
+};
+
 export default function RequestsList() {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
