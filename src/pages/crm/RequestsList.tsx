@@ -132,6 +132,7 @@ export default function RequestsList() {
   const [tipoOpen, setTipoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
 
   const fetchCEP = async (cep: string) => {
