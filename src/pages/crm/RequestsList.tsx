@@ -165,21 +165,15 @@ export default function RequestsList() {
     if (clean.length !== 14) return;
     setCnpjLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("receitaws-proxy", {
-        body: null,
-        method: "GET" as any,
-        // @ts-ignore - query via URL
-      });
-      // Fallback: invoke without query support, call via fetch to function URL
-      let payload: any = data;
-      if (error || !payload) {
-        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`);
-        if (!res.ok) return;
-        payload = await res.json();
-      }
-      const data2 = payload;
-      if (data.nome) {
+      const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`,
+        { headers: { Authorization: `Bearer ${anonKey}`, apikey: anonKey } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.nome) {
         setForm((f) => ({ ...f, empresa: data.nome }));
       }
     } catch {
