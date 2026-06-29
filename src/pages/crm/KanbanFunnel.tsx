@@ -118,22 +118,56 @@ export default function KanbanFunnel() {
     setWinModalLead(null);
   };
 
+  // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
+  const filteredLeads = useMemo(
+    () => leads.filter((l) => (l.funil ?? "vendas") === selectedFunnel),
+    [leads, selectedFunnel],
+  );
+
   // KPIs
-  const totalLeads = leads.length;
-  const totalValue = leads.reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
-  const wonValue = leads.filter(l => l.status === "Ganho").reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
-  const conversionRate = totalLeads > 0 ? Math.round((leads.filter(l => l.status === "Ganho").length / totalLeads) * 100) : 0;
+  const totalLeads = filteredLeads.length;
+  const totalValue = filteredLeads.reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
+  const wonValue = filteredLeads.filter(l => l.status === "Ganho").reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
+  const conversionRate = totalLeads > 0 ? Math.round((filteredLeads.filter(l => l.status === "Ganho").length / totalLeads) * 100) : 0;
+
+  const moveFunnel = (idx: number, dir: -1 | 1) => {
+    setFunnels((prev) => {
+      const next = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  };
 
   return (
     <HexaLayout>
       <div className="space-y-4 animate-slide-up">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Target className="w-6 h-6 text-primary" /> Funil Comercial</h1>
-            <p className="text-sm text-muted-foreground">Arraste os cards para atualizar o status</p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2"><Target className="w-6 h-6 text-primary" /> Funil Comercial</h1>
+              <p className="text-sm text-muted-foreground">Arraste os cards para atualizar o status</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={selectedFunnel} onValueChange={setSelectedFunnel}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Selecione o funil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeFunnels.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="sm" className="gap-1" onClick={() => setConfigOpen(true)}>
+                <Settings2 className="w-4 h-4" /> Configurar funis
+              </Button>
+            </div>
           </div>
           <Link to="/crm"><Button variant="outline" size="sm" className="gap-1"><ArrowLeft className="w-4 h-4" /> Lista</Button></Link>
         </div>
+
 
         {/* Pipeline KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
