@@ -220,7 +220,7 @@ export default function KanbanFunnel() {
         {/* Kanban */}
         <div className="flex gap-3 overflow-x-auto pb-4">
           {COLUMNS.map(col => {
-            const colLeads = leads.filter(l => l.status === col);
+            const colLeads = filteredLeads.filter(l => l.status === col);
             const colValue = colLeads.reduce((s, l) => s + (Number(l.valor_estimado) || 0), 0);
             return (
               <div
