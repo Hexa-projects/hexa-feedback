@@ -581,7 +581,7 @@ export default function RequestsList() {
                     onChange={(e) => setForm({ ...form, tempo_garantia: e.target.value })}
                   />
                 </Field>
-                <Field label="Frete">
+                <Field label="Frete *">
                   <Select
                     value={form.frete}
                     onValueChange={(v) => setForm({ ...form, frete: v })}
@@ -590,9 +590,8 @@ export default function RequestsList() {
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CIF">CIF</SelectItem>
-                      <SelectItem value="FOB">FOB</SelectItem>
                       <SelectItem value="Incluso">Incluso</SelectItem>
+                      <SelectItem value="Não incluso">Não incluso</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
