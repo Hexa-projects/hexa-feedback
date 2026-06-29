@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,9 @@ import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, User, DollarSign, TrendingUp, Users, Target, Bot, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { differenceInHours } from "date-fns";
@@ -23,11 +25,51 @@ const COLUMN_COLORS: Record<string, string> = {
   "Perdido": "border-t-red-400",
 };
 
+type FunnelDef = { id: string; label: string; enabled: boolean };
+
+const DEFAULT_FUNNELS: FunnelDef[] = [
+  { id: "prospeccao", label: "Funil de Prospecção (MKT)", enabled: true },
+  { id: "vendas", label: "Funil de Vendas", enabled: true },
+  { id: "servicos", label: "Funil de Serviços", enabled: true },
+  { id: "pos_vendas", label: "Funil de Pós Vendas", enabled: true },
+  { id: "hexa_ai", label: "Hexa AI", enabled: true },
+];
+
+const FUNNELS_STORAGE_KEY = "hexa.kanban.funnels";
+
 export default function KanbanFunnel() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [winModalLead, setWinModalLead] = useState<any | null>(null);
+  const [funnels, setFunnels] = useState<FunnelDef[]>(() => {
+    try {
+      const raw = localStorage.getItem(FUNNELS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as FunnelDef[];
+        // merge with defaults so newly added funnels appear
+        const byId = new Map(parsed.map((f) => [f.id, f]));
+        return DEFAULT_FUNNELS.map((d) => byId.get(d.id) ?? d).concat(
+          parsed.filter((p) => !DEFAULT_FUNNELS.find((d) => d.id === p.id)),
+        );
+      }
+    } catch {}
+    return DEFAULT_FUNNELS;
+  });
+  const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
+  const [configOpen, setConfigOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(FUNNELS_STORAGE_KEY, JSON.stringify(funnels));
+  }, [funnels]);
+
+  const activeFunnels = useMemo(() => funnels.filter((f) => f.enabled), [funnels]);
+
+  useEffect(() => {
+    if (!activeFunnels.find((f) => f.id === selectedFunnel) && activeFunnels.length) {
+      setSelectedFunnel(activeFunnels[0].id);
+    }
+  }, [activeFunnels, selectedFunnel]);
 
   useEffect(() => {
     if (!user) return;
@@ -76,22 +118,56 @@ export default function KanbanFunnel() {
     setWinModalLead(null);
   };
 
+  // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
+  const filteredLeads = useMemo(
+    () => leads.filter((l) => (l.funil ?? "vendas") === selectedFunnel),
+    [leads, selectedFunnel],
+  );
+
   // KPIs
-  const totalLeads = leads.length;
-  const totalValue = leads.reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
-  const wonValue = leads.filter(l => l.status === "Ganho").reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
-  const conversionRate = totalLeads > 0 ? Math.round((leads.filter(l => l.status === "Ganho").length / totalLeads) * 100) : 0;
+  const totalLeads = filteredLeads.length;
+  const totalValue = filteredLeads.reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
+  const wonValue = filteredLeads.filter(l => l.status === "Ganho").reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
+  const conversionRate = totalLeads > 0 ? Math.round((filteredLeads.filter(l => l.status === "Ganho").length / totalLeads) * 100) : 0;
+
+  const moveFunnel = (idx: number, dir: -1 | 1) => {
+    setFunnels((prev) => {
+      const next = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  };
 
   return (
     <HexaLayout>
       <div className="space-y-4 animate-slide-up">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Target className="w-6 h-6 text-primary" /> Funil Comercial</h1>
-            <p className="text-sm text-muted-foreground">Arraste os cards para atualizar o status</p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2"><Target className="w-6 h-6 text-primary" /> Funil Comercial</h1>
+              <p className="text-sm text-muted-foreground">Arraste os cards para atualizar o status</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={selectedFunnel} onValueChange={setSelectedFunnel}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Selecione o funil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeFunnels.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="sm" className="gap-1" onClick={() => setConfigOpen(true)}>
+                <Settings2 className="w-4 h-4" /> Configurar funis
+              </Button>
+            </div>
           </div>
           <Link to="/crm"><Button variant="outline" size="sm" className="gap-1"><ArrowLeft className="w-4 h-4" /> Lista</Button></Link>
         </div>
+
 
         {/* Pipeline KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -144,7 +220,7 @@ export default function KanbanFunnel() {
         {/* Kanban */}
         <div className="flex gap-3 overflow-x-auto pb-4">
           {COLUMNS.map(col => {
-            const colLeads = leads.filter(l => l.status === col);
+            const colLeads = filteredLeads.filter(l => l.status === col);
             const colValue = colLeads.reduce((s, l) => s + (Number(l.valor_estimado) || 0), 0);
             return (
               <div
@@ -221,6 +297,43 @@ export default function KanbanFunnel() {
               <Button onClick={handleAutoGenerate} className="gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
                 <Zap className="w-4 h-4" /> Gerar Tudo Automático
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Config Funnels Modal */}
+        <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-primary" /> Configurar funis
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {funnels.map((f, idx) => (
+                <div key={f.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-card">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Switch
+                      checked={f.enabled}
+                      onCheckedChange={(v) =>
+                        setFunnels((prev) => prev.map((x) => (x.id === f.id ? { ...x, enabled: v } : x)))
+                      }
+                    />
+                    <span className="text-sm truncate">{f.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveFunnel(idx, -1)} disabled={idx === 0}>
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveFunnel(idx, 1)} disabled={idx === funnels.length - 1}>
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => { setConfigOpen(false); toast.success("Funis atualizados"); }}>Concluir</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
