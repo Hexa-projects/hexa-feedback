@@ -431,7 +431,11 @@ export default function RequestsList() {
                   </TableHeader>
                   <TableBody>
                     {filtered.map((r) => (
-                      <TableRow key={r.id}>
+                      <TableRow
+                        key={r.id}
+                        onDoubleClick={() => setDetail(r)}
+                        className="cursor-pointer select-none"
+                      >
                         <TableCell className="font-medium max-w-[240px] truncate">
                           {r.tipo}
                         </TableCell>
