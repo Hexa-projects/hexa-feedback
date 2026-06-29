@@ -198,15 +198,51 @@ export default function RequestsList() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.tipo) return toast.error("Selecione o tipo da solicitação");
-    if (!form.empresa.trim()) return toast.error("Informe a empresa");
+    const required: [string, string][] = [
+      ["tipo", "Tipo"],
+      ["empresa", "Empresa"],
+      ["cnpj", "CNPJ"],
+      ["telefone", "Telefone"],
+      ["cep", "CEP"],
+      ["rua", "Rua"],
+      ["bairro", "Bairro"],
+      ["cidade", "Cidade"],
+      ["complemento", "Complemento"],
+      ["contato", "Contato"],
+      ["responsavel_comercial", "Vendedor(a)"],
+      ["email_1", "E-mail 1"],
+      ["equipamento", "Equipamento"],
+      ["itens_inclusos", "Itens inclusos"],
+      ["itens_nao_inclusos", "Itens não inclusos"],
+      ["preco", "Preço"],
+      ["condicoes_pagamento", "Condições de pagamento"],
+      ["tempo_garantia", "Tempo de garantia"],
+      ["frete", "Frete"],
+      ["comissao", "Comissão"],
+      ["origem", "Origem"],
+      ["prioridade", "Prioridade"],
+      ["status", "Status"],
+      ["observacoes", "Observações"],
+    ];
+    for (const [k, label] of required) {
+      if (!String((form as any)[k] ?? "").trim()) {
+        return toast.error(`Campo obrigatório: ${label}`);
+      }
+    }
+    if (!isValidCNPJ(form.cnpj)) return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
+    if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
     setSaving(true);
+    const enderecoCompleto = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
     const payload: any = {
       ...form,
+      endereco: enderecoCompleto,
       preco: form.preco ? parseFloat(form.preco) : null,
       comissao: form.comissao ? parseFloat(form.comissao) : null,
       user_id: user!.id,
     };
+    // Remove campos que não existem na tabela
+    delete payload.cep; delete payload.rua; delete payload.bairro;
+    delete payload.cidade; delete payload.uf; delete payload.complemento;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
