@@ -25,11 +25,51 @@ const COLUMN_COLORS: Record<string, string> = {
   "Perdido": "border-t-red-400",
 };
 
+type FunnelDef = { id: string; label: string; enabled: boolean };
+
+const DEFAULT_FUNNELS: FunnelDef[] = [
+  { id: "prospeccao", label: "Funil de Prospecção (MKT)", enabled: true },
+  { id: "vendas", label: "Funil de Vendas", enabled: true },
+  { id: "servicos", label: "Funil de Serviços", enabled: true },
+  { id: "pos_vendas", label: "Funil de Pós Vendas", enabled: true },
+  { id: "hexa_ai", label: "Hexa AI", enabled: true },
+];
+
+const FUNNELS_STORAGE_KEY = "hexa.kanban.funnels";
+
 export default function KanbanFunnel() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [winModalLead, setWinModalLead] = useState<any | null>(null);
+  const [funnels, setFunnels] = useState<FunnelDef[]>(() => {
+    try {
+      const raw = localStorage.getItem(FUNNELS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as FunnelDef[];
+        // merge with defaults so newly added funnels appear
+        const byId = new Map(parsed.map((f) => [f.id, f]));
+        return DEFAULT_FUNNELS.map((d) => byId.get(d.id) ?? d).concat(
+          parsed.filter((p) => !DEFAULT_FUNNELS.find((d) => d.id === p.id)),
+        );
+      }
+    } catch {}
+    return DEFAULT_FUNNELS;
+  });
+  const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
+  const [configOpen, setConfigOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(FUNNELS_STORAGE_KEY, JSON.stringify(funnels));
+  }, [funnels]);
+
+  const activeFunnels = useMemo(() => funnels.filter((f) => f.enabled), [funnels]);
+
+  useEffect(() => {
+    if (!activeFunnels.find((f) => f.id === selectedFunnel) && activeFunnels.length) {
+      setSelectedFunnel(activeFunnels[0].id);
+    }
+  }, [activeFunnels, selectedFunnel]);
 
   useEffect(() => {
     if (!user) return;
