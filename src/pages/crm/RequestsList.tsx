@@ -165,11 +165,11 @@ export default function RequestsList() {
     if (clean.length !== 14) return;
     setCnpjLoading(true);
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+      const res = await fetch(`https://receitaws.com.br/v1/cnpj/${clean}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (data.razao_social) {
-        setForm((f) => ({ ...f, empresa: data.razao_social }));
+      if (data.nome) {
+        setForm((f) => ({ ...f, empresa: data.nome }));
       }
     } catch {
       // falha silenciosa — mantém campo editável manualmente
