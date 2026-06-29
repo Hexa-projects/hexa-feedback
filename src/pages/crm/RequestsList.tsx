@@ -159,6 +159,7 @@ export default function RequestsList() {
   const [cepError, setCepError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
+  const [detail, setDetail] = useState<any | null>(null);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
@@ -430,7 +431,11 @@ export default function RequestsList() {
                   </TableHeader>
                   <TableBody>
                     {filtered.map((r) => (
-                      <TableRow key={r.id}>
+                      <TableRow
+                        key={r.id}
+                        onDoubleClick={() => setDetail(r)}
+                        className="cursor-pointer select-none"
+                      >
                         <TableCell className="font-medium max-w-[240px] truncate">
                           {r.tipo}
                         </TableCell>
@@ -794,7 +799,121 @@ export default function RequestsList() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal detalhes (somente leitura) */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Solicitação</DialogTitle>
+          </DialogHeader>
+          {detail && (
+            <div className="space-y-6">
+              <Section title="Identificação">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ReadField label="Tipo" value={detail.tipo} />
+                  <ReadField label="CNPJ" value={detail.cnpj} />
+                </div>
+              </Section>
+
+              <Section title="Dados da Empresa">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ReadField label="Nome da empresa" value={detail.empresa} />
+                  <ReadField label="Telefone" value={detail.telefone} />
+                  <div className="md:col-span-2">
+                    <ReadField label="Endereço" value={detail.endereco} />
+                  </div>
+                  <ReadField label="Contato" value={detail.contato} />
+                  <ReadField label="Vendedor(a)" value={detail.responsavel_comercial} />
+                  <ReadField label="E-mail 1" value={detail.email_1} />
+                  <ReadField label="E-mail 2" value={detail.email_2} />
+                </div>
+              </Section>
+
+              <Section title="Equipamento e Proposta">
+                <div className="space-y-4">
+                  <ReadField label="Equipamento" value={detail.equipamento} />
+                  <ReadField label="Itens inclusos" value={detail.itens_inclusos} multiline />
+                  <ReadField label="Itens não inclusos" value={detail.itens_nao_inclusos} multiline />
+                </div>
+              </Section>
+
+              <Section title="Condições Comerciais">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ReadField
+                    label="Preço"
+                    value={
+                      detail.preco != null
+                        ? Number(detail.preco).toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })
+                        : ""
+                    }
+                  />
+                  <ReadField label="Condições de pagamento" value={detail.condicoes_pagamento} />
+                  <ReadField label="Tempo de garantia" value={detail.tempo_garantia} />
+                  <ReadField label="Frete" value={detail.frete} />
+                  <ReadField
+                    label="Comissão"
+                    value={detail.comissao != null ? `${detail.comissao}%` : ""}
+                  />
+                  <ReadField label="Origem" value={detail.origem} />
+                </div>
+              </Section>
+
+              <Section title="Outros">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ReadField label="Prioridade" value={detail.prioridade} />
+                  <ReadField label="Status" value={detail.status?.replace("_", " ")} />
+                  <div className="md:col-span-2">
+                    <ReadField label="Observações" value={detail.observacoes} multiline />
+                  </div>
+                  <ReadField
+                    label="Criada em"
+                    value={
+                      detail.created_at
+                        ? format(new Date(detail.created_at), "dd/MM/yyyy HH:mm")
+                        : ""
+                    }
+                  />
+                </div>
+              </Section>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetail(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </HexaLayout>
+  );
+}
+
+function ReadField({
+  label,
+  value,
+  multiline,
+}: {
+  label: string;
+  value: any;
+  multiline?: boolean;
+}) {
+  const display =
+    value === null || value === undefined || value === "" ? "—" : String(value);
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-muted-foreground">{label}</Label>
+      <div
+        className={cn(
+          "min-h-10 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm",
+          multiline && "whitespace-pre-wrap",
+        )}
+      >
+        {display}
+      </div>
+    </div>
   );
 }
 
