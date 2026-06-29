@@ -94,6 +94,7 @@ const emptyForm = {
   frete: "",
   comissao: "",
   origem: "",
+  origem_outro: "",
   prioridade: "media",
   status: "pendente",
   observacoes: "",
@@ -121,6 +122,29 @@ const isValidPhone = (v: string) => /^\(\d{2}\) \d{4,5}-\d{4}$/.test(v);
 
 const maskCEP = (v: string) =>
   v.replace(/\D/g, "").slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
+
+const maskCurrency = (v: string) => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = Number(digits) / 100;
+  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+
+const parseCurrency = (v: string) => {
+  if (!v) return null;
+  return Number(v.replace(/\D/g, "")) / 100;
+};
+
+const maskPercent = (v: string) => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "";
+  return `${digits}%`;
+};
+
+const parsePercent = (v: string) => {
+  if (!v) return null;
+  return Number(v.replace(/\D/g, ""));
+};
 
 export default function RequestsList() {
   const { user } = useAuth();
@@ -253,6 +277,9 @@ export default function RequestsList() {
         return toast.error(`Campo obrigatório: ${label}`);
       }
     }
+    if (form.origem === "Outro" && !form.origem_outro.trim()) {
+      return toast.error("Campo obrigatório: Especifique a origem");
+    }
     if (!isValidCNPJ(form.cnpj)) return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
     if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
     setSaving(true);
@@ -260,13 +287,15 @@ export default function RequestsList() {
     const payload: any = {
       ...form,
       endereco: enderecoCompleto,
-      preco: form.preco ? parseFloat(form.preco) : null,
-      comissao: form.comissao ? parseFloat(form.comissao) : null,
+      preco: parseCurrency(form.preco),
+      comissao: parsePercent(form.comissao),
+      origem: form.origem === "Outro" ? form.origem_outro : form.origem,
       user_id: user!.id,
     };
     // Remove campos que não existem na tabela
     delete payload.cep; delete payload.rua; delete payload.bairro;
     delete payload.cidade; delete payload.uf; delete payload.complemento;
+    delete payload.origem_outro;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
@@ -586,12 +615,11 @@ export default function RequestsList() {
             {/* Condições */}
             <Section title="Condições Comerciais">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Preço (R$)">
+                <Field label="Preço">
                   <Input
-                    type="number"
-                    step="0.01"
+                    placeholder="R$ 0,00"
                     value={form.preco}
-                    onChange={(e) => setForm({ ...form, preco: e.target.value })}
+                    onChange={(e) => setForm({ ...form, preco: maskCurrency(e.target.value) })}
                   />
                 </Field>
                 <Field label="Condições de pagamento">
@@ -624,31 +652,41 @@ export default function RequestsList() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Comissão (%)">
+                <Field label="Comissão">
                   <Input
-                    type="number"
-                    step="0.01"
+                    placeholder="0%"
                     value={form.comissao}
-                    onChange={(e) => setForm({ ...form, comissao: e.target.value })}
+                    onChange={(e) => setForm({ ...form, comissao: maskPercent(e.target.value) })}
                   />
                 </Field>
-                <Field label="Origem">
-                  <Select
-                    value={form.origem}
-                    onValueChange={(v) => setForm({ ...form, origem: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Site">Site</SelectItem>
-                      <SelectItem value="Indicação">Indicação</SelectItem>
-                      <SelectItem value="Evento">Evento</SelectItem>
-                      <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                      <SelectItem value="Outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+                <div className="space-y-3">
+                  <Field label="Origem">
+                    <Select
+                      value={form.origem}
+                      onValueChange={(v) => setForm({ ...form, origem: v, origem_outro: "" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Site">Site</SelectItem>
+                        <SelectItem value="Indicação">Indicação</SelectItem>
+                        <SelectItem value="Evento">Evento</SelectItem>
+                        <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  {form.origem === "Outro" && (
+                    <Field label="Origem (especifique)">
+                      <Input
+                        placeholder="Digite a origem..."
+                        value={form.origem_outro}
+                        onChange={(e) => setForm({ ...form, origem_outro: e.target.value })}
+                      />
+                    </Field>
+                  )}
+                </div>
               </div>
             </Section>
 
