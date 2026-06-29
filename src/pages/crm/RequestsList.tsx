@@ -469,7 +469,12 @@ export default function RequestsList() {
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
-                    onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })}
+                    disabled={cnpjLoading}
+                    onChange={(e) => {
+                      const masked = maskCNPJ(e.target.value);
+                      setForm({ ...form, cnpj: masked });
+                      if (isValidCNPJ(masked)) fetchCNPJ(masked);
+                    }}
                   />
                 </Field>
                 <Field label="Telefone *">
