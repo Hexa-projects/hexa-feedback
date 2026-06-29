@@ -630,6 +630,101 @@ export type Database = {
           },
         ]
       }
+      commercial_requests: {
+        Row: {
+          cnpj: string | null
+          comissao: number | null
+          condicoes_pagamento: string | null
+          contato: string | null
+          created_at: string
+          email_1: string | null
+          email_2: string | null
+          empresa: string
+          endereco: string | null
+          equipamento: string | null
+          frete: string | null
+          id: string
+          itens_inclusos: string | null
+          itens_nao_inclusos: string | null
+          lead_id: string | null
+          observacoes: string | null
+          origem: string | null
+          preco: number | null
+          prioridade: string
+          responsavel_comercial: string | null
+          status: string
+          telefone: string | null
+          tempo_garantia: string | null
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          comissao?: number | null
+          condicoes_pagamento?: string | null
+          contato?: string | null
+          created_at?: string
+          email_1?: string | null
+          email_2?: string | null
+          empresa: string
+          endereco?: string | null
+          equipamento?: string | null
+          frete?: string | null
+          id?: string
+          itens_inclusos?: string | null
+          itens_nao_inclusos?: string | null
+          lead_id?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          preco?: number | null
+          prioridade?: string
+          responsavel_comercial?: string | null
+          status?: string
+          telefone?: string | null
+          tempo_garantia?: string | null
+          tipo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cnpj?: string | null
+          comissao?: number | null
+          condicoes_pagamento?: string | null
+          contato?: string | null
+          created_at?: string
+          email_1?: string | null
+          email_2?: string | null
+          empresa?: string
+          endereco?: string | null
+          equipamento?: string | null
+          frete?: string | null
+          id?: string
+          itens_inclusos?: string | null
+          itens_nao_inclusos?: string | null
+          lead_id?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          preco?: number | null
+          prioridade?: string
+          responsavel_comercial?: string | null
+          status?: string
+          telefone?: string | null
+          tempo_garantia?: string | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_requests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           created_at: string | null
