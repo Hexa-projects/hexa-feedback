@@ -277,6 +277,9 @@ export default function RequestsList() {
         return toast.error(`Campo obrigatório: ${label}`);
       }
     }
+    if (form.origem === "Outro" && !form.origem_outro.trim()) {
+      return toast.error("Campo obrigatório: Especifique a origem");
+    }
     if (!isValidCNPJ(form.cnpj)) return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
     if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
     setSaving(true);
@@ -284,13 +287,15 @@ export default function RequestsList() {
     const payload: any = {
       ...form,
       endereco: enderecoCompleto,
-      preco: form.preco ? parseFloat(form.preco) : null,
-      comissao: form.comissao ? parseFloat(form.comissao) : null,
+      preco: parseCurrency(form.preco),
+      comissao: parsePercent(form.comissao),
+      origem: form.origem === "Outro" ? form.origem_outro : form.origem,
       user_id: user!.id,
     };
     // Remove campos que não existem na tabela
     delete payload.cep; delete payload.rua; delete payload.bairro;
     delete payload.cidade; delete payload.uf; delete payload.complemento;
+    delete payload.origem_outro;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
