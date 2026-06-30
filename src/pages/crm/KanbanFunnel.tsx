@@ -197,6 +197,52 @@ export default function KanbanFunnel() {
           <Link to="/crm"><Button variant="outline" size="sm" className="gap-1"><ArrowLeft className="w-4 h-4" /> Lista</Button></Link>
         </div>
 
+        {selectedFunnel === "prospeccao" && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={filterDeal} onValueChange={setFilterDeal}>
+                <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as negociações</SelectItem>
+                  <SelectItem value="minhas">Minhas negociações</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="em_andamento">Em andamento</SelectItem>
+                  <SelectItem value="ganhas">Ganhas</SelectItem>
+                  <SelectItem value="perdidas">Perdidas</SelectItem>
+                  <SelectItem value="todas">Todas</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterSort} onValueChange={setFilterSort}>
+                <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recentes">Criadas por último</SelectItem>
+                  <SelectItem value="antigas">Mais antigas</SelectItem>
+                  <SelectItem value="valor">Maior valor</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="gap-1 h-9">
+                <Filter className="w-4 h-4" /> Filtros
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">{filteredLeads.length} Negociações</span>
+              {filterStatus !== "todas" && (
+                <Badge variant="secondary" className="gap-1">
+                  {filterStatus === "em_andamento" ? "Em andamento" : filterStatus === "ganhas" ? "Ganhas" : "Perdidas"}
+                  <button onClick={() => setFilterStatus("todas")} className="ml-1 hover:opacity-70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
+
 
         {/* Pipeline KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
