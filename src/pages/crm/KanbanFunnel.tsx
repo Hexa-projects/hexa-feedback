@@ -76,8 +76,8 @@ const DEFAULT_FUNNELS: FunnelDef[] = [
   { id: "prospeccao", label: "Funil de Prospecção (MKT)", enabled: true },
   { id: "vendas", label: "Funil de Vendas", enabled: true },
   { id: "servicos", label: "Funil de Serviços", enabled: true },
-  { id: "pos_vendas", label: "Funil de Pós Vendas", enabled: true },
   { id: "hexa_ai", label: "Hexa AI", enabled: true },
+  { id: "pos_vendas", label: "Funil de Pós Vendas", enabled: true },
 ];
 
 const FUNNELS_STORAGE_KEY = "hexa.kanban.funnels";
