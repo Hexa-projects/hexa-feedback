@@ -27,6 +27,24 @@ const PROSPECCAO_COLUMNS = [
   "Em Negociação",
 ];
 
+const VENDAS_COLUMNS = [
+  "Novo Negócio",
+  "Reunião Agendada",
+  "Qualificação",
+  "Proposta Enviada",
+  "Negociação",
+  "Negócio Ganho",
+];
+
+const SERVICOS_COLUMNS = [
+  "Atendimento Inicial",
+  "Proposta Enviada",
+  "Proposta Aprovada",
+  "Faturamento",
+  "Negócio Ganho",
+  "Interesse Futuro",
+];
+
 const COLUMN_COLORS: Record<string, string> = {
   "Qualificação": "border-t-blue-400",
   "Contato Inicial": "border-t-yellow-400",
@@ -42,7 +60,14 @@ const COLUMN_COLORS: Record<string, string> = {
   "Apresentar Proposta": "border-t-orange-400",
   "Followup para Negociação": "border-t-amber-400",
   "Em Negociação": "border-t-teal-400",
+  "Novo Negócio": "border-t-sky-400",
+  "Negócio Ganho": "border-t-green-400",
+  "Atendimento Inicial": "border-t-blue-400",
+  "Proposta Aprovada": "border-t-emerald-400",
+  "Faturamento": "border-t-amber-400",
+  "Interesse Futuro": "border-t-violet-400",
 };
+
 
 
 type FunnelDef = { id: string; label: string; enabled: boolean };
