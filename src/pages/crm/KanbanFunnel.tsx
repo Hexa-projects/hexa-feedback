@@ -107,10 +107,13 @@ export default function KanbanFunnel() {
   const [filterStatus, setFilterStatus] = useState<string>("em_andamento");
   const [filterSort, setFilterSort] = useState<string>("recentes");
 
-  const COLUMNS = useMemo(
-    () => (selectedFunnel === "prospeccao" ? PROSPECCAO_COLUMNS : DEFAULT_COLUMNS),
-    [selectedFunnel],
-  );
+  const COLUMNS = useMemo(() => {
+    if (selectedFunnel === "prospeccao") return PROSPECCAO_COLUMNS;
+    if (selectedFunnel === "vendas") return VENDAS_COLUMNS;
+    if (selectedFunnel === "servicos") return SERVICOS_COLUMNS;
+    return DEFAULT_COLUMNS;
+  }, [selectedFunnel]);
+
 
 
   useEffect(() => {
