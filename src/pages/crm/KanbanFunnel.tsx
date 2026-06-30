@@ -78,6 +78,15 @@ export default function KanbanFunnel() {
   });
   const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
   const [configOpen, setConfigOpen] = useState(false);
+  const [filterDeal, setFilterDeal] = useState<string>("todas");
+  const [filterStatus, setFilterStatus] = useState<string>("em_andamento");
+  const [filterSort, setFilterSort] = useState<string>("recentes");
+
+  const COLUMNS = useMemo(
+    () => (selectedFunnel === "prospeccao" ? PROSPECCAO_COLUMNS : DEFAULT_COLUMNS),
+    [selectedFunnel],
+  );
+
 
   useEffect(() => {
     localStorage.setItem(FUNNELS_STORAGE_KEY, JSON.stringify(funnels));
