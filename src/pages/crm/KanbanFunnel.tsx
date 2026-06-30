@@ -45,6 +45,24 @@ const SERVICOS_COLUMNS = [
   "Interesse Futuro",
 ];
 
+const HEXA_AI_COLUMNS = [
+  "Novo Lead",
+  "Qualificação",
+  "Orçamento Enviado",
+  "Instalando Demo",
+  "Demo em Processo",
+  "Negociação",
+  "Fechamento",
+];
+
+const POS_VENDAS_COLUMNS = [
+  "Avaliação de Satisfação",
+  "Renovação",
+  "Up Sell",
+  "Cliente em Risco",
+  "Cliente Perdido",
+];
+
 const COLUMN_COLORS: Record<string, string> = {
   "Qualificação": "border-t-blue-400",
   "Contato Inicial": "border-t-yellow-400",
@@ -66,6 +84,15 @@ const COLUMN_COLORS: Record<string, string> = {
   "Proposta Aprovada": "border-t-emerald-400",
   "Faturamento": "border-t-amber-400",
   "Interesse Futuro": "border-t-violet-400",
+  "Orçamento Enviado": "border-t-cyan-400",
+  "Instalando Demo": "border-t-lime-400",
+  "Demo em Processo": "border-t-fuchsia-400",
+  "Fechamento": "border-t-green-400",
+  "Avaliação de Satisfação": "border-t-emerald-400",
+  "Renovação": "border-t-teal-400",
+  "Up Sell": "border-t-amber-400",
+  "Cliente em Risco": "border-t-orange-400",
+  "Cliente Perdido": "border-t-red-400",
 };
 
 
@@ -76,8 +103,8 @@ const DEFAULT_FUNNELS: FunnelDef[] = [
   { id: "prospeccao", label: "Funil de Prospecção (MKT)", enabled: true },
   { id: "vendas", label: "Funil de Vendas", enabled: true },
   { id: "servicos", label: "Funil de Serviços", enabled: true },
-  { id: "pos_vendas", label: "Funil de Pós Vendas", enabled: true },
   { id: "hexa_ai", label: "Hexa AI", enabled: true },
+  { id: "pos_vendas", label: "Funil de Pós Vendas", enabled: true },
 ];
 
 const FUNNELS_STORAGE_KEY = "hexa.kanban.funnels";
@@ -111,6 +138,8 @@ export default function KanbanFunnel() {
     if (selectedFunnel === "prospeccao") return PROSPECCAO_COLUMNS;
     if (selectedFunnel === "vendas") return VENDAS_COLUMNS;
     if (selectedFunnel === "servicos") return SERVICOS_COLUMNS;
+    if (selectedFunnel === "hexa_ai") return HEXA_AI_COLUMNS;
+    if (selectedFunnel === "pos_vendas") return POS_VENDAS_COLUMNS;
     return DEFAULT_COLUMNS;
   }, [selectedFunnel]);
 
