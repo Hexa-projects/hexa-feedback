@@ -84,6 +84,15 @@ const COLUMN_COLORS: Record<string, string> = {
   "Proposta Aprovada": "border-t-emerald-400",
   "Faturamento": "border-t-amber-400",
   "Interesse Futuro": "border-t-violet-400",
+  "Orçamento Enviado": "border-t-cyan-400",
+  "Instalando Demo": "border-t-lime-400",
+  "Demo em Processo": "border-t-fuchsia-400",
+  "Fechamento": "border-t-green-400",
+  "Avaliação de Satisfação": "border-t-emerald-400",
+  "Renovação": "border-t-teal-400",
+  "Up Sell": "border-t-amber-400",
+  "Cliente em Risco": "border-t-orange-400",
+  "Cliente Perdido": "border-t-red-400",
 };
 
 
