@@ -8,12 +8,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
+import { Badge } from "@/components/ui/badge";
 import { differenceInHours } from "date-fns";
 
-const COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
+const DEFAULT_COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
+
+const PROSPECCAO_COLUMNS = [
+  "Novo Lead",
+  "Tentando Contato",
+  "Qualificação",
+  "Oportunidade Validada",
+  "Reunião Agendada",
+  "Apresentar Proposta",
+  "Followup para Negociação",
+  "Em Negociação",
+];
 
 const COLUMN_COLORS: Record<string, string> = {
   "Qualificação": "border-t-blue-400",
@@ -23,7 +35,15 @@ const COLUMN_COLORS: Record<string, string> = {
   "Negociação": "border-t-teal-400",
   "Ganho": "border-t-green-400",
   "Perdido": "border-t-red-400",
+  "Novo Lead": "border-t-sky-400",
+  "Tentando Contato": "border-t-yellow-400",
+  "Oportunidade Validada": "border-t-indigo-400",
+  "Reunião Agendada": "border-t-purple-400",
+  "Apresentar Proposta": "border-t-orange-400",
+  "Followup para Negociação": "border-t-amber-400",
+  "Em Negociação": "border-t-teal-400",
 };
+
 
 type FunnelDef = { id: string; label: string; enabled: boolean };
 
