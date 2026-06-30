@@ -138,6 +138,8 @@ export default function KanbanFunnel() {
     if (selectedFunnel === "prospeccao") return PROSPECCAO_COLUMNS;
     if (selectedFunnel === "vendas") return VENDAS_COLUMNS;
     if (selectedFunnel === "servicos") return SERVICOS_COLUMNS;
+    if (selectedFunnel === "hexa_ai") return HEXA_AI_COLUMNS;
+    if (selectedFunnel === "pos_vendas") return POS_VENDAS_COLUMNS;
     return DEFAULT_COLUMNS;
   }, [selectedFunnel]);
 
