@@ -45,6 +45,24 @@ const SERVICOS_COLUMNS = [
   "Interesse Futuro",
 ];
 
+const HEXA_AI_COLUMNS = [
+  "Novo Lead",
+  "Qualificação",
+  "Orçamento Enviado",
+  "Instalando Demo",
+  "Demo em Processo",
+  "Negociação",
+  "Fechamento",
+];
+
+const POS_VENDAS_COLUMNS = [
+  "Avaliação de Satisfação",
+  "Renovação",
+  "Up Sell",
+  "Cliente em Risco",
+  "Cliente Perdido",
+];
+
 const COLUMN_COLORS: Record<string, string> = {
   "Qualificação": "border-t-blue-400",
   "Contato Inicial": "border-t-yellow-400",
