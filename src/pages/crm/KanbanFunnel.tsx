@@ -8,12 +8,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
+import { Badge } from "@/components/ui/badge";
 import { differenceInHours } from "date-fns";
 
-const COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
+const DEFAULT_COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
+
+const PROSPECCAO_COLUMNS = [
+  "Novo Lead",
+  "Tentando Contato",
+  "Qualificação",
+  "Oportunidade Validada",
+  "Reunião Agendada",
+  "Apresentar Proposta",
+  "Followup para Negociação",
+  "Em Negociação",
+];
 
 const COLUMN_COLORS: Record<string, string> = {
   "Qualificação": "border-t-blue-400",
@@ -23,7 +35,15 @@ const COLUMN_COLORS: Record<string, string> = {
   "Negociação": "border-t-teal-400",
   "Ganho": "border-t-green-400",
   "Perdido": "border-t-red-400",
+  "Novo Lead": "border-t-sky-400",
+  "Tentando Contato": "border-t-yellow-400",
+  "Oportunidade Validada": "border-t-indigo-400",
+  "Reunião Agendada": "border-t-purple-400",
+  "Apresentar Proposta": "border-t-orange-400",
+  "Followup para Negociação": "border-t-amber-400",
+  "Em Negociação": "border-t-teal-400",
 };
+
 
 type FunnelDef = { id: string; label: string; enabled: boolean };
 
@@ -58,6 +78,15 @@ export default function KanbanFunnel() {
   });
   const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
   const [configOpen, setConfigOpen] = useState(false);
+  const [filterDeal, setFilterDeal] = useState<string>("todas");
+  const [filterStatus, setFilterStatus] = useState<string>("em_andamento");
+  const [filterSort, setFilterSort] = useState<string>("recentes");
+
+  const COLUMNS = useMemo(
+    () => (selectedFunnel === "prospeccao" ? PROSPECCAO_COLUMNS : DEFAULT_COLUMNS),
+    [selectedFunnel],
+  );
+
 
   useEffect(() => {
     localStorage.setItem(FUNNELS_STORAGE_KEY, JSON.stringify(funnels));
@@ -167,6 +196,52 @@ export default function KanbanFunnel() {
           </div>
           <Link to="/crm"><Button variant="outline" size="sm" className="gap-1"><ArrowLeft className="w-4 h-4" /> Lista</Button></Link>
         </div>
+
+        {selectedFunnel === "prospeccao" && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={filterDeal} onValueChange={setFilterDeal}>
+                <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as negociações</SelectItem>
+                  <SelectItem value="minhas">Minhas negociações</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="em_andamento">Em andamento</SelectItem>
+                  <SelectItem value="ganhas">Ganhas</SelectItem>
+                  <SelectItem value="perdidas">Perdidas</SelectItem>
+                  <SelectItem value="todas">Todas</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterSort} onValueChange={setFilterSort}>
+                <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recentes">Criadas por último</SelectItem>
+                  <SelectItem value="antigas">Mais antigas</SelectItem>
+                  <SelectItem value="valor">Maior valor</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="gap-1 h-9">
+                <Filter className="w-4 h-4" /> Filtros
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">{filteredLeads.length} Negociações</span>
+              {filterStatus !== "todas" && (
+                <Badge variant="secondary" className="gap-1">
+                  {filterStatus === "em_andamento" ? "Em andamento" : filterStatus === "ganhas" ? "Ganhas" : "Perdidas"}
+                  <button onClick={() => setFilterStatus("todas")} className="ml-1 hover:opacity-70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
 
 
         {/* Pipeline KPIs */}
