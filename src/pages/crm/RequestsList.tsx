@@ -24,9 +24,81 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+// Taxonomia de Equipamentos (Categoria → Marca → Modelos)
+const EQUIPMENT_CATEGORIES: { sigla: string; nome: string }[] = [
+  { sigla: "TC", nome: "Tomógrafo Computadorizado" },
+  { sigla: "RM", nome: "Ressonância Magnética" },
+  { sigla: "RX", nome: "Raios X" },
+  { sigla: "MAMO", nome: "Mamógrafo" },
+  { sigla: "DO", nome: "Densitometria Óssea" },
+  { sigla: "HEMO", nome: "Hemodinâmica" },
+  { sigla: "ARC", nome: "Arco Cirúrgico" },
+  { sigla: "US", nome: "Ultrassom" },
+  { sigla: "DR", nome: "Placa DR" },
+];
+
+const EQUIPMENT_TREE: Record<string, Record<string, string[]>> = {
+  TC: {
+    "Canon/Toshiba": ["Aquilion Start", "Aquilion Lightning", "Aquilion Prime", "Aquilion One", "Aquilion LB", "Alexion"],
+    "Siemens": ["SOMATOM Emotion", "SOMATOM Scope", "SOMATOM Go.Up", "SOMATOM Go.Now", "SOMATOM Go.All", "SOMATOM Perspective", "SOMATOM Definition AS", "SOMATOM Definition Edge", "SOMATOM Drive", "SOMATOM Force"],
+    "GE": ["BrightSpeed", "LightSpeed", "Revolution ACT", "Revolution EVO", "Revolution Maxima", "Revolution CT", "Optima CT520", "Optima CT540"],
+    "Philips": ["Brilliance 6", "Brilliance 16", "Brilliance 40", "Brilliance 64", "Brilliance Big Bore", "Brilliance iCT", "Incisive CT", "IQon Spectral CT"],
+  },
+  RM: {
+    "Siemens": ["MAGNETOM Free.Max", "MAGNETOM Free.Star", "MAGNETOM Sempra", "MAGNETOM Aera", "MAGNETOM Altea", "MAGNETOM Amira", "MAGNETOM Vida", "MAGNETOM Skyra", "MAGNETOM Prisma"],
+    "GE": ["Signa Explorer", "Signa Creator", "Signa Voyager", "Signa Artist", "Signa Premier", "Signa Architect", "Signa Pioneer"],
+    "Philips": ["Ingenia 1.5T", "Ingenia 3.0T", "Ingenia Elition", "Achieva", "Intera", "Multiva", "Prodiva"],
+    "Canon/Toshiba": ["Vantage Elan", "Vantage Orian", "Vantage Titan", "Vantage Galan", "Vantage Fortian"],
+    "Esaote": ["E-scan", "S-scan", "O-scan", "O-scan SMART", "G-scan Brio", "Magnifico Open"],
+  },
+  RX: {
+    "DRGEM": ["GXR-40S", "GXR-SD", "Topaz"],
+    "Siemens": ["Multix Fusion", "Multix Impact", "Multix Select", "Ysio Max", "Ysio X.pree"],
+    "GE": ["Definium 646", "Definium 656", "Definium Tempo"],
+    "Philips": ["DigitalDiagnost", "DuraDiagnost", "CombiDiagnost R90"],
+    "Mindray": ["DigiEye 280", "DigiEye 330", "DigiEye 350"],
+  },
+  MAMO: {
+    "Hologic": ["Selenia Dimensions", "3Dimensions", "Lorad M-IV"],
+    "GE": ["Senographe Essential", "Senographe Pristina", "Senographe Crystal Nova"],
+    "Siemens": ["Mammomat Inspiration", "Mammomat Revelation", "Mammomat Fusion"],
+  },
+  DO: {
+    "Osteosys": ["Dexxum T", "Dexxum 3"],
+  },
+  HEMO: {
+    "Philips": ["Azurion 3", "Azurion 5", "Azurion 7", "Allura Xper FD10", "Allura Xper FD20"],
+    "Siemens": ["Artis Zee", "Artis Q", "Artis Q.zen", "Artis icono"],
+    "GE": ["Innova IGS 520", "Innova IGS 530", "Discovery IGS 730"],
+  },
+  ARC: {
+    "GE": ["OEC One", "OEC Elite CFD"],
+    "Siemens": ["Cios Select", "Cios Alpha", "Cios Spin", "Cios Flow"],
+    "Philips": ["Zenition 50", "Zenition 70", "BV Pulsera", "BV Endura"],
+  },
+  US: {
+    "GE": ["LOGIQ P9", "LOGIQ E10", "LOGIQ Fortis", "Voluson E8", "Voluson E10", "Versana Premier", "Vivid E95"],
+    "Philips": ["Affiniti 50", "Affiniti 70", "EPIQ 5", "EPIQ 7", "ClearVue 650", "CX50"],
+    "Siemens": ["Acuson Redwood", "Acuson Juniper", "Acuson Sequoia"],
+    "Canon": ["Aplio a450", "Aplio i600", "Xario 200G"],
+  },
+  DR: {
+    "Mindray": ["RetroPad 35x43", "RetroPad 43x43"],
+    "Rayance": ["Rayence 1417WCC", "Rayence 1717SCC", "Rayence 1717WCC"],
+  },
+};
+
+// Remove acentos e caracteres especiais, retorna em MAIÚSCULAS
+const normalizeUpper = (v: string) =>
+  (v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
 
 const TIPO_OPTIONS = [
   "Aplicação / Treinamento",
@@ -95,6 +167,11 @@ const emptyForm = {
   email_1: "",
   email_2: "",
   equipamento: "",
+  categoria: "",
+  marca: "",
+  marca_outro: "",
+  modelo: "",
+  modelo_outro: "",
   itens_inclusos: "",
   itens_nao_inclusos: "",
   preco: "",
@@ -342,7 +419,9 @@ export default function RequestsList() {
       ["contato", "Contato"],
       ["responsavel_comercial", "Vendedor(a)"],
       ["email_1", "E-mail 1"],
-      ["equipamento", "Equipamento"],
+      ["categoria", "Categoria"],
+      ["marca", "Marca"],
+      ["modelo", "Modelo"],
       ["itens_inclusos", "Itens inclusos"],
       ["itens_nao_inclusos", "Itens não inclusos"],
       ["preco", "Preço"],
@@ -363,7 +442,18 @@ export default function RequestsList() {
     if (form.origem === "Outro" && !form.origem_outro.trim()) {
       return toast.error("Campo obrigatório: Especifique a origem");
     }
+    if (form.marca === "OUTRO" && !form.marca_outro.trim()) {
+      return toast.error("Campo obrigatório: Especifique a marca");
+    }
+    if (form.modelo === "OUTRO" && !form.modelo_outro.trim()) {
+      return toast.error("Campo obrigatório: Especifique o modelo");
+    }
     if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
+
+    // Monta equipamento normalizado (MAIÚSCULAS, sem acentos): "CATEGORIA - MARCA - MODELO"
+    const marcaFinal = form.marca === "OUTRO" ? form.marca_outro : form.marca;
+    const modeloFinal = form.modelo === "OUTRO" ? form.modelo_outro : form.modelo;
+    const equipamentoNorm = `${normalizeUpper(form.categoria)} - ${normalizeUpper(marcaFinal)} - ${normalizeUpper(modeloFinal)}`;
 
     setSaving(true);
     const enderecoAtendimento = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
@@ -373,6 +463,7 @@ export default function RequestsList() {
       empresa: hasCnpj ? form.empresa : form.cliente_nome,
       cnpj: hasCnpj ? form.cnpj : "",
       endereco: enderecoAtendimento,
+      equipamento: equipamentoNorm,
       preco: parseCurrency(form.preco),
       comissao: parsePercent(form.comissao),
       origem: form.origem === "Outro" ? form.origem_outro : form.origem,
@@ -386,6 +477,8 @@ export default function RequestsList() {
     delete payload.cep_empresa; delete payload.rua_empresa;
     delete payload.bairro_empresa; delete payload.cidade_empresa; delete payload.uf_empresa;
     delete payload.origem_outro;
+    delete payload.categoria; delete payload.marca; delete payload.marca_outro;
+    delete payload.modelo; delete payload.modelo_outro;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
@@ -765,12 +858,100 @@ export default function RequestsList() {
             {/* Equipamento */}
             <Section title="Equipamento e Proposta">
               <div className="space-y-4">
-                <Field label="Equipamento">
-                  <Input
-                    value={form.equipamento}
-                    onChange={(e) => setForm({ ...form, equipamento: e.target.value })}
-                  />
-                </Field>
+                <TooltipProvider delayDuration={200}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Field label="Categoria">
+                      <Select
+                        value={form.categoria}
+                        onValueChange={(v) =>
+                          setForm({ ...form, categoria: v, marca: "", marca_outro: "", modelo: "", modelo_outro: "" })
+                        }
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {EQUIPMENT_CATEGORIES.map((c) => (
+                            <SelectItem key={c.sigla} value={c.sigla} title={c.nome}>
+                              <span className="font-semibold">{c.sigla}</span>
+                              <span className="ml-2 text-xs text-muted-foreground">{c.nome}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="Marca">
+                      {form.marca === "OUTRO" ? (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Digite a marca"
+                            value={form.marca_outro}
+                            onChange={(e) => setForm({ ...form, marca_outro: e.target.value.toUpperCase() })}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setForm({ ...form, marca: "", marca_outro: "", modelo: "", modelo_outro: "" })}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          value={form.marca}
+                          onValueChange={(v) => setForm({ ...form, marca: v, modelo: "", modelo_outro: "" })}
+                          disabled={!form.categoria}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={form.categoria ? "Selecione" : "Escolha a categoria"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {form.categoria &&
+                              Object.keys(EQUIPMENT_TREE[form.categoria] || {}).map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            <SelectItem value="OUTRO">OUTRO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                    <Field label="Modelo">
+                      {form.modelo === "OUTRO" ? (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Digite o modelo"
+                            value={form.modelo_outro}
+                            onChange={(e) => setForm({ ...form, modelo_outro: e.target.value.toUpperCase() })}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setForm({ ...form, modelo: "", modelo_outro: "" })}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          value={form.modelo}
+                          onValueChange={(v) => setForm({ ...form, modelo: v, modelo_outro: "" })}
+                          disabled={!form.marca || form.marca === "OUTRO"}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={form.marca && form.marca !== "OUTRO" ? "Selecione" : "Escolha a marca"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {form.categoria && form.marca && form.marca !== "OUTRO" &&
+                              (EQUIPMENT_TREE[form.categoria]?.[form.marca] || []).map((mo) => (
+                                <SelectItem key={mo} value={mo}>{mo}</SelectItem>
+                              ))}
+                            <SelectItem value="OUTRO">OUTRO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                  </div>
+                </TooltipProvider>
                 <Field label="Itens inclusos">
                   <Textarea
                     rows={3}
