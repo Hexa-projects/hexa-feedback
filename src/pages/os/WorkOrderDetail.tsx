@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, Plus, CheckSquare, Clock, AlertTriangle,
-  Wrench, Package, Camera, FileText, User, Brain, BookOpen, Loader2, RefreshCw
+  Wrench, Package, Camera, FileText, User, Brain, BookOpen, Loader2, RefreshCw, ShieldCheck
 } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 
@@ -189,6 +189,14 @@ export default function WorkOrderDetail() {
               {os.status}
             </Badge>
             <Badge variant="outline" className="capitalize">{os.tipo_manutencao || "corretiva"}</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => navigate(`/quality/cases/new?work_order_id=${os.id}`)}
+            >
+              <ShieldCheck className="w-4 h-4" /> Abrir RACP
+            </Button>
           </div>
         </div>
 

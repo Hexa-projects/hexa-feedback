@@ -22,6 +22,12 @@ const RequestsList = lazy(() => import("./pages/crm/RequestsList"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
 const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
 const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
+const QualityDashboard = lazy(() => import("./pages/quality/QualityDashboard"));
+const QualityCasesList = lazy(() => import("./pages/quality/QualityCasesList"));
+const QualityCaseForm = lazy(() => import("./pages/quality/QualityCaseForm"));
+const QualityCaseDetail = lazy(() => import("./pages/quality/QualityCaseDetail"));
+const QualityEffectiveness = lazy(() => import("./pages/quality/QualityEffectiveness"));
+const QualityReports = lazy(() => import("./pages/quality/QualityReports"));
 const LabPartsList = lazy(() => import("./pages/lab/LabPartsList"));
 const LabPartForm = lazy(() => import("./pages/lab/LabPartForm"));
 const DataImporter = lazy(() => import("./pages/lab/DataImporter"));
@@ -105,6 +111,14 @@ const AppRoutes = () => (
       <Route path="/os" element={<PrivateRoute><WorkOrdersList /></PrivateRoute>} />
       <Route path="/os/new" element={<PrivateRoute><WorkOrderForm /></PrivateRoute>} />
       <Route path="/os/:id" element={<PrivateRoute><WorkOrderDetail /></PrivateRoute>} />
+
+      {/* Qualidade */}
+      <Route path="/quality" element={<PrivateRoute><QualityDashboard /></PrivateRoute>} />
+      <Route path="/quality/cases" element={<PrivateRoute><QualityCasesList /></PrivateRoute>} />
+      <Route path="/quality/cases/new" element={<PrivateRoute><QualityCaseForm /></PrivateRoute>} />
+      <Route path="/quality/cases/:id" element={<PrivateRoute><QualityCaseDetail /></PrivateRoute>} />
+      <Route path="/quality/effectiveness" element={<PrivateRoute><QualityEffectiveness /></PrivateRoute>} />
+      <Route path="/quality/reports" element={<PrivateRoute><QualityReports /></PrivateRoute>} />
 
       {/* Laboratório */}
       <Route path="/lab" element={<PrivateRoute><LabPartsList /></PrivateRoute>} />

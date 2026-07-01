@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, FlaskConical, Clock, Wrench, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Search, FlaskConical, Clock, Wrench, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 
@@ -33,6 +33,7 @@ const TIPOS_PECA = ["bobina", "placa", "fonte", "periferico", "outro"];
 
 export default function LabPartsList() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [parts, setParts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -208,11 +209,16 @@ export default function LabPartsList() {
                           {p.data_entrada ? format(new Date(p.data_entrada), "dd/MM/yy") : "—"}
                         </TableCell>
                         <TableCell>
-                          {nextEtapa && (
-                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updateEtapa(p.id, nextEtapa)}>
-                              → {ETAPA_LABELS[nextEtapa]}
+                          <div className="flex flex-wrap gap-1">
+                            {nextEtapa && (
+                              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updateEtapa(p.id, nextEtapa)}>
+                                → {ETAPA_LABELS[nextEtapa]}
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={() => navigate(`/quality/cases/new?lab_part_id=${p.id}`)}>
+                              <ShieldCheck className="w-3 h-3" /> RACP
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

@@ -7,7 +7,7 @@ import {
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
-  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,18 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/os", label: "Ordens de Serviço", icon: ClipboardList },
       { to: "/calendar", label: "Calendário", icon: Calendar },
       { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
+    ],
+  },
+  {
+    id: "qualidade",
+    label: "Qualidade",
+    icon: ShieldCheck,
+    children: [
+      { to: "/quality", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/quality/cases", label: "RACP", icon: ShieldCheck },
+      { to: "/quality/cases/new", label: "Nova RACP", icon: FilePlus2 },
+      { to: "/quality/effectiveness", label: "Eficácia", icon: Target },
+      { to: "/quality/reports", label: "Relatórios", icon: BarChart3 },
     ],
   },
   {
@@ -142,20 +154,20 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
-  gestor: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "auditoria"],
-  colaborador: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "auditoria"],
+  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  gestor: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
+  colaborador: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "auditoria"],
 };
 
 // Setor-specific visibility overrides
 const SETOR_GROUPS: Record<string, string[]> = {
-  Comercial: ["dashboard", "comercial", "auditoria"],
-  "Técnico": ["dashboard", "operacoes", "laboratorio", "estoque", "auditoria"],
-  "Laboratório": ["dashboard", "laboratorio", "estoque", "auditoria"],
+  Comercial: ["dashboard", "comercial", "qualidade", "auditoria"],
+  "Técnico": ["dashboard", "operacoes", "qualidade", "laboratorio", "estoque", "auditoria"],
+  "Laboratório": ["dashboard", "qualidade", "laboratorio", "estoque", "auditoria"],
   Financeiro: ["dashboard", "financeiro", "auditoria"],
-  "Logística": ["dashboard", "operacoes", "estoque", "auditoria"],
-  Administrativo: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "auditoria"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  "Logística": ["dashboard", "operacoes", "qualidade", "estoque", "auditoria"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {

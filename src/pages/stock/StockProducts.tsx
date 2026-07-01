@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Package, LayoutGrid, List, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, LayoutGrid, List, AlertTriangle, ShieldCheck } from "lucide-react";
 import AISmartBadge from "@/components/AISmartBadge";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -142,7 +142,16 @@ export default function StockProducts() {
                       </div>
                     </TableCell>
                     <TableCell><span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status] || "bg-muted"}`}>{p.status}</span></TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{p.localizacao || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between gap-2">
+                        <span>{p.localizacao || "—"}</span>
+                        <Link to={`/quality/cases/new?stock_product_id=${p.id}`} onClick={e => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                            <ShieldCheck className="w-3 h-3" /> RACP
+                          </Button>
+                        </Link>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -151,8 +160,7 @@ export default function StockProducts() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {filtered.map(p => (
-              <Link key={p.id} to={`/stock/products/${p.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full">
+              <Card key={p.id} className="hover:shadow-md transition-shadow h-full">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center gap-2">
                       {p.foto_url ? <img src={p.foto_url} className="w-12 h-12 rounded object-cover" /> : <div className="w-12 h-12 rounded bg-muted flex items-center justify-center"><Package className="w-6 h-6 text-muted-foreground" /></div>}
@@ -166,9 +174,13 @@ export default function StockProducts() {
                       <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status] || "bg-muted"}`}>{p.status}</span>
                     </div>
                     {p.hexa_id && <p className="text-xs text-muted-foreground">HEXA: {p.hexa_id}</p>}
+                    <Link to={`/quality/cases/new?stock_product_id=${p.id}`}>
+                      <Button variant="outline" size="sm" className="w-full h-8 gap-1 text-xs">
+                        <ShieldCheck className="w-3 h-3" /> Abrir RACP
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
-              </Link>
             ))}
           </div>
         )}
