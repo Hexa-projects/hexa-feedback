@@ -251,9 +251,15 @@ export default function RequestsList() {
       );
       if (!res.ok) return;
       const data = await res.json();
-      if (data?.nome) {
-        setForm((f) => ({ ...f, empresa: data.nome }));
-      }
+      setForm((f) => ({
+        ...f,
+        empresa: data?.nome || f.empresa,
+        cep_empresa: data?.cep ? maskCEP(String(data.cep)) : f.cep_empresa,
+        rua_empresa: data?.logradouro || f.rua_empresa,
+        bairro_empresa: data?.bairro || f.bairro_empresa,
+        cidade_empresa: data?.municipio || f.cidade_empresa,
+        uf_empresa: data?.uf || f.uf_empresa,
+      }));
     } catch {
       // falha silenciosa — mantém campo editável manualmente
     } finally {
