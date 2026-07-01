@@ -581,11 +581,11 @@ export default function RequestsList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Field label="CNPJ *">
+                <Field label="CNPJ">
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
-                    disabled={cnpjLoading}
+                    disabled={cnpjLoading || !!form.cpf.trim()}
                     onChange={(e) => {
                       const masked = maskCNPJ(e.target.value);
                       setForm({ ...form, cnpj: masked });
@@ -593,25 +593,83 @@ export default function RequestsList() {
                     }}
                   />
                 </Field>
+                <Field label="CPF">
+                  <Input
+                    placeholder="000.000.000-00"
+                    value={form.cpf}
+                    disabled={!!form.cnpj.trim()}
+                    onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
+                  />
+                </Field>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Preencha <strong>CNPJ</strong> (para empresas) <em>ou</em> <strong>CPF</strong> (para pessoa física) — não os dois.
+              </p>
             </Section>
 
-            {/* Dados da empresa */}
-            <Section title="Dados da Empresa">
+            {/* Dados da empresa OU do cliente (condicional) */}
+            {form.cnpj.trim() && (
+              <Section title="Dados da Empresa">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Field label="Nome da empresa *">
+                      <Input
+                        value={form.empresa}
+                        onChange={(e) => setForm({ ...form, empresa: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="CEP (fiscal)">
+                    <Input
+                      placeholder="00000-000"
+                      value={form.cep_empresa}
+                      onChange={(e) =>
+                        setForm({ ...form, cep_empresa: maskCEP(e.target.value) })
+                      }
+                    />
+                  </Field>
+                  <Field label="Rua (fiscal)">
+                    <Input
+                      value={form.rua_empresa}
+                      onChange={(e) => setForm({ ...form, rua_empresa: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Bairro (fiscal)">
+                    <Input
+                      value={form.bairro_empresa}
+                      onChange={(e) => setForm({ ...form, bairro_empresa: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Cidade (fiscal)">
+                    <Input
+                      value={form.cidade_empresa}
+                      onChange={(e) => setForm({ ...form, cidade_empresa: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Endereço fiscal preenchido automaticamente pela consulta de CNPJ (editável).
+                </p>
+              </Section>
+            )}
+
+            {form.cpf.trim() && (
+              <Section title="Dados do Cliente">
+                <Field label="Nome do cliente *">
+                  <Input
+                    value={form.cliente_nome}
+                    onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })}
+                  />
+                </Field>
+              </Section>
+            )}
+
+            {/* Endereço de Atendimento */}
+            <Section title="Endereço de Atendimento">
+              <p className="text-xs text-muted-foreground -mt-2 mb-3">
+                Local onde o atendimento/serviço será realizado. Pode ser diferente do endereço fiscal.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Nome da empresa *">
-                  <Input
-                    value={form.empresa}
-                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
-                  />
-                </Field>
-                <Field label="Telefone *">
-                  <Input
-                    placeholder="(00) 00000-0000"
-                    value={form.telefone}
-                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
-                  />
-                </Field>
                 <Field label="CEP *">
                   <div className="relative">
                     <Input
@@ -658,21 +716,26 @@ export default function RequestsList() {
                     />
                   </Field>
                 </div>
+              </div>
+            </Section>
+
+            {/* Contato */}
+            <Section title="Contato">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Contato *">
                   <Input
                     value={form.contato}
                     onChange={(e) => setForm({ ...form, contato: e.target.value })}
                   />
                 </Field>
-                <Field label="Vendedor(a) *">
+                <Field label="Telefone *">
                   <Input
-                    value={form.responsavel_comercial}
-                    onChange={(e) =>
-                      setForm({ ...form, responsavel_comercial: e.target.value })
-                    }
+                    placeholder="(00) 00000-0000"
+                    value={form.telefone}
+                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
                   />
                 </Field>
-                <Field label="E-mail 1">
+                <Field label="E-mail 1 *">
                   <Input
                     type="email"
                     value={form.email_1}
@@ -686,6 +749,16 @@ export default function RequestsList() {
                     onChange={(e) => setForm({ ...form, email_2: e.target.value })}
                   />
                 </Field>
+                <div className="md:col-span-2">
+                  <Field label="Vendedor(a) *">
+                    <Input
+                      value={form.responsavel_comercial}
+                      onChange={(e) =>
+                        setForm({ ...form, responsavel_comercial: e.target.value })
+                      }
+                    />
+                  </Field>
+                </div>
               </div>
             </Section>
 
