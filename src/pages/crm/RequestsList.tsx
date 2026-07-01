@@ -463,6 +463,7 @@ export default function RequestsList() {
       empresa: hasCnpj ? form.empresa : form.cliente_nome,
       cnpj: hasCnpj ? form.cnpj : "",
       endereco: enderecoAtendimento,
+      equipamento: equipamentoNorm,
       preco: parseCurrency(form.preco),
       comissao: parsePercent(form.comissao),
       origem: form.origem === "Outro" ? form.origem_outro : form.origem,
@@ -476,6 +477,8 @@ export default function RequestsList() {
     delete payload.cep_empresa; delete payload.rua_empresa;
     delete payload.bairro_empresa; delete payload.cidade_empresa; delete payload.uf_empresa;
     delete payload.origem_outro;
+    delete payload.categoria; delete payload.marca; delete payload.marca_outro;
+    delete payload.modelo; delete payload.modelo_outro;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
