@@ -442,7 +442,18 @@ export default function RequestsList() {
     if (form.origem === "Outro" && !form.origem_outro.trim()) {
       return toast.error("Campo obrigatório: Especifique a origem");
     }
+    if (form.marca === "OUTRO" && !form.marca_outro.trim()) {
+      return toast.error("Campo obrigatório: Especifique a marca");
+    }
+    if (form.modelo === "OUTRO" && !form.modelo_outro.trim()) {
+      return toast.error("Campo obrigatório: Especifique o modelo");
+    }
     if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
+
+    // Monta equipamento normalizado (MAIÚSCULAS, sem acentos): "CATEGORIA - MARCA - MODELO"
+    const marcaFinal = form.marca === "OUTRO" ? form.marca_outro : form.marca;
+    const modeloFinal = form.modelo === "OUTRO" ? form.modelo_outro : form.modelo;
+    const equipamentoNorm = `${normalizeUpper(form.categoria)} - ${normalizeUpper(marcaFinal)} - ${normalizeUpper(modeloFinal)}`;
 
     setSaving(true);
     const enderecoAtendimento = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
