@@ -73,7 +73,16 @@ const emptyForm = {
   tipo: "",
   empresa: "",
   cnpj: "",
+  cpf: "",
+  cliente_nome: "",
   telefone: "",
+  // Endereço fiscal (empresa)
+  cep_empresa: "",
+  rua_empresa: "",
+  bairro_empresa: "",
+  cidade_empresa: "",
+  uf_empresa: "",
+  // Endereço de atendimento
   cep: "",
   rua: "",
   bairro: "",
@@ -108,6 +117,14 @@ const maskCNPJ = (v: string) =>
     .replace(/(\d{4})(\d)/, "$1-$2");
 
 const isValidCNPJ = (v: string) => /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(v);
+
+const maskCPF = (v: string) =>
+  v.replace(/\D/g, "").slice(0, 11)
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2");
+
+const isValidCPF = (v: string) => /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(v);
 
 const maskPhone = (v: string) => {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -234,9 +251,15 @@ export default function RequestsList() {
       );
       if (!res.ok) return;
       const data = await res.json();
-      if (data?.nome) {
-        setForm((f) => ({ ...f, empresa: data.nome }));
-      }
+      setForm((f) => ({
+        ...f,
+        empresa: data?.nome || f.empresa,
+        cep_empresa: data?.cep ? maskCEP(String(data.cep)) : f.cep_empresa,
+        rua_empresa: data?.logradouro || f.rua_empresa,
+        bairro_empresa: data?.bairro || f.bairro_empresa,
+        cidade_empresa: data?.municipio || f.cidade_empresa,
+        uf_empresa: data?.uf || f.uf_empresa,
+      }));
     } catch {
       // falha silenciosa — mantém campo editável manualmente
     } finally {
@@ -283,16 +306,39 @@ export default function RequestsList() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // CPF x CNPJ — mutuamente exclusivos, ao menos um obrigatório
+    const hasCnpj = !!form.cnpj.trim();
+    const hasCpf = !!form.cpf.trim();
+    if (!hasCnpj && !hasCpf) {
+      return toast.error("Informe CNPJ ou CPF");
+    }
+    if (hasCnpj && hasCpf) {
+      return toast.error("Preencha apenas um: CNPJ ou CPF");
+    }
+    if (hasCnpj && !isValidCNPJ(form.cnpj)) {
+      return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
+    }
+    if (hasCpf && !isValidCPF(form.cpf)) {
+      return toast.error("CPF inválido (use 000.000.000-00)");
+    }
+
+    // Nome (empresa ou cliente) conforme o caminho escolhido
+    if (hasCnpj && !form.empresa.trim()) {
+      return toast.error("Campo obrigatório: Nome da empresa");
+    }
+    if (hasCpf && !form.cliente_nome.trim()) {
+      return toast.error("Campo obrigatório: Nome do cliente");
+    }
+
     const required: [string, string][] = [
       ["tipo", "Tipo"],
-      ["empresa", "Empresa"],
-      ["cnpj", "CNPJ"],
       ["telefone", "Telefone"],
-      ["cep", "CEP"],
-      ["rua", "Rua"],
-      ["bairro", "Bairro"],
-      ["cidade", "Cidade"],
-      ["complemento", "Complemento"],
+      ["cep", "CEP (atendimento)"],
+      ["rua", "Rua (atendimento)"],
+      ["bairro", "Bairro (atendimento)"],
+      ["cidade", "Cidade (atendimento)"],
+      ["complemento", "Complemento (atendimento)"],
       ["contato", "Contato"],
       ["responsavel_comercial", "Vendedor(a)"],
       ["email_1", "E-mail 1"],
@@ -317,21 +363,28 @@ export default function RequestsList() {
     if (form.origem === "Outro" && !form.origem_outro.trim()) {
       return toast.error("Campo obrigatório: Especifique a origem");
     }
-    if (!isValidCNPJ(form.cnpj)) return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
     if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
+
     setSaving(true);
-    const enderecoCompleto = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
+    const enderecoAtendimento = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
     const payload: any = {
       ...form,
-      endereco: enderecoCompleto,
+      // Se for CPF, armazena o nome do cliente no campo "empresa" (compatibilidade de schema)
+      empresa: hasCnpj ? form.empresa : form.cliente_nome,
+      cnpj: hasCnpj ? form.cnpj : "",
+      endereco: enderecoAtendimento,
       preco: parseCurrency(form.preco),
       comissao: parsePercent(form.comissao),
       origem: form.origem === "Outro" ? form.origem_outro : form.origem,
       user_id: user!.id,
     };
-    // Remove campos que não existem na tabela
+    // Remove campos auxiliares que não existem na tabela
+    delete payload.cpf;
+    delete payload.cliente_nome;
     delete payload.cep; delete payload.rua; delete payload.bairro;
     delete payload.cidade; delete payload.uf; delete payload.complemento;
+    delete payload.cep_empresa; delete payload.rua_empresa;
+    delete payload.bairro_empresa; delete payload.cidade_empresa; delete payload.uf_empresa;
     delete payload.origem_outro;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
@@ -528,11 +581,11 @@ export default function RequestsList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Field label="CNPJ *">
+                <Field label="CNPJ">
                   <Input
                     placeholder="00.000.000/0000-00"
                     value={form.cnpj}
-                    disabled={cnpjLoading}
+                    disabled={cnpjLoading || !!form.cpf.trim()}
                     onChange={(e) => {
                       const masked = maskCNPJ(e.target.value);
                       setForm({ ...form, cnpj: masked });
@@ -540,25 +593,83 @@ export default function RequestsList() {
                     }}
                   />
                 </Field>
+                <Field label="CPF">
+                  <Input
+                    placeholder="000.000.000-00"
+                    value={form.cpf}
+                    disabled={!!form.cnpj.trim()}
+                    onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
+                  />
+                </Field>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Preencha <strong>CNPJ</strong> (para empresas) <em>ou</em> <strong>CPF</strong> (para pessoa física) — não os dois.
+              </p>
             </Section>
 
-            {/* Dados da empresa */}
-            <Section title="Dados da Empresa">
+            {/* Dados da empresa OU do cliente (condicional) */}
+            {form.cnpj.trim() && (
+              <Section title="Dados da Empresa">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Field label="Nome da empresa *">
+                      <Input
+                        value={form.empresa}
+                        onChange={(e) => setForm({ ...form, empresa: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="CEP (fiscal)">
+                    <Input
+                      placeholder="00000-000"
+                      value={form.cep_empresa}
+                      onChange={(e) =>
+                        setForm({ ...form, cep_empresa: maskCEP(e.target.value) })
+                      }
+                    />
+                  </Field>
+                  <Field label="Rua (fiscal)">
+                    <Input
+                      value={form.rua_empresa}
+                      onChange={(e) => setForm({ ...form, rua_empresa: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Bairro (fiscal)">
+                    <Input
+                      value={form.bairro_empresa}
+                      onChange={(e) => setForm({ ...form, bairro_empresa: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Cidade (fiscal)">
+                    <Input
+                      value={form.cidade_empresa}
+                      onChange={(e) => setForm({ ...form, cidade_empresa: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Endereço fiscal preenchido automaticamente pela consulta de CNPJ (editável).
+                </p>
+              </Section>
+            )}
+
+            {form.cpf.trim() && (
+              <Section title="Dados do Cliente">
+                <Field label="Nome do cliente *">
+                  <Input
+                    value={form.cliente_nome}
+                    onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })}
+                  />
+                </Field>
+              </Section>
+            )}
+
+            {/* Endereço de Atendimento */}
+            <Section title="Endereço de Atendimento">
+              <p className="text-xs text-muted-foreground -mt-2 mb-3">
+                Local onde o atendimento/serviço será realizado. Pode ser diferente do endereço fiscal.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Nome da empresa *">
-                  <Input
-                    value={form.empresa}
-                    onChange={(e) => setForm({ ...form, empresa: e.target.value })}
-                  />
-                </Field>
-                <Field label="Telefone *">
-                  <Input
-                    placeholder="(00) 00000-0000"
-                    value={form.telefone}
-                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
-                  />
-                </Field>
                 <Field label="CEP *">
                   <div className="relative">
                     <Input
@@ -605,21 +716,26 @@ export default function RequestsList() {
                     />
                   </Field>
                 </div>
+              </div>
+            </Section>
+
+            {/* Contato */}
+            <Section title="Contato">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Contato *">
                   <Input
                     value={form.contato}
                     onChange={(e) => setForm({ ...form, contato: e.target.value })}
                   />
                 </Field>
-                <Field label="Vendedor(a) *">
+                <Field label="Telefone *">
                   <Input
-                    value={form.responsavel_comercial}
-                    onChange={(e) =>
-                      setForm({ ...form, responsavel_comercial: e.target.value })
-                    }
+                    placeholder="(00) 00000-0000"
+                    value={form.telefone}
+                    onChange={(e) => setForm({ ...form, telefone: maskPhone(e.target.value) })}
                   />
                 </Field>
-                <Field label="E-mail 1">
+                <Field label="E-mail 1 *">
                   <Input
                     type="email"
                     value={form.email_1}
@@ -633,6 +749,16 @@ export default function RequestsList() {
                     onChange={(e) => setForm({ ...form, email_2: e.target.value })}
                   />
                 </Field>
+                <div className="md:col-span-2">
+                  <Field label="Vendedor(a) *">
+                    <Input
+                      value={form.responsavel_comercial}
+                      onChange={(e) =>
+                        setForm({ ...form, responsavel_comercial: e.target.value })
+                      }
+                    />
+                  </Field>
+                </div>
               </div>
             </Section>
 
