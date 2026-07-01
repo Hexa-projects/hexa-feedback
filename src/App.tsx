@@ -28,6 +28,9 @@ const QualityCaseForm = lazy(() => import("./pages/quality/QualityCaseForm"));
 const QualityCaseDetail = lazy(() => import("./pages/quality/QualityCaseDetail"));
 const QualityEffectiveness = lazy(() => import("./pages/quality/QualityEffectiveness"));
 const QualityReports = lazy(() => import("./pages/quality/QualityReports"));
+const QualityRncList = lazy(() => import("./pages/quality/QualityRncList"));
+const QualityRncForm = lazy(() => import("./pages/quality/QualityRncForm"));
+const QualityRncDetail = lazy(() => import("./pages/quality/QualityRncDetail"));
 const LabPartsList = lazy(() => import("./pages/lab/LabPartsList"));
 const LabPartForm = lazy(() => import("./pages/lab/LabPartForm"));
 const DataImporter = lazy(() => import("./pages/lab/DataImporter"));
@@ -117,6 +120,9 @@ const AppRoutes = () => (
       <Route path="/quality/cases" element={<PrivateRoute><QualityCasesList /></PrivateRoute>} />
       <Route path="/quality/cases/new" element={<PrivateRoute><QualityCaseForm /></PrivateRoute>} />
       <Route path="/quality/cases/:id" element={<PrivateRoute><QualityCaseDetail /></PrivateRoute>} />
+      <Route path="/quality/rnc" element={<PrivateRoute><QualityRncList /></PrivateRoute>} />
+      <Route path="/quality/rnc/new" element={<PrivateRoute><QualityRncForm /></PrivateRoute>} />
+      <Route path="/quality/rnc/:id" element={<PrivateRoute><QualityRncDetail /></PrivateRoute>} />
       <Route path="/quality/effectiveness" element={<PrivateRoute><QualityEffectiveness /></PrivateRoute>} />
       <Route path="/quality/reports" element={<PrivateRoute><QualityReports /></PrivateRoute>} />
 

@@ -7,20 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, CheckCircle2, Clock, FilePlus2, ShieldCheck, Target, TimerReset } from "lucide-react";
-import type { QualityAction, QualityCase } from "./qualityTypes";
+import type { QualityAction, QualityCase, QualityRnc } from "./qualityTypes";
 import { formatDate, isActionOverdue, isCaseOverdue, priorityBadgeClass, STATUS_LABELS, statusBadgeClass } from "./qualityUtils";
 
 export default function QualityDashboard() {
   const [cases, setCases] = useState<QualityCase[]>([]);
+  const [rncs, setRncs] = useState<QualityRnc[]>([]);
   const [actions, setActions] = useState<QualityAction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       (supabase as any).from("quality_cases").select("*").order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("quality_rncs").select("*").order("created_at", { ascending: false }).limit(50),
       (supabase as any).from("quality_actions").select("*").order("due_date", { ascending: true }).limit(50),
-    ]).then(([caseRes, actionRes]) => {
+    ]).then(([caseRes, rncRes, actionRes]) => {
       setCases(caseRes.data || []);
+      setRncs(rncRes.data || []);
       setActions(actionRes.data || []);
       setLoading(false);
     });
@@ -30,13 +33,14 @@ export default function QualityDashboard() {
     const now = new Date();
     return {
       abertas: cases.filter(c => ["aberta", "em_analise"].includes(c.status)).length,
+      rncsAbertas: rncs.filter(r => r.status !== "encerrada" && r.status !== "cancelada").length,
       emAcao: cases.filter(c => c.status === "em_acao").length,
       atrasadas: cases.filter(c => isCaseOverdue(c)).length + actions.filter(a => isActionOverdue(a)).length,
       eficacia: cases.filter(c => c.status === "aguardando_eficacia").length,
       encerradasMes: cases.filter(c => c.closed_at && new Date(c.closed_at).getMonth() === now.getMonth() && new Date(c.closed_at).getFullYear() === now.getFullYear()).length,
       ineficazes: cases.filter(c => c.status === "ineficaz").length,
     };
-  }, [cases, actions]);
+  }, [cases, rncs, actions]);
 
   const pendingActions = actions.filter(a => a.status !== "concluida" && a.status !== "cancelada").slice(0, 6);
 
@@ -59,6 +63,7 @@ export default function QualityDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           {[
             ["Abertas", metrics.abertas, ShieldCheck, "text-primary", "bg-primary/10"],
+            ["RNC abertas", metrics.rncsAbertas, AlertTriangle, "text-red-600", "bg-red-500/10"],
             ["Em acao", metrics.emAcao, Clock, "text-hexa-amber", "bg-hexa-amber/10"],
             ["Atrasadas", metrics.atrasadas, AlertTriangle, "text-destructive", "bg-destructive/10"],
             ["Eficacia", metrics.eficacia, Target, "text-blue-600", "bg-blue-500/10"],

@@ -76,6 +76,62 @@ export interface QualityCase {
   stock_movement_id?: string | null;
   commercial_request_id?: string | null;
   contract_id?: string | null;
+  rnc_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type QualityRncStatus = "aberta" | "em_disposicao" | "em_retrabalho" | "em_reinspecao" | "aguardando_racp" | "encerrada" | "cancelada";
+
+export interface QualityRnc {
+  id: string;
+  codigo: string;
+  status: QualityRncStatus;
+  prioridade: "baixa" | "media" | "alta" | "critica";
+  origem: string;
+  emitente?: string | null;
+  data_emissao: string;
+  cliente_fornecedor?: string | null;
+  pedido_compra?: string | null;
+  nota_fiscal?: string | null;
+  ordem_producao?: string | null;
+  descricao_item?: string | null;
+  codigo_item?: string | null;
+  lote_serial?: string | null;
+  quantidade_afetada?: number | null;
+  unidade?: string | null;
+  descricao_nao_conformidade: string;
+  evidencia_inicial?: string | null;
+  area_detectada?: string | null;
+  detectado_por?: string | null;
+  tipo_nao_conformidade?: string | null;
+  requisito_descumprido?: string | null;
+  impacto?: string | null;
+  disposicao?: string | null;
+  disposicao_observacao?: string | null;
+  disposicao_responsavel_1?: string | null;
+  disposicao_data_1?: string | null;
+  disposicao_responsavel_2?: string | null;
+  disposicao_data_2?: string | null;
+  metodo_retrabalho?: string | null;
+  total_horas?: number | null;
+  retrabalho_responsavel?: string | null;
+  retrabalho_data_inicio?: string | null;
+  retrabalho_data_fim?: string | null;
+  reinspecao_resultado?: "aprovado" | "reprovado" | "aprovado_com_restricao" | null;
+  reinspecao_observacao?: string | null;
+  reinspecao_responsavel?: string | null;
+  reinspecao_data?: string | null;
+  requer_racp?: boolean;
+  racp_id?: string | null;
+  created_by?: string | null;
+  owner_id?: string | null;
+  closed_at?: string | null;
+  work_order_id?: string | null;
+  lab_part_id?: string | null;
+  stock_product_id?: string | null;
+  commercial_request_id?: string | null;
+  contract_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -105,7 +161,8 @@ export interface QualityAction {
 
 export interface QualityEvidence {
   id: string;
-  quality_case_id: string;
+  quality_case_id?: string | null;
+  rnc_id?: string | null;
   action_id?: string | null;
   file_name: string;
   file_url?: string | null;
@@ -119,6 +176,17 @@ export interface QualityEvidence {
 export interface QualityEvent {
   id: string;
   quality_case_id: string;
+  event_type: string;
+  description?: string | null;
+  actor_id?: string | null;
+  before_state?: Record<string, unknown> | null;
+  after_state?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface QualityRncEvent {
+  id: string;
+  rnc_id: string;
   event_type: string;
   description?: string | null;
   actor_id?: string | null;

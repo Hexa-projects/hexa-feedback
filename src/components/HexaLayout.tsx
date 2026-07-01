@@ -83,6 +83,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/quality", label: "Dashboard", icon: LayoutDashboard },
       { to: "/quality/cases", label: "RACP", icon: ShieldCheck },
       { to: "/quality/cases/new", label: "Nova RACP", icon: FilePlus2 },
+      { to: "/quality/rnc", label: "RNC", icon: AlertTriangle },
       { to: "/quality/effectiveness", label: "Eficácia", icon: Target },
       { to: "/quality/reports", label: "Relatórios", icon: BarChart3 },
     ],

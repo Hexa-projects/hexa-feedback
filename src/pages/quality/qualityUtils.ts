@@ -23,7 +23,25 @@ export const STATUS_OPTIONS: QualityStatus[] = [
   "cancelada",
 ];
 
+export const RNC_STATUS_LABELS = {
+  aberta: "Aberta",
+  em_disposicao: "Em disposicao",
+  em_retrabalho: "Em retrabalho",
+  em_reinspecao: "Em reinspecao",
+  aguardando_racp: "Aguardando RACP",
+  encerrada: "Encerrada",
+  cancelada: "Cancelada",
+};
+
+export const RNC_STATUS_OPTIONS = ["aberta", "em_disposicao", "em_retrabalho", "em_reinspecao", "aguardando_racp", "encerrada", "cancelada"] as const;
+
 export const ORIGENS = ["Cliente", "OS", "Laboratorio", "Estoque", "Fornecedor", "Processo interno", "Auditoria", "Comercial", "Outro"];
+
+export const RNC_ORIGENS = ["Cliente", "Fornecedor", "Recebimento", "Producao", "OS", "Laboratorio", "Estoque", "Auditoria", "Processo interno", "Outro"];
+
+export const RNC_DISPOSICOES = ["Retrabalho", "Reinspecao", "Devolucao ao fornecedor", "Segregar", "Sucata/descarte", "Uso sob concessao", "Aceitar como esta", "Abrir RACP"];
+
+export const RNC_TIPOS = ["Produto", "Servico", "Processo", "Fornecedor", "Documento", "Seguranca", "Garantia", "Outro"];
 
 export const CLASSIFICACOES = [
   "Nao conformidade real",
@@ -68,6 +86,14 @@ export const statusBadgeClass = (status: QualityStatus, overdue = false) => {
   if (overdue || status === "ineficaz" || status === "cancelada") return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
   if (status === "eficaz" || status === "encerrada") return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
   if (status === "em_acao" || status === "aguardando_eficacia") return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
+  return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+};
+
+export const rncStatusBadgeClass = (status: string) => {
+  if (status === "encerrada") return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+  if (status === "cancelada") return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+  if (status === "aguardando_racp" || status === "em_reinspecao") return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
+  if (status === "em_disposicao" || status === "em_retrabalho") return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
   return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
 };
 

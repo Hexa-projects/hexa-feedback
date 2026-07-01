@@ -80,6 +80,7 @@ export default function QualityCaseForm() {
       const workOrderId = params.get("work_order_id");
       const labPartId = params.get("lab_part_id");
       const stockProductId = params.get("stock_product_id");
+      const rncId = params.get("rnc_id");
       if (workOrderId) {
         const { data } = await (supabase as any).from("work_orders").select("*").eq("id", workOrderId).maybeSingle();
         if (data) setForm(prev => ({
@@ -115,6 +116,22 @@ export default function QualityCaseForm() {
           referencia: data.hexa_id || data.part_number || stockProductId.slice(0, 8),
           titulo: data.nome ? `RACP - ${data.nome}` : "RACP vinculada ao estoque",
           descricao: data.notas || data.descricao || "",
+        }));
+      }
+      if (rncId) {
+        const { data } = await (supabase as any).from("quality_rncs").select("*").eq("id", rncId).maybeSingle();
+        if (data) setForm(prev => ({
+          ...prev,
+          origem: "RNC",
+          cliente: data.cliente_fornecedor || "",
+          equipamento: data.descricao_item || "",
+          serial_lote: data.lote_serial || "",
+          referencia: data.codigo,
+          titulo: `RACP - ${data.codigo}`,
+          descricao: data.descricao_nao_conformidade || "",
+          impacto: data.impacto || "",
+          evidencia_inicial: data.evidencia_inicial || "",
+          prioridade: data.prioridade || "media",
         }));
       }
     };
@@ -159,6 +176,7 @@ export default function QualityCaseForm() {
       lab_part_id: params.get("lab_part_id"),
       stock_product_id: params.get("stock_product_id"),
       commercial_request_id: params.get("commercial_request_id"),
+      rnc_id: params.get("rnc_id"),
     };
     const { data, error } = await (supabase as any).from("quality_cases").insert(payload).select().single();
     if (error) {
