@@ -73,7 +73,16 @@ const emptyForm = {
   tipo: "",
   empresa: "",
   cnpj: "",
+  cpf: "",
+  cliente_nome: "",
   telefone: "",
+  // Endereço fiscal (empresa)
+  cep_empresa: "",
+  rua_empresa: "",
+  bairro_empresa: "",
+  cidade_empresa: "",
+  uf_empresa: "",
+  // Endereço de atendimento
   cep: "",
   rua: "",
   bairro: "",
@@ -108,6 +117,14 @@ const maskCNPJ = (v: string) =>
     .replace(/(\d{4})(\d)/, "$1-$2");
 
 const isValidCNPJ = (v: string) => /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(v);
+
+const maskCPF = (v: string) =>
+  v.replace(/\D/g, "").slice(0, 11)
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2");
+
+const isValidCPF = (v: string) => /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(v);
 
 const maskPhone = (v: string) => {
   const d = v.replace(/\D/g, "").slice(0, 11);
