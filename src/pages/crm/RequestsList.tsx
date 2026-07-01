@@ -858,12 +858,102 @@ export default function RequestsList() {
             {/* Equipamento */}
             <Section title="Equipamento e Proposta">
               <div className="space-y-4">
-                <Field label="Equipamento">
-                  <Input
-                    value={form.equipamento}
-                    onChange={(e) => setForm({ ...form, equipamento: e.target.value })}
-                  />
-                </Field>
+                <TooltipProvider delayDuration={200}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Field label="Categoria">
+                      <Select
+                        value={form.categoria}
+                        onValueChange={(v) =>
+                          setForm({ ...form, categoria: v, marca: "", marca_outro: "", modelo: "", modelo_outro: "" })
+                        }
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {EQUIPMENT_CATEGORIES.map((c) => (
+                            <Tooltip key={c.sigla}>
+                              <TooltipTrigger asChild>
+                                <SelectItem value={c.sigla}>{c.sigla}</SelectItem>
+                              </TooltipTrigger>
+                              <TooltipContent side="right">{c.nome}</TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="Marca">
+                      {form.marca === "OUTRO" ? (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Digite a marca"
+                            value={form.marca_outro}
+                            onChange={(e) => setForm({ ...form, marca_outro: e.target.value.toUpperCase() })}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setForm({ ...form, marca: "", marca_outro: "", modelo: "", modelo_outro: "" })}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          value={form.marca}
+                          onValueChange={(v) => setForm({ ...form, marca: v, modelo: "", modelo_outro: "" })}
+                          disabled={!form.categoria}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={form.categoria ? "Selecione" : "Escolha a categoria"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {form.categoria &&
+                              Object.keys(EQUIPMENT_TREE[form.categoria] || {}).map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            <SelectItem value="OUTRO">OUTRO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                    <Field label="Modelo">
+                      {form.modelo === "OUTRO" ? (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Digite o modelo"
+                            value={form.modelo_outro}
+                            onChange={(e) => setForm({ ...form, modelo_outro: e.target.value.toUpperCase() })}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setForm({ ...form, modelo: "", modelo_outro: "" })}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          value={form.modelo}
+                          onValueChange={(v) => setForm({ ...form, modelo: v, modelo_outro: "" })}
+                          disabled={!form.marca || form.marca === "OUTRO"}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={form.marca && form.marca !== "OUTRO" ? "Selecione" : "Escolha a marca"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {form.categoria && form.marca && form.marca !== "OUTRO" &&
+                              (EQUIPMENT_TREE[form.categoria]?.[form.marca] || []).map((mo) => (
+                                <SelectItem key={mo} value={mo}>{mo}</SelectItem>
+                              ))}
+                            <SelectItem value="OUTRO">OUTRO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                  </div>
+                </TooltipProvider>
                 <Field label="Itens inclusos">
                   <Textarea
                     rows={3}
