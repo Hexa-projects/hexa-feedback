@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Bot, CheckCircle2, FileUp, Plus, Save, ShieldCheck } from "lucide-react";
 import type { QualityAction, QualityActionType, QualityCase, QualityEvent, QualityEvidence, QualityStatus } from "./qualityTypes";
-import { ACTION_TYPE_LABELS, formatDate, isActionOverdue, isCaseOverdue, priorityBadgeClass, STATUS_LABELS, statusBadgeClass } from "./qualityUtils";
+import { ACTION_TYPE_LABELS, ATUALIZACOES_PREVENTIVAS, formatDate, isActionOverdue, isCaseOverdue, priorityBadgeClass, STATUS_LABELS, statusBadgeClass } from "./qualityUtils";
 
 const nextStatus: Record<string, QualityStatus> = {
   aberta: "em_analise",
@@ -36,7 +36,7 @@ export default function QualityCaseDetail() {
   const [events, setEvents] = useState<QualityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [newAction, setNewAction] = useState({ tipo: "corretiva" as QualityActionType, descricao: "", due_date: "" });
+  const [newAction, setNewAction] = useState({ tipo: "corretiva" as QualityActionType, descricao: "", due_date: "", responsavel_nome: "", custo: "", abrangencia: "" });
   const [uploadDescription, setUploadDescription] = useState("");
 
   const loadData = async () => {
@@ -103,15 +103,19 @@ export default function QualityCaseDetail() {
   const addAction = async () => {
     if (!item || !user || !newAction.descricao.trim()) return;
     const { error } = await (supabase as any).from("quality_actions").insert({
-      ...newAction,
+      tipo: newAction.tipo,
+      descricao: newAction.descricao,
+      due_date: newAction.due_date || null,
+      responsavel_nome: newAction.responsavel_nome || profile?.nome,
+      custo: newAction.custo ? Number(newAction.custo) : null,
+      abrangencia: newAction.abrangencia || null,
       quality_case_id: item.id,
       responsavel_id: user.id,
-      responsavel_nome: profile?.nome,
       created_by: user.id,
     });
     if (error) toast.error(error.message);
     else {
-      setNewAction({ tipo: "corretiva", descricao: "", due_date: "" });
+      setNewAction({ tipo: "corretiva", descricao: "", due_date: "", responsavel_nome: "", custo: "", abrangencia: "" });
       await addEvent("action_created", "Acao adicionada", newAction);
       toast.success("Acao adicionada.");
       loadData();
@@ -122,6 +126,7 @@ export default function QualityCaseDetail() {
     const { error } = await (supabase as any).from("quality_actions").update({
       status: "concluida",
       completed_at: new Date().toISOString(),
+      realizada_em: new Date().toISOString(),
     }).eq("id", action.id);
     if (error) toast.error(error.message);
     else {
@@ -209,9 +214,11 @@ export default function QualityCaseDetail() {
         <Tabs defaultValue="resumo" className="space-y-4">
           <TabsList>
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            <TabsTrigger value="analise">Analise</TabsTrigger>
             <TabsTrigger value="acoes">Acoes</TabsTrigger>
             <TabsTrigger value="evidencias">Evidencias</TabsTrigger>
             <TabsTrigger value="eficacia">Eficacia</TabsTrigger>
+            <TabsTrigger value="padronizacao">Padronizacao</TabsTrigger>
             <TabsTrigger value="auditoria">Auditoria</TabsTrigger>
           </TabsList>
 
@@ -224,8 +231,20 @@ export default function QualityCaseDetail() {
                 <Info label="Referencia" value={item.referencia} />
                 <Info label="Metodo" value={item.metodo.toUpperCase()} />
                 <Info label="Risco" value={item.risco_nivel} />
+                <Info label="Ocorrencia" value={formatDate(item.data_ocorrencia)} />
+                <Info label="Deteccao" value={formatDate(item.data_deteccao)} />
+                <Info label="Local" value={item.local_deteccao} />
+                <Info label="Detectado por" value={item.detectado_por} />
+                <Info label="Documento" value={item.documento_relacionado} />
+                <Info label="Versao" value={String(item.versao || 1)} />
               </div>
+              {Boolean(item.classificacao?.length) && (
+                <div className="flex flex-wrap gap-2">
+                  {item.classificacao?.map(option => <Badge key={option} variant="outline">{option}</Badge>)}
+                </div>
+              )}
               <TextBlock label="Descricao" value={item.descricao} />
+              <TextBlock label="Evidencia inicial" value={item.evidencia_inicial} />
               <TextBlock label="Impacto" value={item.impacto} />
               <TextBlock label="Contencao imediata" value={item.contencao_imediata} />
               <TextBlock label="Causa" value={item.causa} />
@@ -237,14 +256,53 @@ export default function QualityCaseDetail() {
             </CardContent></Card>
           </TabsContent>
 
+          <TabsContent value="analise">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Analise de impacto e causa</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Info label="Status da causa" value={item.causa_status} />
+                  <Info label="Categoria" value={item.causa_categoria} />
+                  <Info label="Responsavel contencao" value={item.contencao_responsavel} />
+                  <Info label="Contencao realizada em" value={item.contencao_realizada_em ? formatDate(item.contencao_realizada_em) : "-"} />
+                </div>
+                {Boolean(item.impacto_dimensoes?.length) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Dimensoes impactadas</p>
+                    <div className="flex flex-wrap gap-2">{item.impacto_dimensoes?.map(option => <Badge key={option} variant="secondary">{option}</Badge>)}</div>
+                  </div>
+                )}
+                <TextBlock label="Evidencias da causa" value={item.causa_evidencias} />
+                {Boolean(item.cinco_porques?.length) && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">5 Porques</p>
+                    <div className="space-y-2">
+                      {item.cinco_porques?.map((why, index) => (
+                        <div key={index} className="rounded-lg border p-3">
+                          <p className="text-sm font-medium">{why.pergunta}</p>
+                          <p className="text-sm text-muted-foreground">{why.resposta}</p>
+                          {why.evidencia && <p className="text-xs text-muted-foreground mt-1">Evidencia: {why.evidencia}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <TextBlock label="Causas descartadas" value={item.causas_descartadas} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="acoes">
             <Card>
               <CardHeader><CardTitle className="text-lg">Plano de acao</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-[160px_1fr_170px_110px] gap-2 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-[150px_1fr_150px_150px_100px] gap-2 items-end">
                   <Select value={newAction.tipo} onValueChange={v => setNewAction(prev => ({ ...prev, tipo: v as QualityActionType }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(ACTION_TYPE_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent></Select>
                   <Input placeholder="Nova acao..." value={newAction.descricao} onChange={e => setNewAction(prev => ({ ...prev, descricao: e.target.value }))} />
+                  <Input placeholder="Responsavel" value={newAction.responsavel_nome} onChange={e => setNewAction(prev => ({ ...prev, responsavel_nome: e.target.value }))} />
                   <Input type="date" value={newAction.due_date} onChange={e => setNewAction(prev => ({ ...prev, due_date: e.target.value }))} />
+                  <Input type="number" placeholder="Custo" value={newAction.custo} onChange={e => setNewAction(prev => ({ ...prev, custo: e.target.value }))} />
+                  <Input className="md:col-span-4" placeholder="Abrangencia da acao" value={newAction.abrangencia} onChange={e => setNewAction(prev => ({ ...prev, abrangencia: e.target.value }))} />
                   <Button onClick={addAction} className="gap-1"><Plus className="w-4 h-4" /> Adicionar</Button>
                 </div>
                 {actions.map(action => (
@@ -256,7 +314,12 @@ export default function QualityCaseDetail() {
                         {action.status === "concluida" && <Badge className="bg-green-100 text-green-800">Concluida</Badge>}
                       </div>
                       <p className="text-sm font-medium">{action.descricao}</p>
-                      <p className="text-xs text-muted-foreground">Prazo: {formatDate(action.due_date)} • Responsavel: {action.responsavel_nome || "-"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Prazo: {formatDate(action.due_date)} • Responsavel: {action.responsavel_nome || "-"}
+                        {action.custo ? ` • Custo: R$ ${Number(action.custo).toFixed(2)}` : ""}
+                      </p>
+                      {action.abrangencia && <p className="text-xs text-muted-foreground">Abrangencia: {action.abrangencia}</p>}
+                      {action.resultado && <p className="text-xs text-muted-foreground">Resultado: {action.resultado}</p>}
                     </div>
                     {action.status !== "concluida" && <Button variant="outline" size="sm" className="gap-1" onClick={() => completeAction(action)}><CheckCircle2 className="w-4 h-4" /> Concluir</Button>}
                   </div>
@@ -289,10 +352,28 @@ export default function QualityCaseDetail() {
             <Card><CardContent className="pt-6 space-y-4">
               <div className="space-y-2"><Label>Criterio de eficacia</Label><Textarea rows={3} value={item.criterio_eficacia || ""} onChange={e => setItem({ ...item, criterio_eficacia: e.target.value })} /></div>
               <div className="space-y-2"><Label>Resultado da verificacao</Label><Textarea rows={3} value={item.resultado_eficacia || ""} onChange={e => setItem({ ...item, resultado_eficacia: e.target.value })} /></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <label className="flex items-center gap-2 text-sm"><Checkbox checked={Boolean(item.corretiva_eficaz)} onCheckedChange={v => setItem({ ...item, corretiva_eficaz: Boolean(v) })} /> Corretiva eficaz</label>
                 <label className="flex items-center gap-2 text-sm"><Checkbox checked={Boolean(item.preventiva_eficaz)} onCheckedChange={v => setItem({ ...item, preventiva_eficaz: Boolean(v) })} /> Preventiva eficaz</label>
                 <label className="flex items-center gap-2 text-sm"><Checkbox checked={Boolean(item.risco_residual_aceito)} onCheckedChange={v => setItem({ ...item, risco_residual_aceito: Boolean(v) })} /> Risco residual aceito</label>
+                <label className="flex items-center gap-2 text-sm"><Checkbox checked={Boolean(item.nova_racp_necessaria)} onCheckedChange={v => setItem({ ...item, nova_racp_necessaria: Boolean(v) })} /> Nova RACP necessaria</label>
+              </div>
+              {item.nova_racp_necessaria && <div className="space-y-2"><Label>Motivo da nova RACP</Label><Input value={item.nova_racp_motivo || ""} onChange={e => setItem({ ...item, nova_racp_motivo: e.target.value })} /></div>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Aprovacao qualidade</Label>
+                  <Select value={item.aprovacao_qualidade_status || "pendente"} onValueChange={v => setItem({ ...item, aprovacao_qualidade_status: v as any, aprovacao_qualidade_por: v === "aprovado" ? profile?.nome : item.aprovacao_qualidade_por, aprovacao_qualidade_em: v === "aprovado" ? new Date().toISOString() : item.aprovacao_qualidade_em })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="aprovado">Aprovado</SelectItem><SelectItem value="reprovado">Reprovado</SelectItem><SelectItem value="dispensado">Dispensado</SelectItem></SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Aprovacao area</Label>
+                  <Select value={item.aprovacao_area_status || "pendente"} onValueChange={v => setItem({ ...item, aprovacao_area_status: v as any, aprovacao_area_por: v === "aprovado" ? profile?.nome : item.aprovacao_area_por, aprovacao_area_em: v === "aprovado" ? new Date().toISOString() : item.aprovacao_area_em })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="pendente">Pendente</SelectItem><SelectItem value="aprovado">Aprovado</SelectItem><SelectItem value="reprovado">Reprovado</SelectItem><SelectItem value="dispensado">Dispensado</SelectItem></SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2"><Label>Resumo final</Label><Textarea rows={3} value={item.resumo_final || ""} onChange={e => setItem({ ...item, resumo_final: e.target.value })} /></div>
               <div className="flex flex-wrap gap-2">
@@ -302,12 +383,57 @@ export default function QualityCaseDetail() {
                   corretiva_eficaz: item.corretiva_eficaz,
                   preventiva_eficaz: item.preventiva_eficaz,
                   risco_residual_aceito: item.risco_residual_aceito,
+                  nova_racp_necessaria: item.nova_racp_necessaria,
+                  nova_racp_motivo: item.nova_racp_motivo,
+                  aprovacao_qualidade_status: item.aprovacao_qualidade_status,
+                  aprovacao_qualidade_por: item.aprovacao_qualidade_por,
+                  aprovacao_qualidade_em: item.aprovacao_qualidade_em,
+                  aprovacao_area_status: item.aprovacao_area_status,
+                  aprovacao_area_por: item.aprovacao_area_por,
+                  aprovacao_area_em: item.aprovacao_area_em,
                   resumo_final: item.resumo_final,
                   status: item.corretiva_eficaz || item.preventiva_eficaz ? "eficaz" : "ineficaz",
                 } as any, "Eficacia registrada")}><Save className="w-4 h-4" /> Salvar eficacia</Button>
                 <Button variant="outline" onClick={() => updateCase({ status: "ineficaz" } as any, "RACP marcada como ineficaz")}>Marcar ineficaz</Button>
               </div>
             </CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="padronizacao">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Prevencao e aprendizado</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <TextBlock label="Objetivo corretivo" value={item.objetivo_corretivo} />
+                <TextBlock label="Objetivo preventivo" value={item.objetivo_preventivo} />
+                <TextBlock label="Abrangencia preventiva" value={item.abrangencia_preventiva} />
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Atualizacoes preventivas</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {ATUALIZACOES_PREVENTIVAS.map(option => (
+                      <label key={option} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                        <Checkbox
+                          checked={Boolean(item.atualizacoes_preventivas?.includes(option))}
+                          onCheckedChange={() => setItem({
+                            ...item,
+                            atualizacoes_preventivas: item.atualizacoes_preventivas?.includes(option)
+                              ? item.atualizacoes_preventivas.filter(value => value !== option)
+                              : [...(item.atualizacoes_preventivas || []), option],
+                          })}
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2"><Label>Licoes aprendidas</Label><Textarea rows={3} value={item.licoes_aprendidas || ""} onChange={e => setItem({ ...item, licoes_aprendidas: e.target.value })} /></div>
+                <div className="space-y-2"><Label>Motivo da revisao documental</Label><Textarea rows={2} value={item.revisao_motivo || ""} onChange={e => setItem({ ...item, revisao_motivo: e.target.value })} /></div>
+                <Button className="gap-1" onClick={() => updateCase({
+                  atualizacoes_preventivas: item.atualizacoes_preventivas,
+                  licoes_aprendidas: item.licoes_aprendidas,
+                  revisao_motivo: item.revisao_motivo,
+                } as any, "Padronizacao atualizada")}><Save className="w-4 h-4" /> Salvar padronizacao</Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="auditoria">

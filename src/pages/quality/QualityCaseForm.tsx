@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import HexaLayout from "@/components/HexaLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,18 +10,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Save, ShieldCheck, Trash2 } from "lucide-react";
-import { ORIGENS, todayISO } from "./qualityUtils";
+import { ATUALIZACOES_PREVENTIVAS, CAUSA_CATEGORIAS, CLASSIFICACOES, IMPACTO_DIMENSOES, ORIGENS, todayISO } from "./qualityUtils";
 import type { QualityActionType } from "./qualityTypes";
 
 interface ActionDraft {
   tipo: QualityActionType;
   descricao: string;
   due_date: string;
+  responsavel_nome: string;
+  custo: string;
+  abrangencia: string;
 }
 
-const emptyAction: ActionDraft = { tipo: "corretiva", descricao: "", due_date: "" };
+const emptyAction: ActionDraft = { tipo: "corretiva", descricao: "", due_date: "", responsavel_nome: "", custo: "", abrangencia: "" };
 
 export default function QualityCaseForm() {
   const navigate = useNavigate();
@@ -39,15 +43,37 @@ export default function QualityCaseForm() {
     equipamento: "",
     serial_lote: "",
     referencia: "",
+    data_ocorrencia: "",
+    data_deteccao: "",
+    local_deteccao: "",
+    detectado_por: "",
+    evidencia_inicial: "",
     descricao: "",
     impacto: "",
     contencao_imediata: "",
+    contencao_realizada_em: "",
+    contencao_responsavel: "",
     causa: "",
+    causa_status: "provavel",
+    causa_categoria: "",
+    causa_evidencias: "",
+    causas_descartadas: "",
+    objetivo_corretivo: "",
+    objetivo_preventivo: "",
+    abrangencia_preventiva: "",
     criterio_eficacia: "",
     data_limite: "",
     data_verificacao: "",
+    licoes_aprendidas: "",
+    documento_relacionado: "",
   });
   const [actions, setActions] = useState<ActionDraft[]>([{ ...emptyAction }]);
+  const [classificacao, setClassificacao] = useState<string[]>([]);
+  const [impactoDimensoes, setImpactoDimensoes] = useState<string[]>([]);
+  const [atualizacoesPreventivas, setAtualizacoesPreventivas] = useState<string[]>([]);
+  const [cincoPorques, setCincoPorques] = useState([
+    { pergunta: "Por que ocorreu?", resposta: "", evidencia: "" },
+  ]);
 
   useEffect(() => {
     const loadLinkedData = async () => {
@@ -96,6 +122,9 @@ export default function QualityCaseForm() {
   }, [params]);
 
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
+  const toggleValue = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
+    setter(prev => prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value]);
+  };
 
   const generateCode = async () => {
     const year = new Date().getFullYear();
@@ -119,6 +148,10 @@ export default function QualityCaseForm() {
     const payload = {
       ...form,
       codigo,
+      classificacao,
+      impacto_dimensoes: impactoDimensoes,
+      atualizacoes_preventivas: atualizacoesPreventivas,
+      cinco_porques: cincoPorques.filter(item => item.resposta.trim()),
       owner_id: user.id,
       created_by: user.id,
       updated_by: user.id,
@@ -135,10 +168,14 @@ export default function QualityCaseForm() {
     }
     if (validActions.length) {
       await (supabase as any).from("quality_actions").insert(validActions.map(action => ({
-        ...action,
+        tipo: action.tipo,
+        descricao: action.descricao,
+        due_date: action.due_date || null,
+        responsavel_nome: action.responsavel_nome || profile?.nome,
+        custo: action.custo ? Number(action.custo) : null,
+        abrangencia: action.abrangencia || null,
         quality_case_id: data.id,
         responsavel_id: user.id,
-        responsavel_nome: profile?.nome,
         created_by: user.id,
       })));
     }
@@ -171,7 +208,9 @@ export default function QualityCaseForm() {
         <Tabs defaultValue="identificacao" className="space-y-4">
           <TabsList>
             <TabsTrigger value="identificacao">Identificacao</TabsTrigger>
+            <TabsTrigger value="analise">Analise</TabsTrigger>
             <TabsTrigger value="acoes">Acoes e eficacia</TabsTrigger>
+            <TabsTrigger value="padronizacao">Padronizacao</TabsTrigger>
           </TabsList>
 
           <TabsContent value="identificacao">
@@ -186,17 +225,72 @@ export default function QualityCaseForm() {
                   <div className="space-y-2"><Label>Prioridade</Label><Select value={form.prioridade} onValueChange={v => update("prioridade", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="baixa">Baixa</SelectItem><SelectItem value="media">Media</SelectItem><SelectItem value="alta">Alta</SelectItem><SelectItem value="critica">Critica</SelectItem></SelectContent></Select></div>
                   <div className="space-y-2"><Label>Risco</Label><Select value={form.risco_nivel} onValueChange={v => update("risco_nivel", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="baixo">Baixo</SelectItem><SelectItem value="medio">Medio</SelectItem><SelectItem value="alto">Alto</SelectItem><SelectItem value="critico">Critico</SelectItem></SelectContent></Select></div>
                   <div className="space-y-2"><Label>Prazo</Label><Input type="date" value={form.data_limite} min={todayISO()} onChange={e => update("data_limite", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Ocorrencia</Label><Input type="date" value={form.data_ocorrencia} onChange={e => update("data_ocorrencia", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Deteccao</Label><Input type="date" value={form.data_deteccao} onChange={e => update("data_deteccao", e.target.value)} /></div>
                   <div className="space-y-2"><Label>Cliente</Label><Input value={form.cliente} onChange={e => update("cliente", e.target.value)} /></div>
                   <div className="space-y-2"><Label>Equipamento/peca</Label><Input value={form.equipamento} onChange={e => update("equipamento", e.target.value)} /></div>
                   <div className="space-y-2"><Label>Serial/lote</Label><Input value={form.serial_lote} onChange={e => update("serial_lote", e.target.value)} /></div>
                   <div className="space-y-2"><Label>Referencia</Label><Input value={form.referencia} onChange={e => update("referencia", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Local de deteccao</Label><Input value={form.local_deteccao} onChange={e => update("local_deteccao", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Detectado por</Label><Input value={form.detectado_por} onChange={e => update("detectado_por", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Documento relacionado</Label><Input value={form.documento_relacionado} onChange={e => update("documento_relacionado", e.target.value)} placeholder="Procedimento, checklist, laudo..." /></div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Classificacao</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {CLASSIFICACOES.map(option => (
+                      <Button key={option} type="button" size="sm" variant={classificacao.includes(option) ? "default" : "outline"} onClick={() => toggleValue(option, setClassificacao)}>
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2"><Label>Descricao do fato, nao conformidade ou risco</Label><Textarea rows={4} value={form.descricao} onChange={e => update("descricao", e.target.value)} /></div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="space-y-2"><Label>Impacto</Label><Textarea rows={3} value={form.impacto} onChange={e => update("impacto", e.target.value)} /></div>
-                  <div className="space-y-2"><Label>Contencao imediata</Label><Textarea rows={3} value={form.contencao_imediata} onChange={e => update("contencao_imediata", e.target.value)} /></div>
-                  <div className="space-y-2"><Label>Causa provavel/raiz</Label><Textarea rows={3} value={form.causa} onChange={e => update("causa", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Evidencia inicial</Label><Textarea rows={2} value={form.evidencia_inicial} onChange={e => update("evidencia_inicial", e.target.value)} placeholder="Foto, OS, relato, medicao, laudo, teste, log..." /></div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analise">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Impacto, contencao e causa</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Dimensoes de impacto</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {IMPACTO_DIMENSOES.map(option => (
+                      <label key={option} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                        <Checkbox checked={impactoDimensoes.includes(option)} onCheckedChange={() => toggleValue(option, setImpactoDimensoes)} />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2"><Label>Impacto atual</Label><Textarea rows={4} value={form.impacto} onChange={e => update("impacto", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Contencao imediata</Label><Textarea rows={4} value={form.contencao_imediata} onChange={e => update("contencao_imediata", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Causa raiz/potencial</Label><Textarea rows={4} value={form.causa} onChange={e => update("causa", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Responsavel contencao</Label><Input value={form.contencao_responsavel} onChange={e => update("contencao_responsavel", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Contencao realizada em</Label><Input type="datetime-local" value={form.contencao_realizada_em} onChange={e => update("contencao_realizada_em", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Status da causa</Label><Select value={form.causa_status} onValueChange={v => update("causa_status", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="nao_iniciada">Nao iniciada</SelectItem><SelectItem value="provavel">Provavel</SelectItem><SelectItem value="confirmada">Confirmada</SelectItem><SelectItem value="descartada">Descartada</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label>Categoria da causa</Label><Select value={form.causa_categoria || "none"} onValueChange={v => update("causa_categoria", v === "none" ? "" : v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Nao classificada</SelectItem>{CAUSA_CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="md:col-span-2 space-y-2"><Label>Evidencias da causa</Label><Input value={form.causa_evidencias} onChange={e => update("causa_evidencias", e.target.value)} placeholder="Registros, testes, fotos, historico, auditoria..." /></div>
+                </div>
+                <div className="space-y-2">
+                  <Label>5 Porques opcional</Label>
+                  <div className="space-y-2">
+                    {cincoPorques.map((why, index) => (
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_40px] gap-2">
+                        <Input value={why.pergunta} onChange={e => setCincoPorques(prev => prev.map((item, i) => i === index ? { ...item, pergunta: e.target.value } : item))} placeholder={`Pergunta ${index + 1}`} />
+                        <Input value={why.resposta} onChange={e => setCincoPorques(prev => prev.map((item, i) => i === index ? { ...item, resposta: e.target.value } : item))} placeholder="Resposta" />
+                        <Input value={why.evidencia} onChange={e => setCincoPorques(prev => prev.map((item, i) => i === index ? { ...item, evidencia: e.target.value } : item))} placeholder="Evidencia" />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setCincoPorques(prev => prev.filter((_, i) => i !== index))}><Trash2 className="w-4 h-4" /></Button>
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={() => setCincoPorques(prev => [...prev, { pergunta: `Por que ${prev.length + 1}?`, resposta: "", evidencia: "" }])}>Adicionar porque</Button>
+                  </div>
+                </div>
+                <div className="space-y-2"><Label>Causas descartadas e motivo</Label><Textarea rows={2} value={form.causas_descartadas} onChange={e => update("causas_descartadas", e.target.value)} /></div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -207,19 +301,45 @@ export default function QualityCaseForm() {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   {actions.map((action, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-[160px_1fr_170px_40px] gap-2 items-end">
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-[150px_1fr_160px_160px_120px_40px] gap-2 items-end">
                       <div className="space-y-2"><Label>Tipo</Label><Select value={action.tipo} onValueChange={v => setActions(prev => prev.map((a, i) => i === index ? { ...a, tipo: v as QualityActionType } : a))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="contencao">Contencao</SelectItem><SelectItem value="corretiva">Corretiva</SelectItem><SelectItem value="preventiva">Preventiva</SelectItem><SelectItem value="verificacao">Verificacao</SelectItem></SelectContent></Select></div>
                       <div className="space-y-2"><Label>Acao</Label><Input value={action.descricao} onChange={e => setActions(prev => prev.map((a, i) => i === index ? { ...a, descricao: e.target.value } : a))} /></div>
+                      <div className="space-y-2"><Label>Responsavel</Label><Input value={action.responsavel_nome} onChange={e => setActions(prev => prev.map((a, i) => i === index ? { ...a, responsavel_nome: e.target.value } : a))} placeholder={profile?.nome || ""} /></div>
                       <div className="space-y-2"><Label>Prazo</Label><Input type="date" value={action.due_date} onChange={e => setActions(prev => prev.map((a, i) => i === index ? { ...a, due_date: e.target.value } : a))} /></div>
+                      <div className="space-y-2"><Label>Custo</Label><Input type="number" value={action.custo} onChange={e => setActions(prev => prev.map((a, i) => i === index ? { ...a, custo: e.target.value } : a))} /></div>
                       <Button type="button" variant="ghost" size="icon" onClick={() => setActions(prev => prev.filter((_, i) => i !== index))}><Trash2 className="w-4 h-4" /></Button>
+                      <div className="md:col-span-6 space-y-2"><Label>Abrangencia</Label><Input value={action.abrangencia} onChange={e => setActions(prev => prev.map((a, i) => i === index ? { ...a, abrangencia: e.target.value } : a))} placeholder="Cliente, equipamento, serie, fornecedor, processo..." /></div>
                     </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setActions(prev => [...prev, { ...emptyAction }])}><Plus className="w-4 h-4" /> Adicionar acao</Button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2"><Label>Objetivo corretivo</Label><Textarea rows={3} value={form.objetivo_corretivo} onChange={e => update("objetivo_corretivo", e.target.value)} /></div>
+                  <div className="space-y-2"><Label>Objetivo preventivo</Label><Textarea rows={3} value={form.objetivo_preventivo} onChange={e => update("objetivo_preventivo", e.target.value)} /></div>
                   <div className="space-y-2"><Label>Criterio de eficacia</Label><Textarea rows={3} value={form.criterio_eficacia} onChange={e => update("criterio_eficacia", e.target.value)} /></div>
                   <div className="space-y-2"><Label>Data prevista de verificacao</Label><Input type="date" value={form.data_verificacao} onChange={e => update("data_verificacao", e.target.value)} /></div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="padronizacao">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Prevencao e aprendizado</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2"><Label>Abrangencia preventiva</Label><Textarea rows={2} value={form.abrangencia_preventiva} onChange={e => update("abrangencia_preventiva", e.target.value)} placeholder="Onde essa prevencao deve ser replicada?" /></div>
+                <div className="space-y-2">
+                  <Label>Atualizacoes preventivas</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {ATUALIZACOES_PREVENTIVAS.map(option => (
+                      <label key={option} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                        <Checkbox checked={atualizacoesPreventivas.includes(option)} onCheckedChange={() => toggleValue(option, setAtualizacoesPreventivas)} />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2"><Label>Licoes aprendidas</Label><Textarea rows={3} value={form.licoes_aprendidas} onChange={e => update("licoes_aprendidas", e.target.value)} /></div>
               </CardContent>
             </Card>
           </TabsContent>

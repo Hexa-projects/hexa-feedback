@@ -25,6 +25,30 @@ export const STATUS_OPTIONS: QualityStatus[] = [
 
 export const ORIGENS = ["Cliente", "OS", "Laboratorio", "Estoque", "Fornecedor", "Processo interno", "Auditoria", "Comercial", "Outro"];
 
+export const CLASSIFICACOES = [
+  "Nao conformidade real",
+  "Risco potencial",
+  "Reclamacao cliente",
+  "Falha em servico",
+  "Falha em peca",
+  "Desvio de processo",
+];
+
+export const IMPACTO_DIMENSOES = ["Cliente", "Equipamento", "Seguranca", "Prazo", "Custo", "Garantia", "Retrabalho", "Compliance", "Imagem"];
+
+export const CAUSA_CATEGORIAS = ["Metodo", "Pessoa", "Maquina", "Material", "Medicao", "Ambiente", "Fornecedor", "Sistema"];
+
+export const ATUALIZACOES_PREVENTIVAS = [
+  "Procedimento revisado",
+  "Checklist revisado",
+  "Treinamento realizado",
+  "Estoque/fornecedor ajustado",
+  "Plano preventivo atualizado",
+  "Base de conhecimento atualizada",
+  "Contrato/garantia revisado",
+  "Alerta em sistema criado",
+];
+
 export const ACTION_TYPE_LABELS = {
   contencao: "Contencao",
   corretiva: "Corretiva",
