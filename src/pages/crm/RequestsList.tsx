@@ -870,12 +870,10 @@ export default function RequestsList() {
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
                           {EQUIPMENT_CATEGORIES.map((c) => (
-                            <Tooltip key={c.sigla}>
-                              <TooltipTrigger asChild>
-                                <SelectItem value={c.sigla}>{c.sigla}</SelectItem>
-                              </TooltipTrigger>
-                              <TooltipContent side="right">{c.nome}</TooltipContent>
-                            </Tooltip>
+                            <SelectItem key={c.sigla} value={c.sigla} title={c.nome}>
+                              <span className="font-semibold">{c.sigla}</span>
+                              <span className="ml-2 text-xs text-muted-foreground">{c.nome}</span>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
