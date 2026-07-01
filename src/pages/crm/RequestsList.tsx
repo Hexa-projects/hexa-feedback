@@ -306,16 +306,39 @@ export default function RequestsList() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // CPF x CNPJ — mutuamente exclusivos, ao menos um obrigatório
+    const hasCnpj = !!form.cnpj.trim();
+    const hasCpf = !!form.cpf.trim();
+    if (!hasCnpj && !hasCpf) {
+      return toast.error("Informe CNPJ ou CPF");
+    }
+    if (hasCnpj && hasCpf) {
+      return toast.error("Preencha apenas um: CNPJ ou CPF");
+    }
+    if (hasCnpj && !isValidCNPJ(form.cnpj)) {
+      return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
+    }
+    if (hasCpf && !isValidCPF(form.cpf)) {
+      return toast.error("CPF inválido (use 000.000.000-00)");
+    }
+
+    // Nome (empresa ou cliente) conforme o caminho escolhido
+    if (hasCnpj && !form.empresa.trim()) {
+      return toast.error("Campo obrigatório: Nome da empresa");
+    }
+    if (hasCpf && !form.cliente_nome.trim()) {
+      return toast.error("Campo obrigatório: Nome do cliente");
+    }
+
     const required: [string, string][] = [
       ["tipo", "Tipo"],
-      ["empresa", "Empresa"],
-      ["cnpj", "CNPJ"],
       ["telefone", "Telefone"],
-      ["cep", "CEP"],
-      ["rua", "Rua"],
-      ["bairro", "Bairro"],
-      ["cidade", "Cidade"],
-      ["complemento", "Complemento"],
+      ["cep", "CEP (atendimento)"],
+      ["rua", "Rua (atendimento)"],
+      ["bairro", "Bairro (atendimento)"],
+      ["cidade", "Cidade (atendimento)"],
+      ["complemento", "Complemento (atendimento)"],
       ["contato", "Contato"],
       ["responsavel_comercial", "Vendedor(a)"],
       ["email_1", "E-mail 1"],
@@ -340,21 +363,28 @@ export default function RequestsList() {
     if (form.origem === "Outro" && !form.origem_outro.trim()) {
       return toast.error("Campo obrigatório: Especifique a origem");
     }
-    if (!isValidCNPJ(form.cnpj)) return toast.error("CNPJ inválido (use 00.000.000/0000-00)");
     if (!isValidPhone(form.telefone)) return toast.error("Telefone inválido");
+
     setSaving(true);
-    const enderecoCompleto = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
+    const enderecoAtendimento = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""} - CEP ${form.cep}`;
     const payload: any = {
       ...form,
-      endereco: enderecoCompleto,
+      // Se for CPF, armazena o nome do cliente no campo "empresa" (compatibilidade de schema)
+      empresa: hasCnpj ? form.empresa : form.cliente_nome,
+      cnpj: hasCnpj ? form.cnpj : "",
+      endereco: enderecoAtendimento,
       preco: parseCurrency(form.preco),
       comissao: parsePercent(form.comissao),
       origem: form.origem === "Outro" ? form.origem_outro : form.origem,
       user_id: user!.id,
     };
-    // Remove campos que não existem na tabela
+    // Remove campos auxiliares que não existem na tabela
+    delete payload.cpf;
+    delete payload.cliente_nome;
     delete payload.cep; delete payload.rua; delete payload.bairro;
     delete payload.cidade; delete payload.uf; delete payload.complemento;
+    delete payload.cep_empresa; delete payload.rua_empresa;
+    delete payload.bairro_empresa; delete payload.cidade_empresa; delete payload.uf_empresa;
     delete payload.origem_outro;
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
