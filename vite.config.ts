@@ -86,8 +86,8 @@ export default defineConfig(({ mode }) => ({
           },
           // Hashed static assets: cache-first
           {
-            urlPattern: ({ request, url }) =>
-              url.origin === self.location.origin &&
+            urlPattern: ({ request, sameOrigin }: any) =>
+              sameOrigin &&
               ["style", "script", "worker", "font"].includes(request.destination),
             handler: "CacheFirst",
             options: {
@@ -97,8 +97,8 @@ export default defineConfig(({ mode }) => ({
           },
           // Public images (same-origin only)
           {
-            urlPattern: ({ request, url }) =>
-              url.origin === self.location.origin && request.destination === "image",
+            urlPattern: ({ request, sameOrigin }: any) =>
+              sameOrigin && request.destination === "image",
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "hexaos-images",
