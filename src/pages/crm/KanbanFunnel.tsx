@@ -243,9 +243,7 @@ export default function KanbanFunnel() {
     [leads, selectedFunnel],
   );
 
-  const handleDeleteLead = async (lead: any, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDeleteLead = async (lead: any) => {
     if (!canEditRequest) return;
     if (!window.confirm(`Mover "${lead.nome || lead.empresa || "este card"}" para a Lixeira?`)) return;
     const prevStatus = lead.status || "";
