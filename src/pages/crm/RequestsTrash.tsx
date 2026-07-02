@@ -34,6 +34,7 @@ export default function RequestsTrash() {
   const allowed = role === "admin" || role === "gestor";
 
   const [items, setItems] = useState<any[]>([]);
+  const [leadItems, setLeadItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -55,6 +56,19 @@ export default function RequestsTrash() {
       setItems(r2.data || []);
     } else {
       setItems(data || []);
+    }
+
+    // Load soft-deleted leads
+    const { data: leads, error: leadsErr } = await (supabase as any)
+      .from("leads")
+      .select("*")
+      .eq("status", "lixeira")
+      .order("created_at", { ascending: false });
+    if (leadsErr) {
+      toast.error("Erro ao carregar leads da Lixeira");
+      setLeadItems([]);
+    } else {
+      setLeadItems(leads || []);
     }
     setLoading(false);
   };
