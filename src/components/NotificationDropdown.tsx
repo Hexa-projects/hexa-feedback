@@ -58,16 +58,27 @@ export default function NotificationDropdown() {
 
   const handleClick = (n: Notification) => {
     if (!n.lida) markAsRead(n.id);
-    if (n.link) {
-      const meta = (n.metadata || {}) as Record<string, any>;
-      let target = n.link;
-      if (meta.request_id && n.link.startsWith("/crm/requests")) {
-        const sep = n.link.includes("?") ? "&" : "?";
-        target = `${n.link}${sep}request=${encodeURIComponent(meta.request_id)}&view=kanban`;
-      }
-      navigate(target);
-      setOpen(false);
+    const meta = (n.metadata || {}) as Record<string, any>;
+
+    // Commercial request notifications → always deep-link to the request modal
+    const isRequestNotif =
+      meta.event_type === "commercial_request_pending_approval" ||
+      !!meta.request_id ||
+      (n.link || "").startsWith("/crm/requests");
+
+    let target = n.link || "";
+
+    if (isRequestNotif && meta.request_id) {
+      target = `/crm/requests?request=${encodeURIComponent(meta.request_id)}&view=list`;
     }
+
+    if (!target) {
+      setOpen(false);
+      return;
+    }
+
+    navigate(target, { replace: false });
+    setOpen(false);
   };
 
   return (

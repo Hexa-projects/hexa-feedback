@@ -274,17 +274,43 @@ export default function RequestsList() {
 
   useEffect(() => {
     const reqId = searchParams.get("request");
-    if (!reqId || !items.length) return;
-    const found = items.find((r) => r.id === reqId);
-    if (found) {
-      setDetail(found);
+    if (!reqId) return;
+    if (detail?.id === reqId) return;
+
+    let cancelled = false;
+    (async () => {
+      // 1) Try to find in the already-loaded list
+      const found = items.find((r) => r.id === reqId);
+      if (found) {
+        setDetail(found);
+      } else {
+        // 2) Fallback: fetch directly (avoids RLS/timing edge cases)
+        const { data, error } = await (supabase as any)
+          .from("commercial_requests")
+          .select("*")
+          .eq("id", reqId)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error || !data) {
+          toast.error("Solicitação não encontrada ou sem permissão de acesso.");
+        } else {
+          setDetail(data);
+          // Merge into the list so approve/reject updates render correctly
+          setItems((prev) => (prev.some((x) => x.id === data.id) ? prev : [data, ...prev]));
+        }
+      }
       // Clean the url params after opening
       const next = new URLSearchParams(searchParams);
       next.delete("request");
       next.delete("view");
       setSearchParams(next, { replace: true });
-    }
-  }, [items, searchParams, setSearchParams]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, items]);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
