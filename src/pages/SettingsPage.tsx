@@ -187,7 +187,8 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 
   const filtered = users.filter(u =>
     u.nome.toLowerCase().includes(search.toLowerCase()) ||
-    u.setor.toLowerCase().includes(search.toLowerCase())
+    u.setor.toLowerCase().includes(search.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
