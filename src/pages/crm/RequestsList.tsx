@@ -1366,6 +1366,7 @@ export default function RequestsList() {
                 </div>
               )}
 
+              <Section title="Identificação">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ReadField label="Tipo" value={detail.tipo} />
                   <ReadField label="CNPJ" value={detail.cnpj} />
