@@ -1454,6 +1454,36 @@ export default function RequestsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de reprovação — motivo obrigatório */}
+      <Dialog open={rejectOpen} onOpenChange={(o) => !o && setRejectOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reprovar solicitação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da reprovação</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              placeholder="Explique brevemente por que essa solicitação não pode seguir."
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={statusSaving}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmReject}
+              disabled={statusSaving || !rejectReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirmar reprovação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </HexaLayout>
   );
 }
