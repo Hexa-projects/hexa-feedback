@@ -106,6 +106,32 @@ export default function RequestsTrash() {
     toast.success("Solicitação excluída permanentemente");
   };
 
+  const restoreLead = async (l: any) => {
+    setBusyId(l.id);
+    const info = parseLeadTrashInfo(l.notas);
+    const { error } = await (supabase as any)
+      .from("leads")
+      .update({ status: info.prevStatus, notas: info.cleanNotas || null })
+      .eq("id", l.id);
+    setBusyId(null);
+    if (error) return toast.error("Erro ao restaurar: " + error.message);
+    setLeadItems((prev) => prev.filter((x) => x.id !== l.id));
+    toast.success(`Card restaurado em "${info.prevStatus}"`);
+  };
+
+  const purgeLead = async (l: any) => {
+    if (!window.confirm("Esta ação é irreversível. Deseja excluir permanentemente?")) return;
+    setBusyId(l.id);
+    const { error } = await (supabase as any)
+      .from("leads")
+      .delete()
+      .eq("id", l.id);
+    setBusyId(null);
+    if (error) return toast.error("Erro ao excluir: " + error.message);
+    setLeadItems((prev) => prev.filter((x) => x.id !== l.id));
+    toast.success("Card excluído permanentemente");
+  };
+
   return (
     <HexaLayout>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
