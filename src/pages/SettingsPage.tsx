@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, Users, KeyRound, FileText, Zap, Plug, Settings2,
   Plus, Trash2, Edit2, Save, X, UserCheck, UserX, RefreshCw,
-  Mail, MessageSquare, Calendar, Check, AlertTriangle
+  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone
 } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
 // ── Types ──
@@ -102,12 +103,13 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-7 h-auto">
             <TabsTrigger value="users" className="text-xs gap-1"><Users className="w-3 h-3" />Usuários</TabsTrigger>
             <TabsTrigger value="permissions" className="text-xs gap-1"><KeyRound className="w-3 h-3" />Permissões</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs gap-1"><FileText className="w-3 h-3" />Templates</TabsTrigger>
             <TabsTrigger value="automations" className="text-xs gap-1"><Zap className="w-3 h-3" />Automações</TabsTrigger>
             <TabsTrigger value="msteams" className="text-xs gap-1"><MessageSquare className="w-3 h-3" />MS Teams</TabsTrigger>
+            <TabsTrigger value="push" className="text-xs gap-1"><BellRing className="w-3 h-3" />Push</TabsTrigger>
             <TabsTrigger value="integrations" className="text-xs gap-1"><Plug className="w-3 h-3" />Integrações</TabsTrigger>
           </TabsList>
 
@@ -116,12 +118,104 @@ export default function SettingsPage() {
           <TabsContent value="templates"><TemplatesTab /></TabsContent>
           <TabsContent value="automations"><AutomationsTab /></TabsContent>
           <TabsContent value="msteams"><MSTeamsTab /></TabsContent>
+          <TabsContent value="push"><PushTab /></TabsContent>
           <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
         </Tabs>
       </div>
     </HexaLayout>
   );
 }
+
+// ═══════════════════════════════════════════════════
+// TAB: Push Notifications (mobile / desktop)
+// ═══════════════════════════════════════════════════
+
+function PushTab() {
+  const push = usePushNotifications();
+
+  const handleSubscribe = async () => {
+    try {
+      await push.subscribe();
+      toast.success("Notificações no celular ativadas");
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível ativar as notificações");
+    }
+  };
+
+  const handleUnsubscribe = async () => {
+    try {
+      await push.unsubscribe();
+      toast.success("Notificações no celular desativadas");
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao desativar");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Smartphone className="w-4 h-4" /> Notificações no celular
+        </CardTitle>
+        <CardDescription>
+          Receba push notifications quando surgirem novas solicitações pendentes.
+          A notificação interna do HexaOS continua funcionando mesmo sem push.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          <span className="text-muted-foreground">Status:</span>
+          {!push.isSupported ? (
+            <Badge variant="secondary">Não suportado neste navegador</Badge>
+          ) : push.isSubscribed && push.permission === "granted" ? (
+            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Ativado</Badge>
+          ) : push.permission === "denied" ? (
+            <Badge variant="destructive">Permissão bloqueada</Badge>
+          ) : (
+            <Badge variant="secondary">Desativado</Badge>
+          )}
+          <span className="text-muted-foreground">·</span>
+          <span className="text-xs text-muted-foreground">Plataforma: {push.platform}</span>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {!push.isSubscribed ? (
+            <Button onClick={handleSubscribe} disabled={!push.isSupported || push.loading || push.iosNeedsInstall}>
+              <BellRing className="w-4 h-4 mr-1" />
+              Ativar notificações no celular
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleUnsubscribe} disabled={push.loading}>
+              <X className="w-4 h-4 mr-1" /> Desativar notificações
+            </Button>
+          )}
+        </div>
+
+        {push.iosNeedsInstall && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+            <strong>iPhone / iPad:</strong> as notificações push só funcionam depois que o HexaOS
+            estiver <strong>instalado na Tela de Início</strong>. Toque em Compartilhar → "Adicionar
+            à Tela de Início", abra o HexaOS pelo ícone e volte aqui para ativar.
+          </div>
+        )}
+
+        {push.permission === "denied" && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
+            Você bloqueou as notificações deste site no navegador. Habilite manualmente nas
+            configurações do navegador e recarregue a página.
+          </div>
+        )}
+
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p><strong>Android (Chrome/Edge):</strong> toque em Ativar e permita as notificações.</p>
+          <p><strong>Desktop (Chrome/Edge/Firefox):</strong> toque em Ativar e permita.</p>
+          <p><strong>iOS/iPadOS 16.4+:</strong> requer o HexaOS instalado como app na tela inicial.</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 // ═══════════════════════════════════════════════════
 // TAB: Users

@@ -695,12 +695,30 @@ export default function RequestsList() {
     delete payload.modelo; delete payload.modelo_outro;
     // Toda nova solicitação nasce como PENDENTE — aguardando aprovação do CEO.
     payload.status = "pendente";
-    const { error } = await (supabase as any).from("commercial_requests").insert(payload);
+    const { data: inserted, error } = await (supabase as any)
+      .from("commercial_requests")
+      .insert(payload)
+      .select("id, empresa, preco")
+      .maybeSingle();
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
     toast.success("Solicitação enviada para aprovação", {
       description: "Os CEOs foram notificados para analisar.",
     });
+    // Fire-and-forget: push notification to CEOs. The internal notification
+    // was already created by the DB trigger.
+    try {
+      if (inserted?.id) {
+        const bodyText =
+          `Nova solicitação` +
+          (inserted.empresa ? ` · ${inserted.empresa}` : "") +
+          (inserted.preco ? ` · R$ ${Number(inserted.preco).toLocaleString("pt-BR")}` : "") +
+          " — aguardando análise.";
+        supabase.functions.invoke("notify-ceos-push", {
+          body: { request_id: inserted.id, body: bodyText },
+        }).catch((err) => console.warn("[push] notify-ceos-push failed", err));
+      }
+    } catch (e) { console.warn("[push] dispatch failed", e); }
     setOpen(false);
     setForm({ ...emptyForm });
     load();
