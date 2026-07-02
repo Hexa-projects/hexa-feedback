@@ -1386,7 +1386,17 @@ export default function RequestsList() {
               </Section>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <div>
+              {canEditStatus && detail && (
+                <Button
+                  variant="destructive"
+                  onClick={() => softDelete(detail)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" /> Excluir
+                </Button>
+              )}
+            </div>
             <Button variant="outline" onClick={() => setDetail(null)}>
               Fechar
             </Button>
