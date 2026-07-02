@@ -344,11 +344,29 @@ export default function RequestsList() {
     const { data, error } = await (supabase as any)
       .from("commercial_requests")
       .select("*")
+      .neq("status", "lixeira")
       .order("created_at", { ascending: false });
     if (error) toast.error("Erro ao carregar solicitações");
     setItems(data || []);
     setLoading(false);
   };
+
+  const softDelete = async (r: any) => {
+    if (!canEditStatus) return;
+    if (!window.confirm("Tem certeza que deseja excluir esta solicitação? Ela será movida para a Lixeira.")) return;
+    const prevStatus = r.status || "pendente";
+    const marker = `[TRASH_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const nextObs = r.observacoes ? `${marker}\n${r.observacoes}` : marker;
+    const { error } = await (supabase as any)
+      .from("commercial_requests")
+      .update({ status: "lixeira", observacoes: nextObs })
+      .eq("id", r.id);
+    if (error) return toast.error("Erro ao excluir: " + error.message);
+    setItems((prev) => prev.filter((x) => x.id !== r.id));
+    setDetail(null);
+    toast.success("Solicitação movida para a Lixeira");
+  };
+
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
