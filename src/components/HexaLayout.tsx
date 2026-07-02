@@ -279,7 +279,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
                   child.wip
                     ? "text-sidebar-foreground/30 cursor-default"
-                    : isChildActive(child.to)
+                    : child.to === activeChildTo
                     ? "bg-sidebar-accent text-sidebar-primary font-medium"
                     : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 }`}
