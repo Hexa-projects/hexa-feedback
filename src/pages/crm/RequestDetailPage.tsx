@@ -14,42 +14,51 @@ import { toast } from "sonner";
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, role, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [request, setRequest] = useState<any | null>(null);
-  const [isPrivileged, setIsPrivileged] = useState(false);
+  const [isCeo, setIsCeo] = useState(false);
+  const [privilegeChecked, setPrivilegeChecked] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectBox, setShowRejectBox] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Determine CEO/admin privilege
+  // Determine CEO/admin privilege using the same server RPC used by RequestsList,
+  // with a client-side fallback based on profile.funcao and user_roles.
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setPrivilegeChecked(true);
+      return;
+    }
     (async () => {
-      if (!user) return;
-      const funcao = (profile?.funcao || "").toLowerCase();
-      const funcaoIsCeo =
-        funcao.includes("ceo") ||
-        funcao.includes("chief executive") ||
-        funcao.includes("sócio") ||
-        funcao.includes("socio") ||
-        funcao.includes("diretor executivo") ||
-        funcao.includes("fundador");
-      let priv = funcaoIsCeo;
-      if (!priv) {
-        const { data } = await (supabase as any)
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        priv = !!data;
+      let ceo = false;
+      try {
+        const { data } = await (supabase as any).rpc("is_ceo_or_admin", { _user: user.id });
+        ceo = !!data;
+      } catch {
+        /* ignore, fall back below */
       }
-      setIsPrivileged(priv);
+      if (!ceo) {
+        const funcao = (profile?.funcao || "").toLowerCase();
+        ceo =
+          funcao.includes("ceo") ||
+          funcao.includes("chief executive") ||
+          funcao.includes("sócio") ||
+          funcao.includes("socio") ||
+          funcao.includes("diretor executivo") ||
+          funcao.includes("fundador");
+      }
+      setIsCeo(ceo);
+      setPrivilegeChecked(true);
     })();
-  }, [user, profile]);
+  }, [user, profile, authLoading]);
+
+  const canEditStatus = role === "admin" || role === "gestor" || isCeo;
+
 
   const load = async () => {
     if (!id) return;
@@ -111,7 +120,8 @@ export default function RequestDetailPage() {
   };
 
   const status = request?.status as string | undefined;
-  const canAct = isPrivileged && status === "pendente";
+  const canAct = privilegeChecked && canEditStatus && status === "pendente";
+
 
   return (
     <HexaLayout>
