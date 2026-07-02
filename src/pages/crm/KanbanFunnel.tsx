@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
@@ -234,10 +234,35 @@ export default function KanbanFunnel() {
   };
 
   // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
+  // Also hide leads that were soft-deleted (status = "lixeira").
   const filteredLeads = useMemo(
-    () => leads.filter((l) => (l.funil ?? "vendas") === selectedFunnel),
+    () =>
+      leads.filter(
+        (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
+      ),
     [leads, selectedFunnel],
   );
+
+  const handleDeleteLead = async (lead: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canEditRequest) return;
+    if (!window.confirm(`Mover "${lead.nome || lead.empresa || "este card"}" para a Lixeira?`)) return;
+    const prevStatus = lead.status || "";
+    const marker = `[TRASH_LEAD_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const newNotas = `${marker}\n${lead.notas || ""}`;
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: "lixeira", notas: newNotas } as any)
+      .eq("id", lead.id);
+    if (error) {
+      toast.error("Erro ao mover para a Lixeira");
+      return;
+    }
+    setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, status: "lixeira", notas: newNotas } : l)));
+    toast.success("Card movido para a Lixeira");
+  };
+
 
   // KPIs
   const totalLeads = filteredLeads.length;
@@ -444,6 +469,17 @@ export default function KanbanFunnel() {
                       </>
                     );
 
+                    const deleteBtn = canEditRequest ? (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteLead(lead, e)}
+                        title="Mover para a Lixeira"
+                        className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    ) : null;
+
                     if (isFromRequest && reqId) {
                       return (
                         <div
@@ -452,24 +488,28 @@ export default function KanbanFunnel() {
                           onDragStart={() => setDraggedId(lead.id)}
                           onDoubleClick={() => setActiveRequestId(reqId)}
                           title="Duplo clique para ver detalhes da solicitação"
-                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                          className="group relative block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
                         >
+                          {deleteBtn}
                           {commonInner}
                         </div>
                       );
                     }
 
                     return (
-                      <Link
-                        key={lead.id}
-                        to={`/crm/${lead.id}`}
-                        draggable
-                        onDragStart={() => setDraggedId(lead.id)}
-                        className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                      >
-                        {commonInner}
-                      </Link>
+                      <div key={lead.id} className="group relative">
+                        {deleteBtn}
+                        <Link
+                          to={`/crm/${lead.id}`}
+                          draggable
+                          onDragStart={() => setDraggedId(lead.id)}
+                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                        >
+                          {commonInner}
+                        </Link>
+                      </div>
                     );
+
                   })}
                 </div>
               </div>

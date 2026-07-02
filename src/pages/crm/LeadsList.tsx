@@ -41,6 +41,7 @@ export default function LeadsList() {
     supabase
       .from("leads")
       .select("*")
+      .neq("status", "lixeira")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         setLeads(data || []);

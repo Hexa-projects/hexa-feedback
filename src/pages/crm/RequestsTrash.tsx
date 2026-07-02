@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 const TRASH_MARKER_RE = /^\[TRASH_PREV:([^|\]]+)\|([^\]]+)\]\n?/;
+const TRASH_LEAD_MARKER_RE = /^\[TRASH_LEAD_PREV:([^|\]]*)\|([^\]]+)\]\n?/;
 
 function parseTrashInfo(obs: string | null | undefined): { prevStatus: string; deletedAt: string | null; cleanObs: string } {
   const raw = String(obs || "");
@@ -21,11 +22,19 @@ function parseTrashInfo(obs: string | null | undefined): { prevStatus: string; d
   return { prevStatus: m[1] || "pendente", deletedAt: m[2] || null, cleanObs: raw.replace(TRASH_MARKER_RE, "") };
 }
 
+function parseLeadTrashInfo(notas: string | null | undefined): { prevStatus: string; deletedAt: string | null; cleanNotas: string } {
+  const raw = String(notas || "");
+  const m = raw.match(TRASH_LEAD_MARKER_RE);
+  if (!m) return { prevStatus: "Novo Negócio", deletedAt: null, cleanNotas: raw };
+  return { prevStatus: m[1] || "Novo Negócio", deletedAt: m[2] || null, cleanNotas: raw.replace(TRASH_LEAD_MARKER_RE, "") };
+}
+
 export default function RequestsTrash() {
   const { role } = useAuth();
   const allowed = role === "admin" || role === "gestor";
 
   const [items, setItems] = useState<any[]>([]);
+  const [leadItems, setLeadItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -47,6 +56,19 @@ export default function RequestsTrash() {
       setItems(r2.data || []);
     } else {
       setItems(data || []);
+    }
+
+    // Load soft-deleted leads
+    const { data: leads, error: leadsErr } = await (supabase as any)
+      .from("leads")
+      .select("*")
+      .eq("status", "lixeira")
+      .order("created_at", { ascending: false });
+    if (leadsErr) {
+      toast.error("Erro ao carregar leads da Lixeira");
+      setLeadItems([]);
+    } else {
+      setLeadItems(leads || []);
     }
     setLoading(false);
   };
@@ -82,6 +104,32 @@ export default function RequestsTrash() {
     if (error) return toast.error("Erro ao excluir: " + error.message);
     setItems((prev) => prev.filter((x) => x.id !== r.id));
     toast.success("Solicitação excluída permanentemente");
+  };
+
+  const restoreLead = async (l: any) => {
+    setBusyId(l.id);
+    const info = parseLeadTrashInfo(l.notas);
+    const { error } = await (supabase as any)
+      .from("leads")
+      .update({ status: info.prevStatus, notas: info.cleanNotas || null })
+      .eq("id", l.id);
+    setBusyId(null);
+    if (error) return toast.error("Erro ao restaurar: " + error.message);
+    setLeadItems((prev) => prev.filter((x) => x.id !== l.id));
+    toast.success(`Card restaurado em "${info.prevStatus}"`);
+  };
+
+  const purgeLead = async (l: any) => {
+    if (!window.confirm("Esta ação é irreversível. Deseja excluir permanentemente?")) return;
+    setBusyId(l.id);
+    const { error } = await (supabase as any)
+      .from("leads")
+      .delete()
+      .eq("id", l.id);
+    setBusyId(null);
+    if (error) return toast.error("Erro ao excluir: " + error.message);
+    setLeadItems((prev) => prev.filter((x) => x.id !== l.id));
+    toast.success("Card excluído permanentemente");
   };
 
   return (
@@ -153,6 +201,75 @@ export default function RequestsTrash() {
                             size="sm"
                             onClick={() => purge(r)}
                             disabled={busyId === r.id}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Excluir permanentemente
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {leadItems.length} {leadItems.length === 1 ? "card" : "cards"} de negociações na lixeira
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="py-8 text-center text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
+              </div>
+            ) : leadItems.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">Nenhum card de negociação na lixeira.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Etapa anterior</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Excluído em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leadItems.map((l) => {
+                    const info = parseLeadTrashInfo(l.notas);
+                    const deletedAt = info.deletedAt || l.updated_at || l.created_at;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="font-medium">{l.nome || "—"}</TableCell>
+                        <TableCell>{l.empresa || "—"}</TableCell>
+                        <TableCell className="text-xs">{info.prevStatus || "—"}</TableCell>
+                        <TableCell>
+                          {l.valor_estimado != null
+                            ? Number(l.valor_estimado).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {deletedAt ? format(new Date(deletedAt), "dd/MM/yyyy HH:mm") : "—"}
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => restoreLead(l)}
+                            disabled={busyId === l.id}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restaurar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => purgeLead(l)}
+                            disabled={busyId === l.id}
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-1" /> Excluir permanentemente
                           </Button>
