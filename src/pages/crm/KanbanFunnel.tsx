@@ -13,6 +13,13 @@ import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
 import { differenceInHours } from "date-fns";
+import RequestDetailModal from "@/pages/crm/RequestDetailModal";
+
+const extractRequestId = (notas: string | null | undefined): string | null => {
+  if (!notas) return null;
+  const m = String(notas).match(/ID solicita[cç][aã]o:\s*([0-9a-f-]{8,})/i);
+  return m ? m[1] : null;
+};
 
 const DEFAULT_COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
 
@@ -110,8 +117,11 @@ const DEFAULT_FUNNELS: FunnelDef[] = [
 const FUNNELS_STORAGE_KEY = "hexa.kanban.funnels";
 
 export default function KanbanFunnel() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canEditRequest = role === "admin" || role === "gestor";
   const [leads, setLeads] = useState<any[]>([]);
+  const [requestsById, setRequestsById] = useState<Record<string, any>>({});
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [winModalLead, setWinModalLead] = useState<any | null>(null);
   const [funnels, setFunnels] = useState<FunnelDef[]>(() => {
@@ -159,8 +169,27 @@ export default function KanbanFunnel() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("leads").select("*").order("created_at", { ascending: false }).then(({ data }) => {
-      setLeads(data || []);
+    supabase.from("leads").select("*").order("created_at", { ascending: false }).then(async ({ data }) => {
+      const list = data || [];
+      setLeads(list);
+      // Enrich leads originated from commercial_requests
+      const ids = Array.from(
+        new Set(
+          list
+            .filter((l: any) => l.origem === "Via Solicitação")
+            .map((l: any) => extractRequestId(l.notas))
+            .filter((x): x is string => !!x),
+        ),
+      );
+      if (ids.length) {
+        const { data: reqs } = await (supabase as any)
+          .from("commercial_requests")
+          .select("*")
+          .in("id", ids);
+        const map: Record<string, any> = {};
+        (reqs || []).forEach((r: any) => { map[r.id] = r; });
+        setRequestsById(map);
+      }
     });
   }, [user]);
 
@@ -373,6 +402,63 @@ export default function KanbanFunnel() {
                     const lastContact = lead.ultimo_contato || lead.created_at;
                     const hoursInactive = differenceInHours(new Date(), new Date(lastContact));
                     const isInactive = hoursInactive > 72 && !["Ganho", "Perdido"].includes(lead.status);
+                    const isFromRequest = lead.origem === "Via Solicitação";
+                    const reqId = isFromRequest ? extractRequestId(lead.notas) : null;
+                    const req = reqId ? requestsById[reqId] : null;
+
+                    // Summary fields for request-originated cards
+                    const clienteOuEmpresa = req ? (req.cpf ? req.cliente_nome : req.empresa) : lead.empresa;
+                    const catMarcaModelo = req
+                      ? [req.categoria, req.marca, req.modelo].filter(Boolean).join(" • ")
+                      : null;
+                    const preco = req?.preco != null ? Number(req.preco) : Number(lead.valor_estimado) || 0;
+
+                    const commonInner = (
+                      <>
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="text-sm font-medium truncate">{clienteOuEmpresa || lead.nome}</p>
+                          {isInactive && <AISmartBadge agent="Hunter" />}
+                        </div>
+                        {isFromRequest && catMarcaModelo && (
+                          <p className="text-xs text-muted-foreground truncate">{catMarcaModelo}</p>
+                        )}
+                        {!isFromRequest && lead.empresa && (
+                          <p className="text-xs text-muted-foreground">{lead.empresa}</p>
+                        )}
+                        {isFromRequest && (
+                          <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1.5 bg-emerald-100 text-emerald-800 border-emerald-200">
+                            Via Solicitação
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-3 mt-2">
+                          {preco > 0 && (
+                            <span className="text-xs text-hexa-green flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              R$ {preco.toLocaleString("pt-BR")}
+                            </span>
+                          )}
+                          {!isFromRequest && lead.origem && (
+                            <span className="text-xs text-muted-foreground">{lead.origem}</span>
+                          )}
+                        </div>
+                      </>
+                    );
+
+                    if (isFromRequest && reqId) {
+                      return (
+                        <div
+                          key={lead.id}
+                          draggable
+                          onDragStart={() => setDraggedId(lead.id)}
+                          onDoubleClick={() => setActiveRequestId(reqId)}
+                          title="Duplo clique para ver detalhes da solicitação"
+                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                        >
+                          {commonInner}
+                        </div>
+                      );
+                    }
+
                     return (
                       <Link
                         key={lead.id}
@@ -381,27 +467,7 @@ export default function KanbanFunnel() {
                         onDragStart={() => setDraggedId(lead.id)}
                         className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
                       >
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="text-sm font-medium truncate">{lead.nome}</p>
-                          {isInactive && <AISmartBadge agent="Hunter" />}
-                        </div>
-                        {lead.empresa && <p className="text-xs text-muted-foreground">{lead.empresa}</p>}
-                        {lead.origem === "Via Solicitação" && (
-                          <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1.5 bg-emerald-100 text-emerald-800 border-emerald-200">
-                            Via Solicitação
-                          </Badge>
-                        )}
-                        <div className="flex items-center gap-3 mt-2">
-                          {lead.valor_estimado > 0 && (
-                            <span className="text-xs text-hexa-green flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              R$ {Number(lead.valor_estimado).toLocaleString("pt-BR")}
-                            </span>
-                          )}
-                          {lead.origem && lead.origem !== "Via Solicitação" && (
-                            <span className="text-xs text-muted-foreground">{lead.origem}</span>
-                          )}
-                        </div>
+                        {commonInner}
                       </Link>
                     );
                   })}
@@ -474,6 +540,14 @@ export default function KanbanFunnel() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Request Detail Modal (for leads originated from commercial_requests) */}
+        <RequestDetailModal
+          requestId={activeRequestId}
+          open={!!activeRequestId}
+          onClose={() => setActiveRequestId(null)}
+          canEdit={canEditRequest}
+        />
       </div>
     </HexaLayout>
   );
