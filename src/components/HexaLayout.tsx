@@ -18,6 +18,7 @@ interface NavChild {
   label: string;
   icon: any;
   wip?: boolean;
+  roles?: string[];
 }
 
 interface NavGroup {
