@@ -211,9 +211,15 @@ export default function LeadDetail() {
                   <Label>Notas</Label>
                   <Textarea value={lead.notas || ""} onChange={e => setLead({ ...lead, notas: e.target.value })} rows={3} />
                 </div>
-                <Button onClick={handleUpdate} disabled={saving} className="gap-2">
-                  <Save className="w-4 h-4" /> {saving ? "Salvando..." : "Salvar Alterações"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleUpdate} disabled={saving || deleting} className="gap-2">
+                    <Save className="w-4 h-4" /> {saving ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={saving || deleting} className="gap-2">
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Excluir
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
