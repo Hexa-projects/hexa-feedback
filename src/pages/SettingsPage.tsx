@@ -141,18 +141,22 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 
   const loadUsers = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, emailsRes] = await Promise.all([
       supabase.from("profiles").select("*").order("nome"),
       supabase.from("user_roles").select("*"),
+      (supabase as any).rpc("admin_list_user_emails"),
     ]);
 
     const profiles = (profilesRes.data || []) as UserProfile[];
     const roles = (rolesRes.data || []) as UserRole[];
+    const emails = (emailsRes.data || []) as Array<{ id: string; email: string }>;
     const roleMap = new Map(roles.map(r => [r.user_id, r.role]));
+    const emailMap = new Map(emails.map(e => [e.id, e.email]));
 
     const merged: UserWithRole[] = profiles.map(p => ({
       ...p,
       role: roleMap.get(p.id) || "colaborador",
+      email: emailMap.get(p.id),
     }));
     setUsers(merged);
     setLoading(false);
