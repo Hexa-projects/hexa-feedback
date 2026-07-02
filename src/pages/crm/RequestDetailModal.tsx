@@ -112,6 +112,27 @@ export default function RequestDetailModal({ requestId, leadId, open, onClose, c
     setEditMode(false);
   };
 
+  const handleDelete = async () => {
+    if (!leadId) return;
+    if (!window.confirm("Mover este card para a Lixeira?")) return;
+    setDeleting(true);
+    const prevStatus = data?.status || "";
+    const marker = `[TRASH_LEAD_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const { error } = await (supabase as any)
+      .from("leads")
+      .update({ status: "lixeira", notas: `${marker}\n${data?.notas || ""}` } as any)
+      .eq("id", leadId);
+    setDeleting(false);
+    if (error) {
+      console.error("[RequestDetailModal] delete error", error);
+      toast.error("Erro ao mover para a Lixeira");
+      return;
+    }
+    toast.success("Card movido para a Lixeira");
+    onDelete?.(leadId);
+    handleClose();
+  };
+
   const hasCnpj = !!(data?.cnpj && String(data.cnpj).trim());
   const eqParts = splitEquipamento(data?.equipamento);
   const endInfo = splitEndereco(data?.endereco);
