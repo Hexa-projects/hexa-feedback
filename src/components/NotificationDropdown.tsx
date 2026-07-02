@@ -130,6 +130,8 @@ export default function NotificationDropdown() {
                 {notifications.map((n) => {
                   const Icon = ICON_MAP[n.tipo] || Info;
                   const color = COLOR_MAP[n.tipo] || "text-muted-foreground";
+                  const meta = (n.metadata || {}) as Record<string, any>;
+                  const isNewDeal = meta.event_type === "new_deal_pending_approval";
 
                   return (
                     <div
@@ -155,6 +157,23 @@ export default function NotificationDropdown() {
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                             {n.mensagem}
                           </p>
+                        )}
+                        {isNewDeal && (
+                          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                            {meta.company && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {meta.company}
+                              </Badge>
+                            )}
+                            {meta.estimated_value && Number(meta.estimated_value) > 0 && (
+                              <span className="text-[10px] text-hexa-green font-medium">
+                                R$ {Number(meta.estimated_value).toLocaleString("pt-BR")}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-primary font-medium ml-auto">
+                              Ver no Kanban →
+                            </span>
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center gap-0.5 shrink-0">
