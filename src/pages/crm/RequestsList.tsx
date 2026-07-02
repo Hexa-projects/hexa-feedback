@@ -232,7 +232,9 @@ const parsePercent = (v: string) => {
 
 export default function RequestsList() {
   const { user, role } = useAuth();
-  const canEditStatus = role === "admin" || role === "gestor";
+  const [isCeo, setIsCeo] = useState(false);
+  // CEO/Admin podem aprovar/reprovar/excluir.
+  const canEditStatus = role === "admin" || role === "gestor" || isCeo;
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -249,6 +251,17 @@ export default function RequestsList() {
   const [view, setView] = useState<"list" | "kanban">("list");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await (supabase as any).rpc("is_ceo_or_admin", { _user: user.id });
+      setIsCeo(!!data);
+    })();
+  }, [user]);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
