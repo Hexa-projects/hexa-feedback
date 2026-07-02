@@ -452,6 +452,10 @@ export default function KanbanFunnel() {
                           <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1.5 bg-emerald-100 text-emerald-800 border-emerald-200">
                             Via Solicitação
                           </Badge>
+                        {selectedFunnel === "vendas" && lead.status === "Novo Negócio" && (role === "admin" || role === "gestor") && (
+                          <Badge variant="outline" className="mt-1 text-[10px] py-0 px-1.5 border-amber-400/60 text-amber-600 bg-amber-50">
+                            Pendente aprovação
+                          </Badge>
                         )}
                         <div className="flex items-center gap-3 mt-2">
                           {preco > 0 && (
