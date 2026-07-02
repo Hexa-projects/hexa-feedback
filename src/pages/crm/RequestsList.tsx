@@ -172,7 +172,6 @@ const emptyForm = {
   comissao: "",
   origem: "",
   origem_outro: "",
-  prioridade: "media",
   status: "pendente",
   observacoes: "",
 };
