@@ -1,121 +1,106 @@
 
+## Objetivo
+Ativar/revisar RLS em todas as tabelas `public.*` com o modelo:
+- **admin**: acesso total.
+- **gestor**: acesso total aos dados de negócio (igual admin em leitura/escrita), sem tocar em tabelas de configuração.
+- **colaborador**: acesso apenas aos dados do próprio setor (`profiles.setor == setor da tabela`).
 
-## Plan: Reinvention of "IA & Automação" and "Feedback & Processos" Sections
+Nenhuma UI, rota ou workflow existente será modificado — só políticas de banco.
 
-### Overview
-Clean up two polluted sidebar sections, replacing them with two focused hubs: **NÚCLEO AI** (2 items) and **AUDITORIA OPERACIONAL** (2 items). Remove 8 obsolete routes and create 3 new pages.
+## Fundação (já existe no projeto)
+- Enum `app_role` = `admin | gestor | colaborador`
+- Enum `setor` (Comercial, Técnico, Laboratório, Administrativo, Financeiro, Logística, Diretoria)
+- `public.has_role(_user_id, _role)` (security definer)
+- `public.get_user_setor(_user_id)` (security definer)
+- Tabelas `user_roles` e `profiles.setor`
 
----
-
-### Step 1: Route & Sidebar Cleanup
-
-**Remove from sidebar and routes (App.tsx):**
-- `/agentes` (AgentsDashboard)
-- `/ops` (OpsDashboard)
-- `/openclaw/kpis` (OpenClawKpiDashboard)
-- `/openclaw/audit` (OpenClawAgentAudit)
-- `/openclaw/console` (OpenClawOpsConsole)
-- `/api-docs` (ApiDocsPage)
-- `/playbook` (SDRPlaybook)
-- `/tools` (ToolsMapping)
-- `/processes` (RepetitiveProcesses)
-- `/suggestions` (Suggestions)
-
-**Keep:** `/focus-ai`, `/daily`, `/bottlenecks`, `/history`, `/settings`
-
-Remove the lazy imports for deleted routes. Remove `Playbook SDR` from Comercial group.
-
----
-
-### Step 2: Update Sidebar Navigation (HexaLayout.tsx)
-
-Replace the `feedback` and `ia` groups with:
-
-```text
-NÚCLEO AI (Brain icon, admin only)
-├── The Swarm          → /focus-ai
-└── Regras & MS Teams  → /automations
-
-AUDITORIA OPERACIONAL (ClipboardList icon)
-├── Mapa de Gargalos   → /gargalos
-└── Coleta de Dados    → /coleta
+## Novos helpers (security definer, `stable`)
+```sql
+-- Admin OU gestor
+public.is_privileged(_uid uuid) returns boolean
+-- Admin/gestor OU setor do usuário == setor pedido
+public.can_access_setor(_uid uuid, _setor setor) returns boolean
+-- Diretoria também é privilegiada em leitura
+public.is_directoria(_uid uuid) returns boolean
 ```
 
-Update `ROLE_GROUPS` and `SETOR_GROUPS` to replace `feedback`/`ia` with `nucleo_ai`/`auditoria`.
+## Mapeamento tabela → setor
+```text
+Comercial     → leads, deals, deal_activities, lead_interactions,
+                commercial_requests, proposals, contracts, pipeline_stages
+Técnico       → work_orders, work_order_activities, projects, project_tasks,
+                installed_equipment
+Laboratório   → lab_parts, knowledge_chunks
+Logística     → stock_products, stock_movements, stock_journeys, inventory
+Financeiro    → financial_records
 
----
+Só admin        → focus_ai_config, focus_ai_skills, focus_ai_routines,
+                  autonomy_rules, integration_configs, webhook_sources,
+                  tag_definitions, data_catalog, ai_agents
 
-### Step 3: Create `/automations` Page (AutomationsPage.tsx)
+Admin + gestor  → focus_ai_insights, focus_ai_logs, action_queue, agent_runs,
+                  ai_audit_trail, ai_action_requests, automation_executions,
+                  operational_events, kpi_snapshots, openclaw_*, webhook_events,
+                  ai_learning_feedback, file_imports
 
-New page with two tabs (shadcn Tabs):
+Próprio + adm/gestor  → onboarding_*, daily_forms, repetitive_processes,
+                       bottlenecks, suggestions, tool_mappings, ai_feedback,
+                       notifications, ai_chat_messages
 
-**Tab 1 — "Webhooks do Teams":**
-- 4 input fields for webhook URLs: Diretoria, Comercial, Operações, Laboratório
-- Reads/writes `integration_configs` (integration_name = `ms_teams_webhooks`)
-- "Testar Conexão" button per field
-- "Salvar" button
+Todos autenticados    → profiles (self + admin/gestor veem todos),
+                       user_roles (self read, admin write),
+                       teams, team_members, corporate_channels,
+                       channel_messages, channel_tasks, message_reactions,
+                       meeting_logs, meeting_participants_map,
+                       hex_calendar_events, hex_calendar_participants, hex_calendars,
+                       whatsapp_contacts, whatsapp_conversations,
+                       whatsapp_messages, whatsapp_logs
+```
 
-**Tab 2 — "Matriz de Autonomia":**
-- Reads `autonomy_rules` table
-- Renders each rule as a card with: name, description, domain badge, and a `Switch` toggle
-- Toggle updates `ativo` field on `autonomy_rules`
-- Grouped visually by domain (comercial, operacoes, laboratorio, geral)
+## Estratégia de política por categoria
 
----
+**Setoriais** (ex: `leads`):
+```sql
+DROP POLICY IF EXISTS ...;
+ENABLE RLS;
+CREATE POLICY "leads_read"  FOR SELECT TO authenticated
+  USING (public.can_access_setor(auth.uid(), 'Comercial'));
+CREATE POLICY "leads_write" FOR ALL TO authenticated
+  USING (public.can_access_setor(auth.uid(), 'Comercial'))
+  WITH CHECK (public.can_access_setor(auth.uid(), 'Comercial'));
+```
 
-### Step 4: Create `/gargalos` Page (GargalosMap.tsx)
+**Só admin**: `USING (public.has_role(auth.uid(),'admin'))`.
 
-- Reads `focus_ai_insights` table
-- Groups insights by `domain` (Comercial, Operações, Laboratório, Geral)
-- Each domain is a column (masonry/grid layout, 2-3 cols on desktop)
-- Each insight card shows:
-  - `titulo` (bold)
-  - `causa_provavel`
-  - `acao_recomendada`
-  - Priority badge from `prioridade`
-  - "Resolver" button → updates `status` to `resolvido`
+**Admin + gestor**: `USING (public.is_privileged(auth.uid()))`.
 
----
+**Próprio + adm/gestor**:
+```sql
+USING (user_id = auth.uid() OR public.is_privileged(auth.uid()))
+WITH CHECK (user_id = auth.uid() OR public.is_privileged(auth.uid()))
+```
 
-### Step 5: Create `/coleta` Page (DataCollection.tsx)
+**Todos autenticados** (colab. + adm./gestor): `USING (auth.role() = 'authenticated')` — leitura ampla; escrita mais restrita conforme a tabela.
 
-Page with two shadcn Tabs:
+**profiles**: cada um lê/edita o seu; adm/gestor leem todos; só admin edita role.
+**user_roles**: usuário lê o próprio; só admin escreve.
 
-**Tab 1 — "Raio-X (Onboarding)":**
-- Embeds the existing onboarding wizard steps (StepIdentidade, StepRotina, StepProcessos, StepGargalos, StepContato)
-- Writes to `onboarding_responses` table
-- Reuses existing onboarding components
+## GRANTs
+Reaplicar em toda tabela `public.*`:
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.<t> TO authenticated;
+GRANT ALL ON public.<t> TO service_role;
+```
+Sem `GRANT` para `anon` — plataforma é 100% interna (memória do projeto).
 
-**Tab 2 — "Meu Dia (Daily)":**
-- Simplified mobile-first form: "O que fiz hoje" (Textarea), "Impedimentos" (Textarea), optional audio recorder
-- Large touch-friendly buttons
-- Writes to `daily_forms` table
-- Reuses logic from existing DailyForm but in a slimmed-down UI
+## Entregáveis
+1. Uma migração SQL única e idempotente (`DROP POLICY IF EXISTS` + `CREATE`), aplicada via ferramenta de migration.
+2. Nenhuma mudança de UI/código React.
+3. Após aplicar, verifico logs do preview em busca de erros 401/permission denied e ajusto pontualmente.
 
----
+## Riscos
+- Se algum código faz query como `anon` (sem sessão), passará a falhar. Mitigação: hoje todas as rotas usam `AuthContext` e o `supabase` client autenticado — checarei antes de aplicar.
+- Edge Functions usam `service_role` e não são afetadas.
+- Diretoria: incluída em `is_privileged` para não quebrar dashboards executivos.
 
-### Step 6: Update App.tsx Routes
-
-Add new routes:
-- `/automations` → AutomationsPage
-- `/gargalos` → GargalosMap
-- `/coleta` → DataCollection
-
-Redirect old routes to new ones:
-- `/daily` → `/coleta`
-- `/bottlenecks` → `/gargalos`
-
----
-
-### Files to Create
-- `src/pages/AutomationsPage.tsx`
-- `src/pages/GargalosMap.tsx`
-- `src/pages/DataCollection.tsx`
-
-### Files to Edit
-- `src/components/HexaLayout.tsx` (sidebar restructure)
-- `src/App.tsx` (route cleanup + new routes + redirects)
-
-### No Database Changes Required
-All tables already exist: `integration_configs`, `autonomy_rules`, `focus_ai_insights`, `onboarding_responses`, `daily_forms`.
-
+Confirma para eu escrever e aplicar a migração?
