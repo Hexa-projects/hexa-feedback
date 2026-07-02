@@ -567,10 +567,16 @@ export default function KanbanFunnel() {
 
         {/* Request Detail Modal (for leads originated from commercial_requests) */}
         <RequestDetailModal
-          requestId={activeRequestId}
-          open={!!activeRequestId}
-          onClose={() => setActiveRequestId(null)}
+          requestId={activeRequest?.requestId || null}
+          leadId={activeRequest?.leadId || null}
+          open={!!activeRequest}
+          onClose={() => setActiveRequest(null)}
           canEdit={canEditRequest}
+          onDelete={(leadId) => {
+            const lead = leads.find((l) => l.id === leadId);
+            if (lead) handleDeleteLead(lead);
+            setActiveRequest(null);
+          }}
         />
       </div>
     </HexaLayout>
