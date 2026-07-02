@@ -1,10 +1,68 @@
 // Guarded PWA service worker registration for HexaOS.
-// Follows the Lovable PWA skill: never register in dev / Lovable preview / iframe,
-// supports ?sw=off kill switch, and unregisters stale SWs in refused contexts.
-
-type UpdateCallback = (reload: () => void) => void;
+// Uses `virtual:pwa-register` from vite-plugin-pwa to control the update flow.
+// - Never registers in dev / Lovable preview / iframe
+// - Supports ?sw=off kill switch
+// - Unregisters stale SWs in refused contexts
+// - Exposes a tiny pub/sub store the UI can subscribe to
 
 const SW_PATH = "/sw.js";
+const REFRESHING_KEY = "hexaos.sw.refreshing";
+
+export type PwaUpdateState = {
+  needRefresh: boolean;
+  offlineReady: boolean;
+  updateAvailableAt: number | null;
+  updating: boolean;
+};
+
+type Listener = (s: PwaUpdateState) => void;
+
+const state: PwaUpdateState = {
+  needRefresh: false,
+  offlineReady: false,
+  updateAvailableAt: null,
+  updating: false,
+};
+
+const listeners = new Set<Listener>();
+let updateSW: ((reloadPage?: boolean) => Promise<void>) | null = null;
+let registered = false;
+
+function emit() {
+  for (const l of listeners) l({ ...state });
+}
+
+export function subscribePwaUpdate(l: Listener): () => void {
+  listeners.add(l);
+  l({ ...state });
+  return () => listeners.delete(l);
+}
+
+export function getPwaUpdateState(): PwaUpdateState {
+  return { ...state };
+}
+
+export async function updateApp(): Promise<void> {
+  if (!updateSW) {
+    // Fallback: hard reload
+    window.location.reload();
+    return;
+  }
+  state.updating = true;
+  emit();
+  try {
+    await updateSW(true);
+  } catch (err) {
+    console.warn("[pwa] updateSW failed", err);
+    // Force reload as last resort
+    window.location.reload();
+  }
+}
+
+export function dismissUpdate(): void {
+  state.needRefresh = false;
+  emit();
+}
 
 function isRefusedContext(): boolean {
   if (!import.meta.env.PROD) return true;
@@ -40,25 +98,53 @@ async function unregisterMatching(): Promise<void> {
   }
 }
 
-export async function registerPwa(onUpdateAvailable?: UpdateCallback): Promise<void> {
+/**
+ * Register the PWA service worker and wire up the update store.
+ * Safe to call multiple times — registration only runs once.
+ */
+export async function registerPwa(): Promise<void> {
+  if (registered) return;
+  registered = true;
+
   if (isRefusedContext()) {
     await unregisterMatching();
     return;
   }
   if (!("serviceWorker" in navigator)) return;
 
-  try {
-    const { Workbox } = await import("workbox-window");
-    const wb = new Workbox(SW_PATH);
-
-    wb.addEventListener("waiting", () => {
-      onUpdateAvailable?.(() => {
-        wb.addEventListener("controlling", () => window.location.reload());
-        wb.messageSkipWaiting();
-      });
+  // Guard against reload loops after controllerchange
+  if ("serviceWorker" in navigator) {
+    let refreshing = sessionStorage.getItem(REFRESHING_KEY) === "1";
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      sessionStorage.setItem(REFRESHING_KEY, "1");
+      window.location.reload();
     });
+    // Clear the flag once the page has actually reloaded and completed load
+    window.addEventListener("load", () => {
+      // Small delay so we don't clear before the reload path finishes
+      setTimeout(() => sessionStorage.removeItem(REFRESHING_KEY), 1000);
+    });
+  }
 
-    await wb.register();
+  try {
+    const { registerSW } = await import("virtual:pwa-register");
+    updateSW = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        state.needRefresh = true;
+        state.updateAvailableAt = Date.now();
+        emit();
+      },
+      onOfflineReady() {
+        state.offlineReady = true;
+        emit();
+      },
+      onRegisterError(err) {
+        console.warn("[pwa] registration error", err);
+      },
+    });
   } catch (err) {
     console.warn("[pwa] registration failed", err);
   }
