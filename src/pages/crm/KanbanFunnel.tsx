@@ -402,6 +402,63 @@ export default function KanbanFunnel() {
                     const lastContact = lead.ultimo_contato || lead.created_at;
                     const hoursInactive = differenceInHours(new Date(), new Date(lastContact));
                     const isInactive = hoursInactive > 72 && !["Ganho", "Perdido"].includes(lead.status);
+                    const isFromRequest = lead.origem === "Via Solicitação";
+                    const reqId = isFromRequest ? extractRequestId(lead.notas) : null;
+                    const req = reqId ? requestsById[reqId] : null;
+
+                    // Summary fields for request-originated cards
+                    const clienteOuEmpresa = req ? (req.cpf ? req.cliente_nome : req.empresa) : lead.empresa;
+                    const catMarcaModelo = req
+                      ? [req.categoria, req.marca, req.modelo].filter(Boolean).join(" • ")
+                      : null;
+                    const preco = req?.preco != null ? Number(req.preco) : Number(lead.valor_estimado) || 0;
+
+                    const commonInner = (
+                      <>
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="text-sm font-medium truncate">{clienteOuEmpresa || lead.nome}</p>
+                          {isInactive && <AISmartBadge agent="Hunter" />}
+                        </div>
+                        {isFromRequest && catMarcaModelo && (
+                          <p className="text-xs text-muted-foreground truncate">{catMarcaModelo}</p>
+                        )}
+                        {!isFromRequest && lead.empresa && (
+                          <p className="text-xs text-muted-foreground">{lead.empresa}</p>
+                        )}
+                        {isFromRequest && (
+                          <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1.5 bg-emerald-100 text-emerald-800 border-emerald-200">
+                            Via Solicitação
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-3 mt-2">
+                          {preco > 0 && (
+                            <span className="text-xs text-hexa-green flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              R$ {preco.toLocaleString("pt-BR")}
+                            </span>
+                          )}
+                          {!isFromRequest && lead.origem && (
+                            <span className="text-xs text-muted-foreground">{lead.origem}</span>
+                          )}
+                        </div>
+                      </>
+                    );
+
+                    if (isFromRequest && reqId) {
+                      return (
+                        <div
+                          key={lead.id}
+                          draggable
+                          onDragStart={() => setDraggedId(lead.id)}
+                          onDoubleClick={() => setActiveRequestId(reqId)}
+                          title="Duplo clique para ver detalhes da solicitação"
+                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                        >
+                          {commonInner}
+                        </div>
+                      );
+                    }
+
                     return (
                       <Link
                         key={lead.id}
@@ -410,27 +467,7 @@ export default function KanbanFunnel() {
                         onDragStart={() => setDraggedId(lead.id)}
                         className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
                       >
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="text-sm font-medium truncate">{lead.nome}</p>
-                          {isInactive && <AISmartBadge agent="Hunter" />}
-                        </div>
-                        {lead.empresa && <p className="text-xs text-muted-foreground">{lead.empresa}</p>}
-                        {lead.origem === "Via Solicitação" && (
-                          <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1.5 bg-emerald-100 text-emerald-800 border-emerald-200">
-                            Via Solicitação
-                          </Badge>
-                        )}
-                        <div className="flex items-center gap-3 mt-2">
-                          {lead.valor_estimado > 0 && (
-                            <span className="text-xs text-hexa-green flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              R$ {Number(lead.valor_estimado).toLocaleString("pt-BR")}
-                            </span>
-                          )}
-                          {lead.origem && lead.origem !== "Via Solicitação" && (
-                            <span className="text-xs text-muted-foreground">{lead.origem}</span>
-                          )}
-                        </div>
+                        {commonInner}
                       </Link>
                     );
                   })}
