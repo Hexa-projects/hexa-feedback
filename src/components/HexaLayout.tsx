@@ -237,8 +237,15 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       );
     }
 
-    // Group with children
-    const isAnyChildActive = item.children.some(c => isChildActive(c.to));
+    // Group with children — pick single active child using longest-prefix match
+    const matchesChild = (to: string) => {
+      if (to === "/home") return location.pathname === "/home";
+      return location.pathname === to || location.pathname.startsWith(to + "/");
+    };
+    const activeChildTo = item.children
+      .filter(c => !c.wip && matchesChild(c.to))
+      .sort((a, b) => b.to.length - a.to.length)[0]?.to;
+    const isAnyChildActive = !!activeChildTo;
     const isOpen = openGroups[item.id] ?? false;
     const isHighlighted = item.id === "nucleo_ai";
 
@@ -272,7 +279,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
                   child.wip
                     ? "text-sidebar-foreground/30 cursor-default"
-                    : isChildActive(child.to)
+                    : child.to === activeChildTo
                     ? "bg-sidebar-accent text-sidebar-primary font-medium"
                     : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 }`}
