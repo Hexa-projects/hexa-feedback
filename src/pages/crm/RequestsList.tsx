@@ -730,8 +730,8 @@ export default function RequestsList() {
         </Card>
         ) : (
         /* Kanban */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {(["pendente", "aprovada"] as const).map((col) => {
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {(["pendente", "aprovada", "reprovada"] as const).map((col) => {
             const colItems = filtered.filter((r) => r.status === col);
             return (
               <div
@@ -741,11 +741,15 @@ export default function RequestsList() {
                   if (!canEditStatus || !draggedId) return;
                   const r = items.find((x) => x.id === draggedId);
                   setDraggedId(null);
-                  if (r) await changeStatus(r, col);
+                  if (!r || r.status !== "pendente") return;
+                  if (col === "aprovada") await approveRequest(r);
+                  else if (col === "reprovada") openRejectDialog(r);
                 }}
                 className={cn(
                   "bg-muted/30 rounded-xl border-t-4 p-3 min-h-[300px]",
-                  col === "pendente" ? "border-t-yellow-400" : "border-t-green-400",
+                  col === "pendente" ? "border-t-yellow-400"
+                    : col === "aprovada" ? "border-t-green-400"
+                    : "border-t-red-400",
                 )}
               >
                 <div className="flex items-center justify-between mb-3">
