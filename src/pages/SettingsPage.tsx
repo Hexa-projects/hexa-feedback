@@ -199,7 +199,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <Input
-          placeholder="Buscar por nome ou setor..."
+          placeholder="Buscar por nome, e-mail ou setor..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="max-w-sm"
