@@ -252,6 +252,7 @@ export default function RequestsList() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [docType, setDocType] = useState<"cnpj" | "cpf">("cnpj");
   const [form, setForm] = useState({ ...emptyForm });
   const [detail, setDetail] = useState<any | null>(null);
 
