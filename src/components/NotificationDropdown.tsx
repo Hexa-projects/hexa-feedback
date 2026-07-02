@@ -60,16 +60,15 @@ export default function NotificationDropdown() {
     if (!n.lida) markAsRead(n.id);
     const meta = (n.metadata || {}) as Record<string, any>;
 
-    // Commercial request notifications → always deep-link to the request modal
-    const isRequestNotif =
-      meta.event_type === "commercial_request_pending_approval" ||
-      !!meta.request_id ||
-      (n.link || "").startsWith("/crm/requests");
-
     let target = n.link || "";
-
-    if (isRequestNotif && meta.request_id) {
-      target = `/crm/requests?request=${encodeURIComponent(meta.request_id)}&view=list`;
+    // Deep-link fallback: if link is missing but metadata has a request_id,
+    // derive the detail route.
+    if (!target && meta.request_id) {
+      target = `/crm/requests/${meta.request_id}`;
+    }
+    // Retro-compat: older notifications may have link="/crm/requests" without id
+    if (target === "/crm/requests" && meta.request_id) {
+      target = `/crm/requests/${meta.request_id}`;
     }
 
     if (!target) {
