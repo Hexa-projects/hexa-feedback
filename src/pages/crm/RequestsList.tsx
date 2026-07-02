@@ -372,33 +372,107 @@ export default function RequestsList() {
     setCepLoading(false);
   };
 
+  // Normaliza a resposta de diferentes provedores públicos de CNPJ
+  // em um formato único usado pelo formulário.
+  const normalizeCnpjPayload = (raw: any) => {
+    if (!raw) return null;
+    // BrasilAPI: { razao_social, nome_fantasia, cep, logradouro, bairro, municipio, uf, ddd_telefone_1, email, ... }
+    // publica.cnpj.ws: { razao_social, estabelecimento: { cep, logradouro, bairro, cidade:{nome}, estado:{sigla}, ddd1, telefone1, email } }
+    // receitaws-proxy: { nome, fantasia, cep, logradouro, bairro, municipio, uf, telefone, email }
+    const est = raw?.estabelecimento || {};
+    const razao =
+      raw?.razao_social ||
+      raw?.nome ||
+      est?.nome_fantasia ||
+      raw?.nome_fantasia ||
+      "";
+    const cep = raw?.cep || est?.cep || "";
+    const logradouro = raw?.logradouro || est?.logradouro || "";
+    const numero = raw?.numero || est?.numero || "";
+    const complemento = raw?.complemento || est?.complemento || "";
+    const bairro = raw?.bairro || est?.bairro || "";
+    const municipio = raw?.municipio || est?.cidade?.nome || est?.municipio || "";
+    const uf = raw?.uf || est?.estado?.sigla || est?.uf || "";
+    const telefone =
+      raw?.ddd_telefone_1 ||
+      raw?.telefone ||
+      (est?.ddd1 && est?.telefone1 ? `${est.ddd1}${est.telefone1}` : "") ||
+      "";
+    const email = raw?.email || est?.email || "";
+    if (!razao && !cep && !logradouro) return null;
+    return { razao, cep, logradouro, numero, complemento, bairro, municipio, uf, telefone, email };
+  };
+
   const fetchCNPJ = async (cnpj: string) => {
     const clean = cnpj.replace(/\D/g, "");
     if (clean.length !== 14) return;
     setCnpjLoading(true);
-    try {
-      const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
-      const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`,
-        { headers: { Authorization: `Bearer ${anonKey}`, apikey: anonKey } }
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      setForm((f) => ({
-        ...f,
-        empresa: data?.nome || f.empresa,
-        cep_empresa: data?.cep ? maskCEP(String(data.cep)) : f.cep_empresa,
-        rua_empresa: data?.logradouro || f.rua_empresa,
-        bairro_empresa: data?.bairro || f.bairro_empresa,
-        cidade_empresa: data?.municipio || f.cidade_empresa,
-        uf_empresa: data?.uf || f.uf_empresa,
-      }));
-    } catch {
-      // falha silenciosa — mantém campo editável manualmente
-    } finally {
-      setCnpjLoading(false);
+
+    // Cascata de provedores públicos (sem custo/token). Retornamos na 1ª que responder.
+    const providers: Array<() => Promise<any>> = [
+      // 1) BrasilAPI (Receita Federal — CORS aberto)
+      async () => {
+        const r = await fetchWithTimeout(
+          `https://brasilapi.com.br/api/cnpj/v1/${clean}`,
+          6000
+        );
+        if (!r.ok) throw new Error("brasilapi");
+        return r.json();
+      },
+      // 2) publica.cnpj.ws (Receita Federal — CORS aberto, gratuita)
+      async () => {
+        const r = await fetchWithTimeout(
+          `https://publica.cnpj.ws/cnpj/${clean}`,
+          6000
+        );
+        if (!r.ok) throw new Error("cnpjws");
+        return r.json();
+      },
+      // 3) Proxy interno (ReceitaWS) — fallback
+      async () => {
+        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const r = await fetchWithTimeout(
+          `https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`,
+          8000
+        );
+        if (!r.ok) throw new Error("receitaws");
+        return r.json();
+      },
+    ];
+
+    let normalized: ReturnType<typeof normalizeCnpjPayload> = null;
+    for (const p of providers) {
+      try {
+        const raw = await p();
+        normalized = normalizeCnpjPayload(raw);
+        if (normalized) break;
+      } catch {
+        // segue para próximo provedor
+      }
     }
+
+    if (!normalized) {
+      setCnpjLoading(false);
+      toast.error("Não foi possível consultar este CNPJ agora. Preencha manualmente.");
+      return;
+    }
+
+    setForm((f) => ({
+      ...f,
+      empresa: normalized!.razao || f.empresa,
+      cep_empresa: normalized!.cep ? maskCEP(String(normalized!.cep)) : f.cep_empresa,
+      rua_empresa: normalized!.logradouro || f.rua_empresa,
+      numero_empresa: normalized!.numero || f.numero_empresa,
+      complemento_empresa: normalized!.complemento || f.complemento_empresa,
+      bairro_empresa: normalized!.bairro || f.bairro_empresa,
+      cidade_empresa: normalized!.municipio || f.cidade_empresa,
+      uf_empresa: normalized!.uf || f.uf_empresa,
+      telefone: f.telefone || normalized!.telefone || "",
+      email_1: f.email_1 || normalized!.email || "",
+    }));
+    toast.success("Dados do CNPJ preenchidos automaticamente");
+    setCnpjLoading(false);
   };
 
   const load = async () => {
