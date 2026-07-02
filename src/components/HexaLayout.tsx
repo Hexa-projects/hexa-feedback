@@ -64,6 +64,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Negociações", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
+      { to: "/crm/lixeira", label: "Lixeira", icon: Trash2, roles: ["admin", "gestor"] },
     ],
   },
   {
