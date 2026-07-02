@@ -355,7 +355,53 @@ export default function RequestsList() {
     load();
   }, [user]);
 
-  const filtered = useMemo(() => {
+  // Cria lead no Funil de Vendas ("Novo Negócio") a partir de uma solicitação aprovada
+  const createLeadFromRequest = async (r: any) => {
+    if (!user) return;
+    const nome = r.empresa || "Solicitação aprovada";
+    const notas = [
+      "Origem: Solicitação Comercial aprovada",
+      `ID solicitação: ${r.id}`,
+      r.tipo && `Tipo: ${r.tipo}`,
+      r.equipamento && `Equipamento: ${r.equipamento}`,
+      r.responsavel_comercial && `Vendedor(a): ${r.responsavel_comercial}`,
+    ].filter(Boolean).join("\n");
+    const { error } = await (supabase as any).from("leads").insert({
+      nome,
+      empresa: r.empresa || "",
+      email: r.email_1 || "",
+      telefone: r.telefone || "",
+      status: "Novo Negócio",
+      funil: "vendas",
+      valor_estimado: Number(r.preco) || 0,
+      origem: "Via Solicitação",
+      notas,
+      user_id: user.id,
+      ultimo_contato: new Date().toISOString(),
+    });
+    if (error) toast.error("Solicitação aprovada, mas falhou ao criar negócio: " + error.message);
+    else toast.success("Negócio criado no Funil de Vendas");
+  };
+
+  const changeStatus = async (r: any, newStatus: "pendente" | "aprovada") => {
+    if (!canEditStatus) return;
+    if (r.status === newStatus) return;
+    setStatusSaving(true);
+    const { error } = await (supabase as any)
+      .from("commercial_requests")
+      .update({ status: newStatus })
+      .eq("id", r.id);
+    setStatusSaving(false);
+    if (error) return toast.error("Erro ao atualizar status: " + error.message);
+    setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: newStatus } : x)));
+    setDetail((d: any) => (d && d.id === r.id ? { ...d, status: newStatus } : d));
+    if (newStatus === "aprovada" && r.status !== "aprovada") {
+      await createLeadFromRequest({ ...r, status: newStatus });
+    } else {
+      toast.success("Status atualizado");
+    }
+  };
+
     return items.filter((r) => {
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
       if (!search) return true;
