@@ -212,7 +212,22 @@ export default function OnboardingChatPage() {
               variant="ghost"
               size="sm"
               className="text-muted-foreground"
-              onClick={() => navigate("/home")}
+              onClick={async () => {
+                try {
+                  if (profile?.id) {
+                    const { error } = await supabase
+                      .from("profiles")
+                      .update({ onboarding_completo: true })
+                      .eq("id", profile.id);
+                    if (error) throw error;
+                    await refreshProfile();
+                  }
+                  navigate("/home", { replace: true });
+                } catch (e: any) {
+                  console.error("Erro ao sair do onboarding:", e);
+                  toast.error(e.message || "Não foi possível sair. Tente novamente.");
+                }
+              }}
             >
               Sair
             </Button>
