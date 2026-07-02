@@ -23,7 +23,7 @@ import {
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
-import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2, List, LayoutGrid, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -231,7 +231,8 @@ const parsePercent = (v: string) => {
 };
 
 export default function RequestsList() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canEditStatus = role === "admin" || role === "gestor";
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -245,6 +246,9 @@ export default function RequestsList() {
   const [docType, setDocType] = useState<"cnpj" | "cpf">("cnpj");
   const [form, setForm] = useState({ ...emptyForm });
   const [detail, setDetail] = useState<any | null>(null);
+  const [view, setView] = useState<"list" | "kanban">("list");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
@@ -350,6 +354,53 @@ export default function RequestsList() {
     if (!user) { setLoading(false); return; }
     load();
   }, [user]);
+
+  // Cria lead no Funil de Vendas ("Novo Negócio") a partir de uma solicitação aprovada
+  const createLeadFromRequest = async (r: any) => {
+    if (!user) return;
+    const nome = r.empresa || "Solicitação aprovada";
+    const notas = [
+      "Origem: Solicitação Comercial aprovada",
+      `ID solicitação: ${r.id}`,
+      r.tipo && `Tipo: ${r.tipo}`,
+      r.equipamento && `Equipamento: ${r.equipamento}`,
+      r.responsavel_comercial && `Vendedor(a): ${r.responsavel_comercial}`,
+    ].filter(Boolean).join("\n");
+    const { error } = await (supabase as any).from("leads").insert({
+      nome,
+      empresa: r.empresa || "",
+      email: r.email_1 || "",
+      telefone: r.telefone || "",
+      status: "Novo Negócio",
+      funil: "vendas",
+      valor_estimado: Number(r.preco) || 0,
+      origem: "Via Solicitação",
+      notas,
+      user_id: user.id,
+      ultimo_contato: new Date().toISOString(),
+    });
+    if (error) toast.error("Solicitação aprovada, mas falhou ao criar negócio: " + error.message);
+    else toast.success("Negócio criado no Funil de Vendas");
+  };
+
+  const changeStatus = async (r: any, newStatus: "pendente" | "aprovada") => {
+    if (!canEditStatus) return;
+    if (r.status === newStatus) return;
+    setStatusSaving(true);
+    const { error } = await (supabase as any)
+      .from("commercial_requests")
+      .update({ status: newStatus })
+      .eq("id", r.id);
+    setStatusSaving(false);
+    if (error) return toast.error("Erro ao atualizar status: " + error.message);
+    setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: newStatus } : x)));
+    setDetail((d: any) => (d && d.id === r.id ? { ...d, status: newStatus } : d));
+    if (newStatus === "aprovada" && r.status !== "aprovada") {
+      await createLeadFromRequest({ ...r, status: newStatus });
+    } else {
+      toast.success("Status atualizado");
+    }
+  };
 
   const filtered = useMemo(() => {
     return items.filter((r) => {
@@ -491,10 +542,36 @@ export default function RequestsList() {
               Registre e acompanhe solicitações comerciais de clientes.
             </p>
           </div>
-          <Button onClick={() => setOpen(true)} className="gap-1">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Solicitação
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-input bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => setView("list")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-[5px] transition-colors",
+                  view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Visualização em lista"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("kanban")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-[5px] transition-colors",
+                  view === "kanban" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Visualização em kanban"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+            <Button onClick={() => setOpen(true)} className="gap-1">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Solicitação
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
@@ -537,7 +614,8 @@ export default function RequestsList() {
           </CardContent>
         </Card>
 
-        {/* Tabela */}
+        {view === "list" ? (
+        /* Tabela */
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
@@ -602,6 +680,68 @@ export default function RequestsList() {
             )}
           </CardContent>
         </Card>
+        ) : (
+        /* Kanban */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {(["pendente", "aprovada"] as const).map((col) => {
+            const colItems = filtered.filter((r) => r.status === col);
+            return (
+              <div
+                key={col}
+                onDragOver={(e) => { if (canEditStatus) e.preventDefault(); }}
+                onDrop={async () => {
+                  if (!canEditStatus || !draggedId) return;
+                  const r = items.find((x) => x.id === draggedId);
+                  setDraggedId(null);
+                  if (r) await changeStatus(r, col);
+                }}
+                className={cn(
+                  "bg-muted/30 rounded-xl border-t-4 p-3 min-h-[300px]",
+                  col === "pendente" ? "border-t-yellow-400" : "border-t-green-400",
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold capitalize">{col}</h3>
+                  <span className="text-xs bg-muted rounded-full px-2 py-0.5">{colItems.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {colItems.map((r) => (
+                    <div
+                      key={r.id}
+                      draggable={canEditStatus}
+                      onDragStart={() => canEditStatus && setDraggedId(r.id)}
+                      onDoubleClick={() => setDetail(r)}
+                      className={cn(
+                        "p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow select-none",
+                        canEditStatus ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+                      )}
+                    >
+                      <p className="text-xs text-muted-foreground truncate">{r.tipo}</p>
+                      <p className="text-sm font-medium truncate">{r.empresa}</p>
+                      {r.equipamento && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{r.equipamento}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-hexa-green">
+                          {r.preco
+                            ? Number(r.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                            : "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(r.created_at), "dd/MM/yyyy")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {colItems.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">Nenhuma solicitação</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        )}
       </div>
 
       {/* Modal nova solicitação */}
@@ -1173,8 +1313,38 @@ export default function RequestsList() {
 
               <Section title="Outros">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  <ReadField label="Status" value={detail.status?.replace("_", " ")} />
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground flex items-center gap-1">
+                      Status
+                      {!canEditStatus && <Lock className="w-3 h-3" />}
+                    </Label>
+                    {canEditStatus ? (
+                      <Select
+                        value={detail.status === "aprovada" ? "aprovada" : "pendente"}
+                        onValueChange={(v) => changeStatus(detail, v as "pendente" | "aprovada")}
+                        disabled={statusSaving}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="aprovada">Aprovada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="min-h-10 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+                        <Badge className={STATUS_COLORS[detail.status] || ""}>
+                          {detail.status?.replace("_", " ")}
+                        </Badge>
+                      </div>
+                    )}
+                    {!canEditStatus && (
+                      <p className="text-xs text-muted-foreground">
+                        Apenas CEO ou Admin podem alterar o status.
+                      </p>
+                    )}
+                  </div>
                   <div className="md:col-span-2">
                     <ReadField label="Observações" value={detail.observacoes} multiline />
                   </div>
