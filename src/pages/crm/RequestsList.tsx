@@ -675,29 +675,66 @@ export default function RequestsList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Field label="CNPJ">
-                  <Input
-                    placeholder="00.000.000/0000-00"
-                    value={form.cnpj}
-                    disabled={cnpjLoading || !!form.cpf.trim()}
-                    onChange={(e) => {
-                      const masked = maskCNPJ(e.target.value);
-                      setForm({ ...form, cnpj: masked });
-                      if (isValidCNPJ(masked)) fetchCNPJ(masked);
-                    }}
-                  />
-                </Field>
-                <Field label="CPF">
-                  <Input
-                    placeholder="000.000.000-00"
-                    value={form.cpf}
-                    disabled={!!form.cnpj.trim()}
-                    onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
-                  />
-                </Field>
+                <div>
+                  <Label>Tipo de documento *</Label>
+                  <div className="mt-1 inline-flex rounded-md border border-input bg-background p-0.5">
+                    {(["cnpj", "cpf"] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => {
+                          if (docType === opt) return;
+                          setDocType(opt);
+                          setForm({
+                            ...form,
+                            cnpj: "",
+                            cpf: "",
+                            empresa: "",
+                            cep_empresa: "",
+                            rua_empresa: "",
+                            bairro_empresa: "",
+                            cidade_empresa: "",
+                            cliente_nome: "",
+                          });
+                        }}
+                        className={cn(
+                          "px-4 py-1.5 text-sm font-medium rounded-[5px] transition-colors",
+                          docType === opt
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                        aria-pressed={docType === opt}
+                      >
+                        {opt.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {docType === "cnpj" ? (
+                  <Field label="CNPJ">
+                    <Input
+                      placeholder="00.000.000/0000-00"
+                      value={form.cnpj}
+                      disabled={cnpjLoading}
+                      onChange={(e) => {
+                        const masked = maskCNPJ(e.target.value);
+                        setForm({ ...form, cnpj: masked });
+                        if (isValidCNPJ(masked)) fetchCNPJ(masked);
+                      }}
+                    />
+                  </Field>
+                ) : (
+                  <Field label="CPF">
+                    <Input
+                      placeholder="000.000.000-00"
+                      value={form.cpf}
+                      onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
+                    />
+                  </Field>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Preencha <strong>CNPJ</strong> (para empresas) <em>ou</em> <strong>CPF</strong> (para pessoa física) — não os dois.
+                Selecione <strong>CNPJ</strong> (empresa) ou <strong>CPF</strong> (pessoa física).
               </p>
             </Section>
 
