@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -254,6 +255,7 @@ export default function RequestsList() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<any | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (!user) return;
@@ -262,6 +264,26 @@ export default function RequestsList() {
       setIsCeo(!!data);
     })();
   }, [user]);
+
+  // Deep-link: /crm/requests?request=<id>&view=kanban (from notifications)
+  useEffect(() => {
+    const viewParam = searchParams.get("view");
+    if (viewParam === "kanban" || viewParam === "list") setView(viewParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const reqId = searchParams.get("request");
+    if (!reqId || !items.length) return;
+    const found = items.find((r) => r.id === reqId);
+    if (found) {
+      setDetail(found);
+      // Clean the url params after opening
+      const next = new URLSearchParams(searchParams);
+      next.delete("request");
+      next.delete("view");
+      setSearchParams(next, { replace: true });
+    }
+  }, [items, searchParams, setSearchParams]);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
