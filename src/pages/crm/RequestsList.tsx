@@ -561,7 +561,7 @@ export default function RequestsList() {
                       <TableHead>Empresa</TableHead>
                       <TableHead>Equipamento</TableHead>
                       <TableHead>Preço</TableHead>
-                      <TableHead>Prioridade</TableHead>
+                      
                       <TableHead>Status</TableHead>
                       <TableHead>Data</TableHead>
                     </TableRow>
