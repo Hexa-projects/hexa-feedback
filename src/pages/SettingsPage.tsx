@@ -243,13 +243,6 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                     <td className="p-3 hidden lg:table-cell text-muted-foreground text-xs">
                       {u.email || "—"}
                     </td>
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                          {u.nome.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium">{u.nome}</span>
-                      </div>
-                    </td>
                     <td className="p-3 hidden md:table-cell">
                       {editingId === u.id ? (
                         <select
