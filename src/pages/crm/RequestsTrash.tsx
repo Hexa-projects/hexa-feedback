@@ -213,6 +213,75 @@ export default function RequestsTrash() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {leadItems.length} {leadItems.length === 1 ? "card" : "cards"} de negociações na lixeira
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="py-8 text-center text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
+              </div>
+            ) : leadItems.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">Nenhum card de negociação na lixeira.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Etapa anterior</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Excluído em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leadItems.map((l) => {
+                    const info = parseLeadTrashInfo(l.notas);
+                    const deletedAt = info.deletedAt || l.updated_at || l.created_at;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="font-medium">{l.nome || "—"}</TableCell>
+                        <TableCell>{l.empresa || "—"}</TableCell>
+                        <TableCell className="text-xs">{info.prevStatus || "—"}</TableCell>
+                        <TableCell>
+                          {l.valor_estimado != null
+                            ? Number(l.valor_estimado).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {deletedAt ? format(new Date(deletedAt), "dd/MM/yyyy HH:mm") : "—"}
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => restoreLead(l)}
+                            disabled={busyId === l.id}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restaurar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => purgeLead(l)}
+                            disabled={busyId === l.id}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Excluir permanentemente
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </HexaLayout>
   );
