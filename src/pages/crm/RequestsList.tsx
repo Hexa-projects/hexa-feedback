@@ -614,7 +614,8 @@ export default function RequestsList() {
           </CardContent>
         </Card>
 
-        {/* Tabela */}
+        {view === "list" ? (
+        /* Tabela */
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
@@ -679,6 +680,68 @@ export default function RequestsList() {
             )}
           </CardContent>
         </Card>
+        ) : (
+        /* Kanban */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {(["pendente", "aprovada"] as const).map((col) => {
+            const colItems = filtered.filter((r) => r.status === col);
+            return (
+              <div
+                key={col}
+                onDragOver={(e) => { if (canEditStatus) e.preventDefault(); }}
+                onDrop={async () => {
+                  if (!canEditStatus || !draggedId) return;
+                  const r = items.find((x) => x.id === draggedId);
+                  setDraggedId(null);
+                  if (r) await changeStatus(r, col);
+                }}
+                className={cn(
+                  "bg-muted/30 rounded-xl border-t-4 p-3 min-h-[300px]",
+                  col === "pendente" ? "border-t-yellow-400" : "border-t-green-400",
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold capitalize">{col}</h3>
+                  <span className="text-xs bg-muted rounded-full px-2 py-0.5">{colItems.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {colItems.map((r) => (
+                    <div
+                      key={r.id}
+                      draggable={canEditStatus}
+                      onDragStart={() => canEditStatus && setDraggedId(r.id)}
+                      onDoubleClick={() => setDetail(r)}
+                      className={cn(
+                        "p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow select-none",
+                        canEditStatus ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+                      )}
+                    >
+                      <p className="text-xs text-muted-foreground truncate">{r.tipo}</p>
+                      <p className="text-sm font-medium truncate">{r.empresa}</p>
+                      {r.equipamento && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{r.equipamento}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-hexa-green">
+                          {r.preco
+                            ? Number(r.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                            : "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(r.created_at), "dd/MM/yyyy")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {colItems.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">Nenhuma solicitação</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        )}
       </div>
 
       {/* Modal nova solicitação */}
