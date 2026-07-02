@@ -126,19 +126,10 @@ const TIPO_OPTIONS = [
   "Montagem de equipamento",
 ];
 
-const PRIORIDADE_COLORS: Record<string, string> = {
-  baixa: "bg-blue-100 text-blue-800",
-  media: "bg-yellow-100 text-yellow-800",
-  alta: "bg-orange-100 text-orange-800",
-  critica: "bg-red-100 text-red-800",
-};
-
 const STATUS_COLORS: Record<string, string> = {
   pendente: "bg-yellow-100 text-yellow-800",
-  em_analise: "bg-blue-100 text-blue-800",
   aprovada: "bg-green-100 text-green-800",
-  recusada: "bg-red-100 text-red-800",
-  rascunho: "bg-slate-100 text-slate-800",
+  reprovada: "bg-red-100 text-red-800",
 };
 
 const emptyForm = {
