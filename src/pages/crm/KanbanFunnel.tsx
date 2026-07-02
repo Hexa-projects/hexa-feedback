@@ -469,6 +469,17 @@ export default function KanbanFunnel() {
                       </>
                     );
 
+                    const deleteBtn = canEditRequest ? (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteLead(lead, e)}
+                        title="Mover para a Lixeira"
+                        className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    ) : null;
+
                     if (isFromRequest && reqId) {
                       return (
                         <div
@@ -477,24 +488,28 @@ export default function KanbanFunnel() {
                           onDragStart={() => setDraggedId(lead.id)}
                           onDoubleClick={() => setActiveRequestId(reqId)}
                           title="Duplo clique para ver detalhes da solicitação"
-                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                          className="group relative block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
                         >
+                          {deleteBtn}
                           {commonInner}
                         </div>
                       );
                     }
 
                     return (
-                      <Link
-                        key={lead.id}
-                        to={`/crm/${lead.id}`}
-                        draggable
-                        onDragStart={() => setDraggedId(lead.id)}
-                        className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                      >
-                        {commonInner}
-                      </Link>
+                      <div key={lead.id} className="group relative">
+                        {deleteBtn}
+                        <Link
+                          to={`/crm/${lead.id}`}
+                          draggable
+                          onDragStart={() => setDraggedId(lead.id)}
+                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                        >
+                          {commonInner}
+                        </Link>
+                      </div>
                     );
+
                   })}
                 </div>
               </div>
