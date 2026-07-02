@@ -40,6 +40,7 @@ export default function LeadDetail() {
   const [newNote, setNewNote] = useState("");
   const [noteType, setNoteType] = useState("nota");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Proposal form
