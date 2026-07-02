@@ -572,10 +572,14 @@ export default function RequestsList() {
     delete payload.origem_outro;
     delete payload.categoria; delete payload.marca; delete payload.marca_outro;
     delete payload.modelo; delete payload.modelo_outro;
+    // Toda nova solicitação nasce como PENDENTE — aguardando aprovação do CEO.
+    payload.status = "pendente";
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
-    toast.success("Solicitação criada");
+    toast.success("Solicitação enviada para aprovação", {
+      description: "Os CEOs foram notificados para analisar.",
+    });
     setOpen(false);
     setForm({ ...emptyForm });
     load();
