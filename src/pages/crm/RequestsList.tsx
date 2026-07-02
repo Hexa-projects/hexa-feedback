@@ -542,10 +542,36 @@ export default function RequestsList() {
               Registre e acompanhe solicitações comerciais de clientes.
             </p>
           </div>
-          <Button onClick={() => setOpen(true)} className="gap-1">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Solicitação
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-input bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => setView("list")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-[5px] transition-colors",
+                  view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Visualização em lista"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("kanban")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-[5px] transition-colors",
+                  view === "kanban" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Visualização em kanban"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+            <Button onClick={() => setOpen(true)} className="gap-1">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Solicitação
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
