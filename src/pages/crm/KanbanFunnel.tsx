@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X, Trash2 } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +121,7 @@ export default function KanbanFunnel() {
   const canEditRequest = role === "admin" || role === "gestor";
   const [leads, setLeads] = useState<any[]>([]);
   const [requestsById, setRequestsById] = useState<Record<string, any>>({});
-  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  const [activeRequest, setActiveRequest] = useState<{ requestId: string; leadId: string } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [winModalLead, setWinModalLead] = useState<any | null>(null);
   const [funnels, setFunnels] = useState<FunnelDef[]>(() => {
@@ -243,9 +243,7 @@ export default function KanbanFunnel() {
     [leads, selectedFunnel],
   );
 
-  const handleDeleteLead = async (lead: any, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDeleteLead = async (lead: any) => {
     if (!canEditRequest) return;
     if (!window.confirm(`Mover "${lead.nome || lead.empresa || "este card"}" para a Lixeira?`)) return;
     const prevStatus = lead.status || "";
@@ -469,45 +467,31 @@ export default function KanbanFunnel() {
                       </>
                     );
 
-                    const deleteBtn = canEditRequest ? (
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteLead(lead, e)}
-                        title="Mover para a Lixeira"
-                        className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    ) : null;
-
                     if (isFromRequest && reqId) {
                       return (
                         <div
                           key={lead.id}
                           draggable
                           onDragStart={() => setDraggedId(lead.id)}
-                          onDoubleClick={() => setActiveRequestId(reqId)}
+                          onDoubleClick={() => setActiveRequest({ requestId: reqId, leadId: lead.id })}
                           title="Duplo clique para ver detalhes da solicitação"
-                          className="group relative block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
                         >
-                          {deleteBtn}
                           {commonInner}
                         </div>
                       );
                     }
 
                     return (
-                      <div key={lead.id} className="group relative">
-                        {deleteBtn}
-                        <Link
-                          to={`/crm/${lead.id}`}
-                          draggable
-                          onDragStart={() => setDraggedId(lead.id)}
-                          className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                        >
-                          {commonInner}
-                        </Link>
-                      </div>
+                      <Link
+                        key={lead.id}
+                        to={`/crm/${lead.id}`}
+                        draggable
+                        onDragStart={() => setDraggedId(lead.id)}
+                        className="block p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                      >
+                        {commonInner}
+                      </Link>
                     );
 
                   })}
@@ -583,10 +567,16 @@ export default function KanbanFunnel() {
 
         {/* Request Detail Modal (for leads originated from commercial_requests) */}
         <RequestDetailModal
-          requestId={activeRequestId}
-          open={!!activeRequestId}
-          onClose={() => setActiveRequestId(null)}
+          requestId={activeRequest?.requestId || null}
+          leadId={activeRequest?.leadId || null}
+          open={!!activeRequest}
+          onClose={() => setActiveRequest(null)}
           canEdit={canEditRequest}
+          onDelete={(leadId) => {
+            const lead = leads.find((l) => l.id === leadId);
+            if (lead) handleDeleteLead(lead);
+            setActiveRequest(null);
+          }}
         />
       </div>
     </HexaLayout>

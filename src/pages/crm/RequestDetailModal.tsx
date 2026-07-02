@@ -8,16 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Pencil, X, Save } from "lucide-react";
+import { Loader2, Pencil, X, Save, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Props = {
   requestId: string | null;
+  leadId?: string | null;
   open: boolean;
   onClose: () => void;
   canEdit: boolean;
+  onDelete?: (leadId: string) => void;
 };
 
 // Parse "CATEGORIA - MARCA - MODELO" back into parts.
@@ -39,12 +41,13 @@ function splitEndereco(end: string | null | undefined) {
   return { raw, cep };
 }
 
-export default function RequestDetailModal({ requestId, open, onClose, canEdit }: Props) {
+export default function RequestDetailModal({ requestId, leadId, open, onClose, canEdit, onDelete }: Props) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open || !requestId) return;
@@ -107,6 +110,27 @@ export default function RequestDetailModal({ requestId, open, onClose, canEdit }
     toast.success("Solicitação atualizada");
     setData({ ...data, ...patch });
     setEditMode(false);
+  };
+
+  const handleDelete = async () => {
+    if (!leadId) return;
+    if (!window.confirm("Mover este card para a Lixeira?")) return;
+    setDeleting(true);
+    const prevStatus = data?.status || "";
+    const marker = `[TRASH_LEAD_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const { error } = await (supabase as any)
+      .from("leads")
+      .update({ status: "lixeira", notas: `${marker}\n${data?.notas || ""}` } as any)
+      .eq("id", leadId);
+    setDeleting(false);
+    if (error) {
+      console.error("[RequestDetailModal] delete error", error);
+      toast.error("Erro ao mover para a Lixeira");
+      return;
+    }
+    toast.success("Card movido para a Lixeira");
+    onDelete?.(leadId);
+    handleClose();
   };
 
   const hasCnpj = !!(data?.cnpj && String(data.cnpj).trim());
@@ -263,21 +287,27 @@ export default function RequestDetailModal({ requestId, open, onClose, canEdit }
         <DialogFooter className="gap-2">
           {editMode ? (
             <>
-              <Button variant="outline" onClick={() => { setEditMode(false); setForm(data || {}); }} disabled={saving}>
+              <Button variant="outline" onClick={() => { setEditMode(false); setForm(data || {}); }} disabled={saving || deleting}>
                 <X className="w-4 h-4 mr-1" /> Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving || deleting}>
                 {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 Salvar
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleClose}>Fechar</Button>
+              <Button variant="outline" onClick={handleClose} disabled={deleting}>Fechar</Button>
               {canEdit && data && (
-                <Button onClick={() => setEditMode(true)}>
-                  <Pencil className="w-4 h-4 mr-1" /> Editar
-                </Button>
+                <>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleting || !leadId}>
+                    {deleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
+                    Excluir
+                  </Button>
+                  <Button onClick={() => setEditMode(true)} disabled={deleting}>
+                    <Pencil className="w-4 h-4 mr-1" /> Editar
+                  </Button>
+                </>
               )}
             </>
           )}
