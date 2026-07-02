@@ -126,19 +126,10 @@ const TIPO_OPTIONS = [
   "Montagem de equipamento",
 ];
 
-const PRIORIDADE_COLORS: Record<string, string> = {
-  baixa: "bg-blue-100 text-blue-800",
-  media: "bg-yellow-100 text-yellow-800",
-  alta: "bg-orange-100 text-orange-800",
-  critica: "bg-red-100 text-red-800",
-};
-
 const STATUS_COLORS: Record<string, string> = {
   pendente: "bg-yellow-100 text-yellow-800",
-  em_analise: "bg-blue-100 text-blue-800",
   aprovada: "bg-green-100 text-green-800",
-  recusada: "bg-red-100 text-red-800",
-  rascunho: "bg-slate-100 text-slate-800",
+  reprovada: "bg-red-100 text-red-800",
 };
 
 const emptyForm = {
@@ -181,7 +172,6 @@ const emptyForm = {
   comissao: "",
   origem: "",
   origem_outro: "",
-  prioridade: "media",
   status: "pendente",
   observacoes: "",
 };
@@ -431,7 +421,7 @@ export default function RequestsList() {
       ["frete", "Frete"],
       ["comissao", "Comissão"],
       ["origem", "Origem"],
-      ["prioridade", "Prioridade"],
+      
       ["status", "Status"],
       ["observacoes", "Observações"],
     ];
@@ -571,7 +561,7 @@ export default function RequestsList() {
                       <TableHead>Empresa</TableHead>
                       <TableHead>Equipamento</TableHead>
                       <TableHead>Preço</TableHead>
-                      <TableHead>Prioridade</TableHead>
+                      
                       <TableHead>Status</TableHead>
                       <TableHead>Data</TableHead>
                     </TableRow>
@@ -595,11 +585,6 @@ export default function RequestsList() {
                                 currency: "BRL",
                               })
                             : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={PRIORIDADE_COLORS[r.prioridade]}>
-                            {r.prioridade}
-                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={STATUS_COLORS[r.status]}>
@@ -1087,23 +1072,7 @@ export default function RequestsList() {
 
             {/* Outros */}
             <Section title="Outros">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Prioridade">
-                  <Select
-                    value={form.prioridade}
-                    onValueChange={(v) => setForm({ ...form, prioridade: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="critica">Crítica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+              <div className="grid grid-cols-1 gap-4">
                 <Field label="Status">
                   <Select
                     value={form.status}
@@ -1113,23 +1082,19 @@ export default function RequestsList() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="rascunho">Rascunho</SelectItem>
                       <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="em_analise">Em análise</SelectItem>
                       <SelectItem value="aprovada">Aprovada</SelectItem>
-                      <SelectItem value="recusada">Recusada</SelectItem>
+                      <SelectItem value="reprovada">Reprovada</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
-                <div className="md:col-span-2">
-                  <Field label="Observações">
-                    <Textarea
-                      rows={3}
-                      value={form.observacoes}
-                      onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-                    />
-                  </Field>
-                </div>
+                <Field label="Observações">
+                  <Textarea
+                    rows={3}
+                    value={form.observacoes}
+                    onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+                  />
+                </Field>
               </div>
             </Section>
 
@@ -1208,7 +1173,7 @@ export default function RequestsList() {
 
               <Section title="Outros">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ReadField label="Prioridade" value={detail.prioridade} />
+                  
                   <ReadField label="Status" value={detail.status?.replace("_", " ")} />
                   <div className="md:col-span-2">
                     <ReadField label="Observações" value={detail.observacoes} multiline />
