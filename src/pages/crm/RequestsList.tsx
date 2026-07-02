@@ -1077,23 +1077,7 @@ export default function RequestsList() {
 
             {/* Outros */}
             <Section title="Outros">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Prioridade">
-                  <Select
-                    value={form.prioridade}
-                    onValueChange={(v) => setForm({ ...form, prioridade: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="critica">Crítica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+              <div className="grid grid-cols-1 gap-4">
                 <Field label="Status">
                   <Select
                     value={form.status}
@@ -1103,23 +1087,19 @@ export default function RequestsList() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="rascunho">Rascunho</SelectItem>
                       <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="em_analise">Em análise</SelectItem>
                       <SelectItem value="aprovada">Aprovada</SelectItem>
-                      <SelectItem value="recusada">Recusada</SelectItem>
+                      <SelectItem value="reprovada">Reprovada</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
-                <div className="md:col-span-2">
-                  <Field label="Observações">
-                    <Textarea
-                      rows={3}
-                      value={form.observacoes}
-                      onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-                    />
-                  </Field>
-                </div>
+                <Field label="Observações">
+                  <Textarea
+                    rows={3}
+                    value={form.observacoes}
+                    onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+                  />
+                </Field>
               </div>
             </Section>
 
