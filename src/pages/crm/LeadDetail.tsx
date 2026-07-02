@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   ArrowLeft, Save, MessageSquare, Send, FileText, Plus,
-  DollarSign, Calendar, User, Phone, Mail, Building2
+  DollarSign, Calendar, User, Phone, Mail, Building2, Trash2, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 
