@@ -121,7 +121,7 @@ export default function KanbanFunnel() {
   const canEditRequest = role === "admin" || role === "gestor";
   const [leads, setLeads] = useState<any[]>([]);
   const [requestsById, setRequestsById] = useState<Record<string, any>>({});
-  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  const [activeRequest, setActiveRequest] = useState<{ requestId: string; leadId: string } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [winModalLead, setWinModalLead] = useState<any | null>(null);
   const [funnels, setFunnels] = useState<FunnelDef[]>(() => {
