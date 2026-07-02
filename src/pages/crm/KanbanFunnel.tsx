@@ -386,6 +386,11 @@ export default function KanbanFunnel() {
                           {isInactive && <AISmartBadge agent="Hunter" />}
                         </div>
                         {lead.empresa && <p className="text-xs text-muted-foreground">{lead.empresa}</p>}
+                        {lead.origem === "Via Solicitação" && (
+                          <Badge variant="secondary" className="mt-1 text-[10px] py-0 px-1.5 bg-emerald-100 text-emerald-800 border-emerald-200">
+                            Via Solicitação
+                          </Badge>
+                        )}
                         <div className="flex items-center gap-3 mt-2">
                           {lead.valor_estimado > 0 && (
                             <span className="text-xs text-hexa-green flex items-center gap-1">
@@ -393,7 +398,7 @@ export default function KanbanFunnel() {
                               R$ {Number(lead.valor_estimado).toLocaleString("pt-BR")}
                             </span>
                           )}
-                          {lead.origem && (
+                          {lead.origem && lead.origem !== "Via Solicitação" && (
                             <span className="text-xs text-muted-foreground">{lead.origem}</span>
                           )}
                         </div>
