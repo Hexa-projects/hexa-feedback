@@ -221,6 +221,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-3 font-medium">Nome</th>
+                  <th className="text-left p-3 font-medium hidden lg:table-cell">E-mail</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Setor</th>
                   <th className="text-left p-3 font-medium hidden lg:table-cell">Função</th>
                   <th className="text-left p-3 font-medium">Perfil</th>
@@ -232,6 +233,16 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                 {filtered.map(u => (
                   <tr key={u.id} className="border-t hover:bg-muted/30 transition-colors">
                     <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                          {u.nome.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium">{u.nome}</span>
+                      </div>
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground text-xs">
+                      {u.email || "—"}
+                    </td>
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
                           {u.nome.charAt(0).toUpperCase()}
