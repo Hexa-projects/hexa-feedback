@@ -234,10 +234,35 @@ export default function KanbanFunnel() {
   };
 
   // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
+  // Also hide leads that were soft-deleted (status = "lixeira").
   const filteredLeads = useMemo(
-    () => leads.filter((l) => (l.funil ?? "vendas") === selectedFunnel),
+    () =>
+      leads.filter(
+        (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
+      ),
     [leads, selectedFunnel],
   );
+
+  const handleDeleteLead = async (lead: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canEditRequest) return;
+    if (!window.confirm(`Mover "${lead.nome || lead.empresa || "este card"}" para a Lixeira?`)) return;
+    const prevStatus = lead.status || "";
+    const marker = `[TRASH_LEAD_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const newNotas = `${marker}\n${lead.notas || ""}`;
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: "lixeira", notas: newNotas } as any)
+      .eq("id", lead.id);
+    if (error) {
+      toast.error("Erro ao mover para a Lixeira");
+      return;
+    }
+    setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, status: "lixeira", notas: newNotas } : l)));
+    toast.success("Card movido para a Lixeira");
+  };
+
 
   // KPIs
   const totalLeads = filteredLeads.length;
