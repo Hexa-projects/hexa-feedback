@@ -13,6 +13,13 @@ import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
 import { differenceInHours } from "date-fns";
+import RequestDetailModal from "@/pages/crm/RequestDetailModal";
+
+const extractRequestId = (notas: string | null | undefined): string | null => {
+  if (!notas) return null;
+  const m = String(notas).match(/ID solicita[cç][aã]o:\s*([0-9a-f-]{8,})/i);
+  return m ? m[1] : null;
+};
 
 const DEFAULT_COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
 
