@@ -13,12 +13,20 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 const TRASH_MARKER_RE = /^\[TRASH_PREV:([^|\]]+)\|([^\]]+)\]\n?/;
+const TRASH_LEAD_MARKER_RE = /^\[TRASH_LEAD_PREV:([^|\]]*)\|([^\]]+)\]\n?/;
 
 function parseTrashInfo(obs: string | null | undefined): { prevStatus: string; deletedAt: string | null; cleanObs: string } {
   const raw = String(obs || "");
   const m = raw.match(TRASH_MARKER_RE);
   if (!m) return { prevStatus: "pendente", deletedAt: null, cleanObs: raw };
   return { prevStatus: m[1] || "pendente", deletedAt: m[2] || null, cleanObs: raw.replace(TRASH_MARKER_RE, "") };
+}
+
+function parseLeadTrashInfo(notas: string | null | undefined): { prevStatus: string; deletedAt: string | null; cleanNotas: string } {
+  const raw = String(notas || "");
+  const m = raw.match(TRASH_LEAD_MARKER_RE);
+  if (!m) return { prevStatus: "Novo Negócio", deletedAt: null, cleanNotas: raw };
+  return { prevStatus: m[1] || "Novo Negócio", deletedAt: m[2] || null, cleanNotas: raw.replace(TRASH_LEAD_MARKER_RE, "") };
 }
 
 export default function RequestsTrash() {
