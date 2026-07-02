@@ -615,11 +615,8 @@ export default function RequestsList() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="em_analise">Em análise</SelectItem>
-                <SelectItem value="aprovada">Aprovada</SelectItem>
-                <SelectItem value="recusada">Recusada</SelectItem>
-                <SelectItem value="rascunho">Rascunho</SelectItem>
+                <SelectItem value="pendente">Pendente(s)</SelectItem>
+                <SelectItem value="aprovada">Aprovada(s)</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
