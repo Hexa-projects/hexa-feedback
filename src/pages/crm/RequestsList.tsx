@@ -464,7 +464,6 @@ export default function RequestsList() {
       cep_empresa: normalized!.cep ? maskCEP(String(normalized!.cep)) : f.cep_empresa,
       rua_empresa: normalized!.logradouro || f.rua_empresa,
       bairro_empresa: normalized!.bairro || f.bairro_empresa,
-      bairro_empresa: normalized!.bairro || f.bairro_empresa,
       cidade_empresa: normalized!.municipio || f.cidade_empresa,
       uf_empresa: normalized!.uf || f.uf_empresa,
       telefone: f.telefone || normalized!.telefone || "",
