@@ -209,9 +209,8 @@ export default function OnboardingChatPage() {
               </Button>
             )}
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="text-muted-foreground"
               onClick={async () => {
                 try {
                   if (profile?.id) {
@@ -219,13 +218,31 @@ export default function OnboardingChatPage() {
                       .from("profiles")
                       .update({ onboarding_completo: true })
                       .eq("id", profile.id);
-                    if (error) throw error;
-                    await refreshProfile();
+                    if (error) console.warn("update onboarding_completo:", error);
+                    await refreshProfile().catch(() => {});
                   }
-                  navigate("/home", { replace: true });
-                } catch (e: any) {
-                  console.error("Erro ao sair do onboarding:", e);
-                  toast.error(e.message || "Não foi possível sair. Tente novamente.");
+                } finally {
+                  window.location.assign("/home");
+                }
+              }}
+            >
+              Preencher depois
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={async () => {
+                try {
+                  if (profile?.id) {
+                    await supabase
+                      .from("profiles")
+                      .update({ onboarding_completo: true })
+                      .eq("id", profile.id);
+                    await refreshProfile().catch(() => {});
+                  }
+                } finally {
+                  window.location.assign("/home");
                 }
               }}
             >
