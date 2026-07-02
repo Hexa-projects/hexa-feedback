@@ -587,11 +587,6 @@ export default function RequestsList() {
                             : "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge className={PRIORIDADE_COLORS[r.prioridade]}>
-                            {r.prioridade}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
                           <Badge className={STATUS_COLORS[r.status]}>
                             {r.status.replace("_", " ")}
                           </Badge>
