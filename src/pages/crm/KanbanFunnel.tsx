@@ -540,6 +540,14 @@ export default function KanbanFunnel() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Request Detail Modal (for leads originated from commercial_requests) */}
+        <RequestDetailModal
+          requestId={activeRequestId}
+          open={!!activeRequestId}
+          onClose={() => setActiveRequestId(null)}
+          canEdit={canEditRequest}
+        />
       </div>
     </HexaLayout>
   );
