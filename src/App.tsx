@@ -156,6 +156,7 @@ const AppRoutes = () => (
 
       {/* Configurações */}
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+      <Route path="/pwa" element={<PrivateRoute><PwaInstall /></PrivateRoute>} />
 
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
