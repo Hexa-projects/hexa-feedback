@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, Users, KeyRound, FileText, Zap, Plug, Settings2,
   Plus, Trash2, Edit2, Save, X, UserCheck, UserX, RefreshCw,
-  Mail, MessageSquare, Calendar, Check, AlertTriangle
+  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone
 } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
 // ── Types ──
@@ -102,12 +103,13 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-7 h-auto">
             <TabsTrigger value="users" className="text-xs gap-1"><Users className="w-3 h-3" />Usuários</TabsTrigger>
             <TabsTrigger value="permissions" className="text-xs gap-1"><KeyRound className="w-3 h-3" />Permissões</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs gap-1"><FileText className="w-3 h-3" />Templates</TabsTrigger>
             <TabsTrigger value="automations" className="text-xs gap-1"><Zap className="w-3 h-3" />Automações</TabsTrigger>
             <TabsTrigger value="msteams" className="text-xs gap-1"><MessageSquare className="w-3 h-3" />MS Teams</TabsTrigger>
+            <TabsTrigger value="push" className="text-xs gap-1"><BellRing className="w-3 h-3" />Push</TabsTrigger>
             <TabsTrigger value="integrations" className="text-xs gap-1"><Plug className="w-3 h-3" />Integrações</TabsTrigger>
           </TabsList>
 
@@ -116,6 +118,7 @@ export default function SettingsPage() {
           <TabsContent value="templates"><TemplatesTab /></TabsContent>
           <TabsContent value="automations"><AutomationsTab /></TabsContent>
           <TabsContent value="msteams"><MSTeamsTab /></TabsContent>
+          <TabsContent value="push"><PushTab /></TabsContent>
           <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
         </Tabs>
       </div>
