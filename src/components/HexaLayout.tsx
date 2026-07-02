@@ -271,7 +271,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
         {isOpen && (
           <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
-            {item.children.map(child => (
+            {visibleChildren.map(child => (
               <Link
                 key={child.to}
                 to={child.wip ? "#" : child.to}
