@@ -244,7 +244,8 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       if (to === "/home") return location.pathname === "/home";
       return location.pathname === to || location.pathname.startsWith(to + "/");
     };
-    const activeChildTo = item.children
+    const visibleChildren = item.children.filter(c => !c.roles || c.roles.includes(role));
+    const activeChildTo = visibleChildren
       .filter(c => !c.wip && matchesChild(c.to))
       .sort((a, b) => b.to.length - a.to.length)[0]?.to;
     const isAnyChildActive = !!activeChildTo;
