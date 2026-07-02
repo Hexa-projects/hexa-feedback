@@ -1313,8 +1313,38 @@ export default function RequestsList() {
 
               <Section title="Outros">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  <ReadField label="Status" value={detail.status?.replace("_", " ")} />
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground flex items-center gap-1">
+                      Status
+                      {!canEditStatus && <Lock className="w-3 h-3" />}
+                    </Label>
+                    {canEditStatus ? (
+                      <Select
+                        value={detail.status === "aprovada" ? "aprovada" : "pendente"}
+                        onValueChange={(v) => changeStatus(detail, v as "pendente" | "aprovada")}
+                        disabled={statusSaving}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="aprovada">Aprovada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="min-h-10 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+                        <Badge className={STATUS_COLORS[detail.status] || ""}>
+                          {detail.status?.replace("_", " ")}
+                        </Badge>
+                      </div>
+                    )}
+                    {!canEditStatus && (
+                      <p className="text-xs text-muted-foreground">
+                        Apenas CEO ou Admin podem alterar o status.
+                      </p>
+                    )}
+                  </div>
                   <div className="md:col-span-2">
                     <ReadField label="Observações" value={detail.observacoes} multiline />
                   </div>
