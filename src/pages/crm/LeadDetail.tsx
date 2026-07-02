@@ -77,6 +77,25 @@ export default function LeadDetail() {
     setSaving(false);
   };
 
+  const handleDelete = async () => {
+    if (!lead) return;
+    if (!window.confirm(`Mover "${lead.nome || lead.empresa || "este lead"}" para a Lixeira?`)) return;
+    setDeleting(true);
+    const prevStatus = lead.status || "";
+    const marker = `[TRASH_LEAD_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const { error } = await supabase
+      .from("leads")
+      .update({ status: "lixeira", notas: `${marker}\n${lead.notas || ""}` } as any)
+      .eq("id", lead.id);
+    setDeleting(false);
+    if (error) {
+      toast.error("Erro ao mover para a Lixeira");
+      return;
+    }
+    toast.success("Lead movido para a Lixeira");
+    navigate("/crm");
+  };
+
   const handleAddNote = async () => {
     if (!newNote.trim() || !user || !id) return;
     const { data, error } = await supabase.from("lead_interactions").insert({
