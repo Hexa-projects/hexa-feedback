@@ -232,7 +232,9 @@ const parsePercent = (v: string) => {
 
 export default function RequestsList() {
   const { user, role } = useAuth();
-  const canEditStatus = role === "admin" || role === "gestor";
+  const [isCeo, setIsCeo] = useState(false);
+  // CEO/Admin podem aprovar/reprovar/excluir.
+  const canEditStatus = role === "admin" || role === "gestor" || isCeo;
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -249,6 +251,17 @@ export default function RequestsList() {
   const [view, setView] = useState<"list" | "kanban">("list");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await (supabase as any).rpc("is_ceo_or_admin", { _user: user.id });
+      setIsCeo(!!data);
+    })();
+  }, [user]);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
@@ -373,62 +386,71 @@ export default function RequestsList() {
     load();
   }, [user]);
 
-  // Cria lead no Funil de Vendas ("Novo Negócio") a partir de uma solicitação aprovada
-  const createLeadFromRequest = async (r: any) => {
-    if (!user) return;
-    const nome = r.empresa || "Solicitação aprovada";
-    const notas = [
-      "Funil: Funil de Vendas",
-      "Etapa: Novo Negócio",
-      "Origem: Solicitação Comercial aprovada (Via Solicitação)",
-      `ID solicitação: ${r.id}`,
-      r.tipo && `Tipo: ${r.tipo}`,
-      r.equipamento && `Equipamento: ${r.equipamento}`,
-      r.responsavel_comercial && `Vendedor(a): ${r.responsavel_comercial}`,
-    ].filter(Boolean).join("\n");
-    // Payload uses only columns that exist in public.leads
-    const payload: Record<string, any> = {
-      nome,
-      empresa: r.empresa || null,
-      email: r.email_1 || null,
-      telefone: r.telefone || null,
-      status: "Novo Negócio",
-      valor_estimado: Number(r.preco) || 0,
-      origem: "Via Solicitação",
-      notas,
-      user_id: user.id,
-      ultimo_contato: new Date().toISOString(),
-    };
-    const { data, error } = await (supabase as any).from("leads").insert(payload).select().single();
-    if (error) {
-      console.error("[createLeadFromRequest] Falha ao inserir lead:", {
-        payload,
-        supabaseError: error,
-      });
-      toast.error("Solicitação aprovada, mas falhou ao criar negócio: " + error.message);
-      return;
-    }
-    console.info("[createLeadFromRequest] Lead criado:", data);
-    toast.success("Negócio criado no Funil de Vendas");
+  // Aprovação via RPC segura (SECURITY DEFINER). Cria o lead no funil de vendas.
+  const approveRequest = async (r: any) => {
+    if (!canEditStatus) return;
+    if (r.status !== "pendente") return;
+    setStatusSaving(true);
+    const { data, error } = await (supabase as any).rpc("approve_commercial_request", {
+      request_id: r.id,
+    });
+    setStatusSaving(false);
+    if (error) return toast.error("Erro ao aprovar: " + error.message);
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === r.id
+          ? { ...x, status: "aprovada", converted_lead_id: data, approved_at: new Date().toISOString() }
+          : x
+      )
+    );
+    setDetail((d: any) =>
+      d && d.id === r.id
+        ? { ...d, status: "aprovada", converted_lead_id: data, approved_at: new Date().toISOString() }
+        : d
+    );
+    toast.success("Solicitação aprovada — negócio criado em Vendas › Novo Negócio", {
+      action: {
+        label: "Ver no Kanban",
+        onClick: () => window.location.assign("/crm/kanban"),
+      },
+    });
   };
 
-  const changeStatus = async (r: any, newStatus: "pendente" | "aprovada") => {
+  const openRejectDialog = (r: any) => {
     if (!canEditStatus) return;
-    if (r.status === newStatus) return;
+    if (r.status !== "pendente") return;
+    setRejectTarget(r);
+    setRejectReason("");
+    setRejectOpen(true);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (!reason) return toast.error("Informe o motivo da reprovação");
     setStatusSaving(true);
-    const { error } = await (supabase as any)
-      .from("commercial_requests")
-      .update({ status: newStatus })
-      .eq("id", r.id);
+    const { error } = await (supabase as any).rpc("reject_commercial_request", {
+      request_id: rejectTarget.id,
+      reason,
+    });
     setStatusSaving(false);
-    if (error) return toast.error("Erro ao atualizar status: " + error.message);
-    setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: newStatus } : x)));
-    setDetail((d: any) => (d && d.id === r.id ? { ...d, status: newStatus } : d));
-    if (newStatus === "aprovada" && r.status !== "aprovada") {
-      await createLeadFromRequest({ ...r, status: newStatus });
-    } else {
-      toast.success("Status atualizado");
-    }
+    if (error) return toast.error("Erro ao reprovar: " + error.message);
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === rejectTarget.id
+          ? { ...x, status: "reprovada", rejection_reason: reason, rejected_at: new Date().toISOString() }
+          : x
+      )
+    );
+    setDetail((d: any) =>
+      d && d.id === rejectTarget.id
+        ? { ...d, status: "reprovada", rejection_reason: reason, rejected_at: new Date().toISOString() }
+        : d
+    );
+    setRejectOpen(false);
+    setRejectTarget(null);
+    setRejectReason("");
+    toast.success("Solicitação reprovada");
   };
 
   const filtered = useMemo(() => {
@@ -550,10 +572,14 @@ export default function RequestsList() {
     delete payload.origem_outro;
     delete payload.categoria; delete payload.marca; delete payload.marca_outro;
     delete payload.modelo; delete payload.modelo_outro;
+    // Toda nova solicitação nasce como PENDENTE — aguardando aprovação do CEO.
+    payload.status = "pendente";
     const { error } = await (supabase as any).from("commercial_requests").insert(payload);
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
-    toast.success("Solicitação criada");
+    toast.success("Solicitação enviada para aprovação", {
+      description: "Os CEOs foram notificados para analisar.",
+    });
     setOpen(false);
     setForm({ ...emptyForm });
     load();
@@ -708,8 +734,8 @@ export default function RequestsList() {
         </Card>
         ) : (
         /* Kanban */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {(["pendente", "aprovada"] as const).map((col) => {
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {(["pendente", "aprovada", "reprovada"] as const).map((col) => {
             const colItems = filtered.filter((r) => r.status === col);
             return (
               <div
@@ -719,11 +745,15 @@ export default function RequestsList() {
                   if (!canEditStatus || !draggedId) return;
                   const r = items.find((x) => x.id === draggedId);
                   setDraggedId(null);
-                  if (r) await changeStatus(r, col);
+                  if (!r || r.status !== "pendente") return;
+                  if (col === "aprovada") await approveRequest(r);
+                  else if (col === "reprovada") openRejectDialog(r);
                 }}
                 className={cn(
                   "bg-muted/30 rounded-xl border-t-4 p-3 min-h-[300px]",
-                  col === "pendente" ? "border-t-yellow-400" : "border-t-green-400",
+                  col === "pendente" ? "border-t-yellow-400"
+                    : col === "aprovada" ? "border-t-green-400"
+                    : "border-t-red-400",
                 )}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -1344,30 +1374,51 @@ export default function RequestsList() {
                       Status
                       {!canEditStatus && <Lock className="w-3 h-3" />}
                     </Label>
-                    {canEditStatus ? (
-                      <Select
-                        value={detail.status === "aprovada" ? "aprovada" : "pendente"}
-                        onValueChange={(v) => changeStatus(detail, v as "pendente" | "aprovada")}
-                        disabled={statusSaving}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="aprovada">Aprovada</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="min-h-10 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
-                        <Badge className={STATUS_COLORS[detail.status] || ""}>
-                          {detail.status?.replace("_", " ")}
-                        </Badge>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={STATUS_COLORS[detail.status] || ""}>
+                        {detail.status === "pendente"
+                          ? "Pendente"
+                          : detail.status === "aprovada"
+                          ? "Aprovada"
+                          : detail.status === "reprovada"
+                          ? "Reprovada"
+                          : detail.status}
+                      </Badge>
+                      {detail.status === "pendente" && (
+                        <span className="text-xs text-muted-foreground">
+                          Aguardando aprovação do CEO
+                        </span>
+                      )}
+                    </div>
+                    {canEditStatus && detail.status === "pendente" && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveRequest(detail)}
+                          disabled={statusSaving}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRejectDialog(detail)}
+                          disabled={statusSaving}
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          Reprovar
+                        </Button>
                       </div>
                     )}
-                    {!canEditStatus && (
+                    {detail.status === "reprovada" && detail.rejection_reason && (
+                      <p className="text-xs text-red-600 mt-2">
+                        <strong>Motivo:</strong> {detail.rejection_reason}
+                      </p>
+                    )}
+                    {!canEditStatus && detail.status === "pendente" && (
                       <p className="text-xs text-muted-foreground">
-                        Apenas CEO ou Admin podem alterar o status.
+                        Apenas CEO ou Admin podem aprovar/reprovar.
                       </p>
                     )}
                   </div>
@@ -1399,6 +1450,36 @@ export default function RequestsList() {
             </div>
             <Button variant="outline" onClick={() => setDetail(null)}>
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de reprovação — motivo obrigatório */}
+      <Dialog open={rejectOpen} onOpenChange={(o) => !o && setRejectOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reprovar solicitação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da reprovação</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              placeholder="Explique brevemente por que essa solicitação não pode seguir."
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={statusSaving}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmReject}
+              disabled={statusSaving || !rejectReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirmar reprovação
             </Button>
           </DialogFooter>
         </DialogContent>
