@@ -1173,7 +1173,7 @@ export default function RequestsList() {
 
               <Section title="Outros">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ReadField label="Prioridade" value={detail.prioridade} />
+                  
                   <ReadField label="Status" value={detail.status?.replace("_", " ")} />
                   <div className="md:col-span-2">
                     <ReadField label="Observações" value={detail.observacoes} multiline />
