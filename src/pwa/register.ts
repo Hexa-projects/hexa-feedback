@@ -1,4 +1,5 @@
 // Guarded PWA service worker registration for HexaOS.
+
 // Uses `virtual:pwa-register` from vite-plugin-pwa to control the update flow.
 // - Never registers in dev / Lovable preview / iframe
 // - Supports ?sw=off kill switch
