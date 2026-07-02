@@ -7,7 +7,7 @@ import {
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
-  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
