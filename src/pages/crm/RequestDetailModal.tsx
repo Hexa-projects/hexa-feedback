@@ -15,9 +15,11 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   requestId: string | null;
+  leadId?: string | null;
   open: boolean;
   onClose: () => void;
   canEdit: boolean;
+  onDelete?: (leadId: string) => void;
 };
 
 // Parse "CATEGORIA - MARCA - MODELO" back into parts.
