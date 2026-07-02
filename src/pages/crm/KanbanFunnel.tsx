@@ -169,8 +169,27 @@ export default function KanbanFunnel() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("leads").select("*").order("created_at", { ascending: false }).then(({ data }) => {
-      setLeads(data || []);
+    supabase.from("leads").select("*").order("created_at", { ascending: false }).then(async ({ data }) => {
+      const list = data || [];
+      setLeads(list);
+      // Enrich leads originated from commercial_requests
+      const ids = Array.from(
+        new Set(
+          list
+            .filter((l: any) => l.origem === "Via Solicitação")
+            .map((l: any) => extractRequestId(l.notas))
+            .filter((x): x is string => !!x),
+        ),
+      );
+      if (ids.length) {
+        const { data: reqs } = await (supabase as any)
+          .from("commercial_requests")
+          .select("*")
+          .in("id", ids);
+        const map: Record<string, any> = {};
+        (reqs || []).forEach((r: any) => { map[r.id] = r; });
+        setRequestsById(map);
+      }
     });
   }, [user]);
 
