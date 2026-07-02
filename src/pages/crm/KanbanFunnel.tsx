@@ -117,8 +117,11 @@ const DEFAULT_FUNNELS: FunnelDef[] = [
 const FUNNELS_STORAGE_KEY = "hexa.kanban.funnels";
 
 export default function KanbanFunnel() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canEditRequest = role === "admin" || role === "gestor";
   const [leads, setLeads] = useState<any[]>([]);
+  const [requestsById, setRequestsById] = useState<Record<string, any>>({});
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [winModalLead, setWinModalLead] = useState<any | null>(null);
   const [funnels, setFunnels] = useState<FunnelDef[]>(() => {
