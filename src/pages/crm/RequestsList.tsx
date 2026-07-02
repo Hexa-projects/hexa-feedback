@@ -360,27 +360,38 @@ export default function RequestsList() {
     if (!user) return;
     const nome = r.empresa || "Solicitação aprovada";
     const notas = [
-      "Origem: Solicitação Comercial aprovada",
+      "Funil: Funil de Vendas",
+      "Etapa: Novo Negócio",
+      "Origem: Solicitação Comercial aprovada (Via Solicitação)",
       `ID solicitação: ${r.id}`,
       r.tipo && `Tipo: ${r.tipo}`,
       r.equipamento && `Equipamento: ${r.equipamento}`,
       r.responsavel_comercial && `Vendedor(a): ${r.responsavel_comercial}`,
     ].filter(Boolean).join("\n");
-    const { error } = await (supabase as any).from("leads").insert({
+    // Payload uses only columns that exist in public.leads
+    const payload: Record<string, any> = {
       nome,
-      empresa: r.empresa || "",
-      email: r.email_1 || "",
-      telefone: r.telefone || "",
+      empresa: r.empresa || null,
+      email: r.email_1 || null,
+      telefone: r.telefone || null,
       status: "Novo Negócio",
-      funil: "vendas",
       valor_estimado: Number(r.preco) || 0,
       origem: "Via Solicitação",
       notas,
       user_id: user.id,
       ultimo_contato: new Date().toISOString(),
-    });
-    if (error) toast.error("Solicitação aprovada, mas falhou ao criar negócio: " + error.message);
-    else toast.success("Negócio criado no Funil de Vendas");
+    };
+    const { data, error } = await (supabase as any).from("leads").insert(payload).select().single();
+    if (error) {
+      console.error("[createLeadFromRequest] Falha ao inserir lead:", {
+        payload,
+        supabaseError: error,
+      });
+      toast.error("Solicitação aprovada, mas falhou ao criar negócio: " + error.message);
+      return;
+    }
+    console.info("[createLeadFromRequest] Lead criado:", data);
+    toast.success("Negócio criado no Funil de Vendas");
   };
 
   const changeStatus = async (r: any, newStatus: "pendente" | "aprovada") => {
