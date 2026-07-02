@@ -231,7 +231,8 @@ const parsePercent = (v: string) => {
 };
 
 export default function RequestsList() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canEditStatus = role === "admin" || role === "gestor";
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -245,6 +246,9 @@ export default function RequestsList() {
   const [docType, setDocType] = useState<"cnpj" | "cpf">("cnpj");
   const [form, setForm] = useState({ ...emptyForm });
   const [detail, setDetail] = useState<any | null>(null);
+  const [view, setView] = useState<"list" | "kanban">("list");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
