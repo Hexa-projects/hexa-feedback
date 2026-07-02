@@ -421,7 +421,7 @@ export default function RequestsList() {
       ["frete", "Frete"],
       ["comissao", "Comissão"],
       ["origem", "Origem"],
-      ["prioridade", "Prioridade"],
+      
       ["status", "Status"],
       ["observacoes", "Observações"],
     ];
