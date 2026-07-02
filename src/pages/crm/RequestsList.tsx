@@ -386,62 +386,71 @@ export default function RequestsList() {
     load();
   }, [user]);
 
-  // Cria lead no Funil de Vendas ("Novo Negócio") a partir de uma solicitação aprovada
-  const createLeadFromRequest = async (r: any) => {
-    if (!user) return;
-    const nome = r.empresa || "Solicitação aprovada";
-    const notas = [
-      "Funil: Funil de Vendas",
-      "Etapa: Novo Negócio",
-      "Origem: Solicitação Comercial aprovada (Via Solicitação)",
-      `ID solicitação: ${r.id}`,
-      r.tipo && `Tipo: ${r.tipo}`,
-      r.equipamento && `Equipamento: ${r.equipamento}`,
-      r.responsavel_comercial && `Vendedor(a): ${r.responsavel_comercial}`,
-    ].filter(Boolean).join("\n");
-    // Payload uses only columns that exist in public.leads
-    const payload: Record<string, any> = {
-      nome,
-      empresa: r.empresa || null,
-      email: r.email_1 || null,
-      telefone: r.telefone || null,
-      status: "Novo Negócio",
-      valor_estimado: Number(r.preco) || 0,
-      origem: "Via Solicitação",
-      notas,
-      user_id: user.id,
-      ultimo_contato: new Date().toISOString(),
-    };
-    const { data, error } = await (supabase as any).from("leads").insert(payload).select().single();
-    if (error) {
-      console.error("[createLeadFromRequest] Falha ao inserir lead:", {
-        payload,
-        supabaseError: error,
-      });
-      toast.error("Solicitação aprovada, mas falhou ao criar negócio: " + error.message);
-      return;
-    }
-    console.info("[createLeadFromRequest] Lead criado:", data);
-    toast.success("Negócio criado no Funil de Vendas");
+  // Aprovação via RPC segura (SECURITY DEFINER). Cria o lead no funil de vendas.
+  const approveRequest = async (r: any) => {
+    if (!canEditStatus) return;
+    if (r.status !== "pendente") return;
+    setStatusSaving(true);
+    const { data, error } = await (supabase as any).rpc("approve_commercial_request", {
+      request_id: r.id,
+    });
+    setStatusSaving(false);
+    if (error) return toast.error("Erro ao aprovar: " + error.message);
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === r.id
+          ? { ...x, status: "aprovada", converted_lead_id: data, approved_at: new Date().toISOString() }
+          : x
+      )
+    );
+    setDetail((d: any) =>
+      d && d.id === r.id
+        ? { ...d, status: "aprovada", converted_lead_id: data, approved_at: new Date().toISOString() }
+        : d
+    );
+    toast.success("Solicitação aprovada — negócio criado em Vendas › Novo Negócio", {
+      action: {
+        label: "Ver no Kanban",
+        onClick: () => window.location.assign("/crm/kanban"),
+      },
+    });
   };
 
-  const changeStatus = async (r: any, newStatus: "pendente" | "aprovada") => {
+  const openRejectDialog = (r: any) => {
     if (!canEditStatus) return;
-    if (r.status === newStatus) return;
+    if (r.status !== "pendente") return;
+    setRejectTarget(r);
+    setRejectReason("");
+    setRejectOpen(true);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (!reason) return toast.error("Informe o motivo da reprovação");
     setStatusSaving(true);
-    const { error } = await (supabase as any)
-      .from("commercial_requests")
-      .update({ status: newStatus })
-      .eq("id", r.id);
+    const { error } = await (supabase as any).rpc("reject_commercial_request", {
+      request_id: rejectTarget.id,
+      reason,
+    });
     setStatusSaving(false);
-    if (error) return toast.error("Erro ao atualizar status: " + error.message);
-    setItems((prev) => prev.map((x) => (x.id === r.id ? { ...x, status: newStatus } : x)));
-    setDetail((d: any) => (d && d.id === r.id ? { ...d, status: newStatus } : d));
-    if (newStatus === "aprovada" && r.status !== "aprovada") {
-      await createLeadFromRequest({ ...r, status: newStatus });
-    } else {
-      toast.success("Status atualizado");
-    }
+    if (error) return toast.error("Erro ao reprovar: " + error.message);
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === rejectTarget.id
+          ? { ...x, status: "reprovada", rejection_reason: reason, rejected_at: new Date().toISOString() }
+          : x
+      )
+    );
+    setDetail((d: any) =>
+      d && d.id === rejectTarget.id
+        ? { ...d, status: "reprovada", rejection_reason: reason, rejected_at: new Date().toISOString() }
+        : d
+    );
+    setRejectOpen(false);
+    setRejectTarget(null);
+    setRejectReason("");
+    toast.success("Solicitação reprovada");
   };
 
   const filtered = useMemo(() => {
