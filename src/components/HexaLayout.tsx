@@ -7,7 +7,7 @@ import {
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
-  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ interface NavChild {
   label: string;
   icon: any;
   wip?: boolean;
+  roles?: string[];
 }
 
 interface NavGroup {
@@ -63,6 +64,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Negociações", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
+      { to: "/crm/lixeira", label: "Lixeira", icon: Trash2, roles: ["admin", "gestor"] },
     ],
   },
   {
@@ -242,7 +244,8 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       if (to === "/home") return location.pathname === "/home";
       return location.pathname === to || location.pathname.startsWith(to + "/");
     };
-    const activeChildTo = item.children
+    const visibleChildren = item.children.filter(c => !c.roles || c.roles.includes(role));
+    const activeChildTo = visibleChildren
       .filter(c => !c.wip && matchesChild(c.to))
       .sort((a, b) => b.to.length - a.to.length)[0]?.to;
     const isAnyChildActive = !!activeChildTo;
@@ -268,7 +271,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
         {isOpen && (
           <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
-            {item.children.map(child => (
+            {visibleChildren.map(child => (
               <Link
                 key={child.to}
                 to={child.wip ? "#" : child.to}

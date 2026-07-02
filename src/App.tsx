@@ -19,6 +19,7 @@ const KanbanFunnel = lazy(() => import("./pages/crm/KanbanFunnel"));
 const ProposalsList = lazy(() => import("./pages/crm/ProposalsList"));
 const ContractsList = lazy(() => import("./pages/crm/ContractsList"));
 const RequestsList = lazy(() => import("./pages/crm/RequestsList"));
+const RequestsTrash = lazy(() => import("./pages/crm/RequestsTrash"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
 const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
 const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
@@ -103,6 +104,7 @@ const AppRoutes = () => (
       <Route path="/crm/proposals" element={<PrivateRoute><ProposalsList /></PrivateRoute>} />
       <Route path="/crm/contracts" element={<PrivateRoute><ContractsList /></PrivateRoute>} />
       <Route path="/crm/requests" element={<PrivateRoute><RequestsList /></PrivateRoute>} />
+      <Route path="/crm/lixeira" element={<PrivateRoute><RequestsTrash /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
       {/* Projetos & Implantação */}

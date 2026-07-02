@@ -23,7 +23,7 @@ import {
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
-import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2, List, LayoutGrid, Lock } from "lucide-react";
+import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2, List, LayoutGrid, Lock, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -344,11 +344,29 @@ export default function RequestsList() {
     const { data, error } = await (supabase as any)
       .from("commercial_requests")
       .select("*")
+      .neq("status", "lixeira")
       .order("created_at", { ascending: false });
     if (error) toast.error("Erro ao carregar solicitações");
     setItems(data || []);
     setLoading(false);
   };
+
+  const softDelete = async (r: any) => {
+    if (!canEditStatus) return;
+    if (!window.confirm("Tem certeza que deseja excluir esta solicitação? Ela será movida para a Lixeira.")) return;
+    const prevStatus = r.status || "pendente";
+    const marker = `[TRASH_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const nextObs = r.observacoes ? `${marker}\n${r.observacoes}` : marker;
+    const { error } = await (supabase as any)
+      .from("commercial_requests")
+      .update({ status: "lixeira", observacoes: nextObs })
+      .eq("id", r.id);
+    if (error) return toast.error("Erro ao excluir: " + error.message);
+    setItems((prev) => prev.filter((x) => x.id !== r.id));
+    setDetail(null);
+    toast.success("Solicitação movida para a Lixeira");
+  };
+
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -1368,7 +1386,17 @@ export default function RequestsList() {
               </Section>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <div>
+              {canEditStatus && detail && (
+                <Button
+                  variant="destructive"
+                  onClick={() => softDelete(detail)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" /> Excluir
+                </Button>
+              )}
+            </div>
             <Button variant="outline" onClick={() => setDetail(null)}>
               Fechar
             </Button>
