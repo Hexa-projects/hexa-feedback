@@ -141,18 +141,22 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 
   const loadUsers = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, emailsRes] = await Promise.all([
       supabase.from("profiles").select("*").order("nome"),
       supabase.from("user_roles").select("*"),
+      (supabase as any).rpc("admin_list_user_emails"),
     ]);
 
     const profiles = (profilesRes.data || []) as UserProfile[];
     const roles = (rolesRes.data || []) as UserRole[];
+    const emails = (emailsRes.data || []) as Array<{ id: string; email: string }>;
     const roleMap = new Map(roles.map(r => [r.user_id, r.role]));
+    const emailMap = new Map(emails.map(e => [e.id, e.email]));
 
     const merged: UserWithRole[] = profiles.map(p => ({
       ...p,
       role: roleMap.get(p.id) || "colaborador",
+      email: emailMap.get(p.id),
     }));
     setUsers(merged);
     setLoading(false);
@@ -183,7 +187,8 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 
   const filtered = users.filter(u =>
     u.nome.toLowerCase().includes(search.toLowerCase()) ||
-    u.setor.toLowerCase().includes(search.toLowerCase())
+    u.setor.toLowerCase().includes(search.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -194,7 +199,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <Input
-          placeholder="Buscar por nome ou setor..."
+          placeholder="Buscar por nome, e-mail ou setor..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="max-w-sm"
@@ -216,6 +221,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-3 font-medium">Nome</th>
+                  <th className="text-left p-3 font-medium hidden lg:table-cell">E-mail</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Setor</th>
                   <th className="text-left p-3 font-medium hidden lg:table-cell">Função</th>
                   <th className="text-left p-3 font-medium">Perfil</th>
@@ -233,6 +239,9 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                         </div>
                         <span className="font-medium">{u.nome}</span>
                       </div>
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground text-xs">
+                      {u.email || "—"}
                     </td>
                     <td className="p-3 hidden md:table-cell">
                       {editingId === u.id ? (
