@@ -56,6 +56,7 @@ const AutomationsPage = lazy(() => import("./pages/AutomationsPage"));
 const GargalosMap = lazy(() => import("./pages/GargalosMap"));
 const DataCollection = lazy(() => import("./pages/DataCollection"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
+const PwaInstall = lazy(() => import("./pages/PwaInstall"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -155,6 +156,7 @@ const AppRoutes = () => (
 
       {/* Configurações */}
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+      <Route path="/pwa" element={<PrivateRoute><PwaInstall /></PrivateRoute>} />
 
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
