@@ -287,21 +287,27 @@ export default function RequestDetailModal({ requestId, leadId, open, onClose, c
         <DialogFooter className="gap-2">
           {editMode ? (
             <>
-              <Button variant="outline" onClick={() => { setEditMode(false); setForm(data || {}); }} disabled={saving}>
+              <Button variant="outline" onClick={() => { setEditMode(false); setForm(data || {}); }} disabled={saving || deleting}>
                 <X className="w-4 h-4 mr-1" /> Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving || deleting}>
                 {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 Salvar
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleClose}>Fechar</Button>
+              <Button variant="outline" onClick={handleClose} disabled={deleting}>Fechar</Button>
               {canEdit && data && (
-                <Button onClick={() => setEditMode(true)}>
-                  <Pencil className="w-4 h-4 mr-1" /> Editar
-                </Button>
+                <>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleting || !leadId}>
+                    {deleting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
+                    Excluir
+                  </Button>
+                  <Button onClick={() => setEditMode(true)} disabled={deleting}>
+                    <Pencil className="w-4 h-4 mr-1" /> Editar
+                  </Button>
+                </>
               )}
             </>
           )}
