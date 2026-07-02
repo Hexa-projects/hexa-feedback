@@ -61,7 +61,7 @@ export default function QualityDashboard() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-          {[
+          {([
             ["Abertas", metrics.abertas, ShieldCheck, "text-primary", "bg-primary/10"],
             ["RNC abertas", metrics.rncsAbertas, AlertTriangle, "text-red-600", "bg-red-500/10"],
             ["Em acao", metrics.emAcao, Clock, "text-hexa-amber", "bg-hexa-amber/10"],
@@ -69,8 +69,8 @@ export default function QualityDashboard() {
             ["Eficacia", metrics.eficacia, Target, "text-blue-600", "bg-blue-500/10"],
             ["Encerradas mes", metrics.encerradasMes, CheckCircle2, "text-hexa-green", "bg-hexa-green/10"],
             ["Ineficazes", metrics.ineficazes, TimerReset, "text-red-600", "bg-red-500/10"],
-          ].map(([label, value, Icon, color, bg]) => (
-            <Card key={label as string}>
+          ] as Array<[string, number, React.ComponentType<{ className?: string }>, string, string]>).map(([label, value, Icon, color, bg]) => (
+            <Card key={label}>
               <CardContent className="p-3 flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
                   <Icon className={`w-4 h-4 ${color}`} />
