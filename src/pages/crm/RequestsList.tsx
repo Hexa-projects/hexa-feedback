@@ -402,6 +402,7 @@ export default function RequestsList() {
     }
   };
 
+  const filtered = useMemo(() => {
     return items.filter((r) => {
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
       if (!search) return true;
