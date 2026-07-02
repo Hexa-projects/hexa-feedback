@@ -1370,30 +1370,51 @@ export default function RequestsList() {
                       Status
                       {!canEditStatus && <Lock className="w-3 h-3" />}
                     </Label>
-                    {canEditStatus ? (
-                      <Select
-                        value={detail.status === "aprovada" ? "aprovada" : "pendente"}
-                        onValueChange={(v) => changeStatus(detail, v as "pendente" | "aprovada")}
-                        disabled={statusSaving}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="aprovada">Aprovada</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="min-h-10 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
-                        <Badge className={STATUS_COLORS[detail.status] || ""}>
-                          {detail.status?.replace("_", " ")}
-                        </Badge>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={STATUS_COLORS[detail.status] || ""}>
+                        {detail.status === "pendente"
+                          ? "Pendente"
+                          : detail.status === "aprovada"
+                          ? "Aprovada"
+                          : detail.status === "reprovada"
+                          ? "Reprovada"
+                          : detail.status}
+                      </Badge>
+                      {detail.status === "pendente" && (
+                        <span className="text-xs text-muted-foreground">
+                          Aguardando aprovação do CEO
+                        </span>
+                      )}
+                    </div>
+                    {canEditStatus && detail.status === "pendente" && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveRequest(detail)}
+                          disabled={statusSaving}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRejectDialog(detail)}
+                          disabled={statusSaving}
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          Reprovar
+                        </Button>
                       </div>
                     )}
-                    {!canEditStatus && (
+                    {detail.status === "reprovada" && detail.rejection_reason && (
+                      <p className="text-xs text-red-600 mt-2">
+                        <strong>Motivo:</strong> {detail.rejection_reason}
+                      </p>
+                    )}
+                    {!canEditStatus && detail.status === "pendente" && (
                       <p className="text-xs text-muted-foreground">
-                        Apenas CEO ou Admin podem alterar o status.
+                        Apenas CEO ou Admin podem aprovar/reprovar.
                       </p>
                     )}
                   </div>
