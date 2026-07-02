@@ -23,7 +23,7 @@ import {
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
-import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2, List, LayoutGrid, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { toast } from "sonner";
