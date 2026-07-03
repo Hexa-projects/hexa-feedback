@@ -935,6 +935,21 @@ function IntegrationsTab() {
       icon: Zap,
       config: ["URL", "Token", "Ambiente"],
     },
+    {
+      key: "rd_station",
+      nome: "RD Station",
+      descricao: "CRM e Marketing: sincronização de contatos, empresas, negócios e webhooks.",
+      icon: PlugZap,
+      config: ["Client ID", "Client Secret", "OAuth", "Webhooks"],
+      extra: rdInfo
+        ? [
+            rdInfo.last_sync
+              ? `Última sync: ${new Date(rdInfo.last_sync).toLocaleString("pt-BR")}`
+              : "Nunca sincronizado",
+            rdInfo.last_error ? `Erro: ${rdInfo.last_error.slice(0, 80)}` : null,
+          ].filter(Boolean) as string[]
+        : [],
+    },
   ];
 
   const STATUS_BADGE: Record<string, string> = {
