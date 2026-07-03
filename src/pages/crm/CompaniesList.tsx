@@ -79,6 +79,19 @@ function dealsOf(org: Org): any[] {
   return Array.isArray(arr) ? arr : [];
 }
 
+function segmentOf(org: Org): string {
+  const p = org.raw_payload || {};
+  return (
+    p.segment ||
+    p.sector ||
+    p.industry ||
+    p.company?.segment ||
+    p.company?.sector ||
+    p.company?.industry ||
+    ""
+  );
+}
+
 function toDate(v: any): Date | null {
   if (!v) return null;
   const d = new Date(v);
