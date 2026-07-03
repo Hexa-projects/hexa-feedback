@@ -19,6 +19,7 @@ interface NavChild {
   icon: any;
   wip?: boolean;
   roles?: string[];
+  setores?: string[];
 }
 
 interface NavGroup {
