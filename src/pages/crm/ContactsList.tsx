@@ -286,7 +286,33 @@ export default function ContactsList() {
     setNomeError(false);
   };
 
-  const handleCreate = () => {
+  const openEditContact = (c: Contact) => {
+    setEditingId(c.id);
+    setForm({
+      nome: c.nome,
+      cargo: c.cargo || "",
+      whatsapp: c.whatsapp || "",
+      empresa: c.empresa || "",
+    });
+    setPhones(
+      c.phonesData && c.phonesData.length
+        ? c.phonesData
+        : c.telefones.length
+          ? c.telefones.map(n => ({ tipo: "Celular" as const, numero: n }))
+          : [{ tipo: "Celular", numero: "" }],
+    );
+    setEmails(c.emails.length ? c.emails : [""]);
+    setNomeError(false);
+    setCreateOpen(true);
+  };
+
+  const openCreateContact = () => {
+    setEditingId(null);
+    resetForm();
+    setCreateOpen(true);
+  };
+
+  const handleSubmit = () => {
     if (!form.nome.trim()) {
       setNomeError(true);
       return;
@@ -294,22 +320,68 @@ export default function ContactsList() {
     setSaving(true);
     setTimeout(() => {
       const cleanEmails = emails.map(e => e.trim()).filter(Boolean);
-      const cleanPhones = phones.map(p => p.numero.trim()).filter(Boolean);
-      const newC: Contact = {
-        id: `local-${Date.now()}`,
-        nome: form.nome.trim(),
-        empresa: form.empresa || "",
-        emails: cleanEmails,
-        telefones: cleanPhones,
-        cargo: form.cargo || "",
-        negociacoes: 0,
-      };
-      setContacts(prev => [newC, ...prev]);
+      const cleanPhonesData = phones.filter(p => p.numero.trim());
+      const cleanPhones = cleanPhonesData.map(p => p.numero.trim());
+      if (editingId) {
+        setContacts(prev =>
+          prev.map(c =>
+            c.id === editingId
+              ? {
+                  ...c,
+                  nome: form.nome.trim(),
+                  empresa: form.empresa || "",
+                  cargo: form.cargo || "",
+                  whatsapp: form.whatsapp || "",
+                  emails: cleanEmails,
+                  telefones: cleanPhones,
+                  phonesData: cleanPhonesData,
+                }
+              : c,
+          ),
+        );
+        toast.success("Contato atualizado com sucesso");
+      } else {
+        const newC: Contact = {
+          id: `local-${Date.now()}`,
+          nome: form.nome.trim(),
+          empresa: form.empresa || "",
+          emails: cleanEmails,
+          telefones: cleanPhones,
+          phonesData: cleanPhonesData,
+          whatsapp: form.whatsapp || "",
+          cargo: form.cargo || "",
+          negociacoes: 0,
+        };
+        setContacts(prev => [newC, ...prev]);
+        toast.success("Contato criado com sucesso");
+      }
       resetForm();
+      setEditingId(null);
       setSaving(false);
       setCreateOpen(false);
-      toast.success("Contato criado com sucesso");
     }, 300);
+  };
+
+  const openEditCompany = (name: string) => {
+    if (!name) return;
+    setCompanyEditName(name);
+    setCompanyEditOpen(true);
+  };
+
+  const handleCompanySaved = (data: CompanyData) => {
+    const oldName = companyEditName;
+    const newName = data.name;
+    setCompanyDataMap(prev => {
+      const next = { ...prev };
+      if (oldName && oldName !== newName) delete next[oldName];
+      next[newName] = data;
+      return next;
+    });
+    if (oldName && oldName !== newName) {
+      setContacts(prev =>
+        prev.map(c => (c.empresa === oldName ? { ...c, empresa: newName } : c)),
+      );
+    }
   };
 
   return (
