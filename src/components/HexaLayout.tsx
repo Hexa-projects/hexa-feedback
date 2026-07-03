@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
+import { getCurrentPathname, navigateInApp, shouldHandleInAppNavigation } from "@/lib/navigation";
 import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
@@ -166,21 +166,27 @@ const SETOR_GROUPS: Record<string, string[]> = {
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const [pathname, setPathname] = useState(() => getCurrentPathname());
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     // Auto-open the group that contains the current route
+    const currentPath = getCurrentPathname();
     const initial: Record<string, boolean> = {};
     for (const item of NAV_ITEMS) {
-      if (isGroup(item) && item.children.some(c => location.pathname.startsWith(c.to))) {
+      if (isGroup(item) && item.children.some(c => currentPath.startsWith(c.to))) {
         initial[item.id] = true;
       }
     }
     return initial;
   });
+
+  useEffect(() => {
+    const updatePathname = () => setPathname(getCurrentPathname());
+    window.addEventListener("popstate", updatePathname);
+    return () => window.removeEventListener("popstate", updatePathname);
+  }, []);
 
   const toggleGroup = (id: string) =>
     setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
@@ -202,23 +208,29 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    navigateInApp("/", { replace: true });
   };
 
   const isChildActive = (to: string) => {
-    if (to === "/home") return location.pathname === "/home";
-    return location.pathname.startsWith(to);
+    if (to === "/home") return pathname === "/home";
+    return pathname.startsWith(to);
   };
 
   const renderNavItem = (item: NavItem) => {
     if (!isGroup(item)) {
       // Single item (e.g. Settings)
-      const active = location.pathname.startsWith(item.to);
+      const active = pathname.startsWith(item.to);
       return (
-        <Link
+        <a
           key={item.id}
-          to={item.to}
-          onClick={() => setSidebarOpen(false)}
+          href={item.to}
+          onClick={(event) => {
+            if (shouldHandleInAppNavigation(event)) {
+              event.preventDefault();
+              navigateInApp(item.to);
+            }
+            setSidebarOpen(false);
+          }}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
             active
               ? "bg-sidebar-accent text-sidebar-primary font-semibold"
@@ -227,14 +239,14 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
         >
           <item.icon className="w-4 h-4 shrink-0" />
           <span>{item.label}</span>
-        </Link>
+        </a>
       );
     }
 
     // Group with children — pick single active child using longest-prefix match
     const matchesChild = (to: string) => {
-      if (to === "/home") return location.pathname === "/home";
-      return location.pathname === to || location.pathname.startsWith(to + "/");
+      if (to === "/home") return pathname === "/home";
+      return pathname === to || pathname.startsWith(to + "/");
     };
     const visibleChildren = item.children.filter(c => !c.roles || c.roles.includes(role));
     const activeChildTo = visibleChildren
@@ -261,11 +273,15 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
         {isOpen && (
           <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
             {visibleChildren.map(child => (
-              <Link
+              <a
                 key={child.to}
-                to={child.wip ? "#" : child.to}
-                onClick={(e) => {
-                  if (child.wip) { e.preventDefault(); return; }
+                href={child.wip ? "#" : child.to}
+                onClick={(event) => {
+                  if (child.wip) { event.preventDefault(); return; }
+                  if (shouldHandleInAppNavigation(event)) {
+                    event.preventDefault();
+                    navigateInApp(child.to);
+                  }
                   setSidebarOpen(false);
                 }}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
@@ -283,7 +299,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                     Em breve
                   </Badge>
                 )}
-              </Link>
+              </a>
             ))}
           </div>
         )}

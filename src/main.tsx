@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
 import OfflineBanner from "./components/pwa/OfflineBanner";
@@ -7,9 +8,11 @@ import { AppErrorBoundary, armChunkRecovery } from "./components/AppErrorBoundar
 armChunkRecovery();
 
 createRoot(document.getElementById("root")!).render(
-  <AppErrorBoundary>
-    <OfflineBanner />
-    <App />
-  </AppErrorBoundary>,
+  <BrowserRouter>
+    <AppErrorBoundary>
+      <OfflineBanner />
+      <App />
+    </AppErrorBoundary>
+  </BrowserRouter>,
 );
 
