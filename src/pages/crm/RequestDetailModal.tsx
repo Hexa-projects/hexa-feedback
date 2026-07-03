@@ -286,7 +286,10 @@ export default function RequestDetailModal({ requestId, leadId, open, onClose, c
           </div>
         )}
 
-        <DialogFooter className="gap-2">
+        {extraContent}
+
+        <DialogFooter className="gap-2 flex-wrap">
+          {footerExtras}
           {editMode ? (
             <>
               <Button variant="outline" onClick={() => { setEditMode(false); setForm(data || {}); }} disabled={saving || deleting}>
