@@ -271,7 +271,7 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
           }}
         >
           <SheetHeader className="p-6 border-b">
-            <SheetTitle>Criar Empresa</SheetTitle>
+            <SheetTitle>{mode === "edit" ? "Editar Empresa" : "Criar Empresa"}</SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
