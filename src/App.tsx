@@ -48,7 +48,7 @@ const ProjectForm = lazy(() => import("./pages/projects/ProjectForm"));
 const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
-const FocusAI = lazy(() => import("./pages/FocusAI"));
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
