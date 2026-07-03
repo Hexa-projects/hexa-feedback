@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import HexaLayout from "@/components/HexaLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -294,13 +295,14 @@ export default function ContactsList() {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Contatos</h1>
-        <p className="text-sm text-muted-foreground">
-          Gerencie seus contatos comerciais
-        </p>
-      </div>
+    <HexaLayout>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Contatos</h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie seus contatos comerciais
+          </p>
+        </div>
 
       {/* Barra superior */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -338,9 +340,6 @@ export default function ContactsList() {
         </Popover>
 
         <div className="flex items-center gap-2 ml-auto">
-          <Button variant="outline" size="icon" aria-label="Calendário">
-            <CalendarIcon className="h-4 w-4" />
-          </Button>
           <Button onClick={() => setCreateOpen(true)}>Criar contato</Button>
         </div>
       </div>
@@ -750,7 +749,8 @@ export default function ContactsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </HexaLayout>
   );
 }
 
