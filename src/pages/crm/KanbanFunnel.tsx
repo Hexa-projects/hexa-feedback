@@ -14,6 +14,7 @@ import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
 import { differenceInHours } from "date-fns";
 import RequestDetailModal from "@/pages/crm/RequestDetailModal";
+import OwnerFilterPopover, { type OwnerQuick, type OwnerOption } from "@/components/crm/OwnerFilterPopover";
 
 const extractRequestId = (notas: string | null | undefined): string | null => {
   if (!notas) return null;
