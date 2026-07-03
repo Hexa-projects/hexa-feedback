@@ -20,6 +20,7 @@ interface NavChild {
   wip?: boolean;
   roles?: string[];
   setores?: string[];
+  ceoOrAdmin?: boolean;
 }
 
 interface NavGroup {
