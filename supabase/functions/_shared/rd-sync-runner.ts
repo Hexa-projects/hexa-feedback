@@ -120,12 +120,33 @@ export async function runSync(
     if (delta && since && supportsDelta) extraParams["updated_at_since"] = since;
     let count = 0;
     try {
-      for await (const page of rdPaginate<any>(svc, path, extraParams, itemsKey)) {
-        const rows = page.map(map).filter((r) => r.rd_id);
-        if (rows.length === 0) continue;
-        const { error } = await svc.from(table).upsert(rows, { onConflict: "rd_id" });
-        if (error) throw error;
-        count += rows.length;
+      // Special case: stages must be fetched per pipeline in RD CRM v1
+      // (/deal_stages returns only the default pipeline's stages).
+      if (entity === "stages") {
+        const { data: pipes } = await svc
+          .from("rd_pipelines")
+          .select("rd_id")
+          .is("deleted_at", null);
+        const pipelineIds = (pipes || []).map((p: any) => p.rd_id).filter(Boolean);
+        for (const pid of pipelineIds) {
+          for await (const page of rdPaginate<any>(svc, path, { deal_pipeline_id: pid }, itemsKey)) {
+            const rows = page
+              .map((s: any) => ({ ...map(s), pipeline_rd_id: String(pid) }))
+              .filter((r: any) => r.rd_id);
+            if (rows.length === 0) continue;
+            const { error } = await svc.from(table).upsert(rows, { onConflict: "rd_id" });
+            if (error) throw error;
+            count += rows.length;
+          }
+        }
+      } else {
+        for await (const page of rdPaginate<any>(svc, path, extraParams, itemsKey)) {
+          const rows = page.map(map).filter((r) => r.rd_id);
+          if (rows.length === 0) continue;
+          const { error } = await svc.from(table).upsert(rows, { onConflict: "rd_id" });
+          if (error) throw error;
+          count += rows.length;
+        }
       }
       stats[entity] = count;
       await logSync(svc, jobId, entity, "info", `Imported ${count} ${entity}`);
