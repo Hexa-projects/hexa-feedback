@@ -255,6 +255,11 @@ export default function RequestsList() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<any | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestData, setSuggestData] = useState<{ nome: string; cpf: string; telefone: string; email: string } | null>(null);
+  const [createContactOpen, setCreateContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ nome: "", cpf: "", telefone: "", email: "" });
+  const [savingContact, setSavingContact] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
