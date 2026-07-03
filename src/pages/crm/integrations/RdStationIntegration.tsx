@@ -180,6 +180,80 @@ export default function RdStationIntegration() {
         </div>
 
         <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" /> Credenciais OAuth
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Cole o <strong>Client ID</strong> e <strong>Client Secret</strong> do seu app no RD Station App Store.
+              O secret é armazenado criptografado e nunca é devolvido para o navegador.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="rd-client-id">Client ID</Label>
+                <Input
+                  id="rd-client-id"
+                  autoComplete="off"
+                  value={creds.client_id}
+                  onChange={(e) => setCreds({ ...creds, client_id: e.target.value })}
+                  placeholder="ex.: 1a2b3c4d-..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rd-client-secret">
+                  Client Secret {hasSecret && <span className="text-emerald-600 text-xs">• salvo</span>}
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="rd-client-secret"
+                    type={showSecret ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={creds.client_secret}
+                    onChange={(e) => setCreds({ ...creds, client_secret: e.target.value })}
+                    placeholder={hasSecret ? "••••••••  (deixe em branco para manter)" : "cole o secret"}
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={() => setShowSecret((s) => !s)}>
+                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rd-redirect">Redirect URI (Callback URL)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="rd-redirect"
+                  value={creds.redirect_uri || defaultRedirect}
+                  onChange={(e) => setCreds({ ...creds, redirect_uri: e.target.value })}
+                  placeholder={defaultRedirect}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(creds.redirect_uri || defaultRedirect);
+                    toast.success("Redirect URI copiada");
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Cadastre exatamente esta URL como <em>Callback URL</em> no app do RD Station.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={saveCreds} disabled={busy === "save-creds" || !creds.client_id.trim()}>
+                <Save className="w-4 h-4 mr-1.5" /> Salvar credenciais
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader><CardTitle className="text-base">Conexão</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
