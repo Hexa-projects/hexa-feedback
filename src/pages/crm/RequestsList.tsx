@@ -879,9 +879,17 @@ export default function RequestsList() {
     const pendentes = items.filter((i) => i.status === "pendente").length;
     const aprovadas = items.filter((i) => i.status === "aprovada").length;
     const reprovadas = items.filter((i) => i.status === "reprovada").length;
-    const valor = items.reduce((sum, i) => sum + (Number(i.preco) || 0), 0);
+    const scoped = filterStatus === "all" ? items : items.filter((i) => i.status === filterStatus);
+    const valor = scoped.reduce((sum, i) => sum + (Number(i.preco) || 0), 0);
     return { total, pendentes, aprovadas, reprovadas, valor };
-  }, [items]);
+  }, [items, filterStatus]);
+
+  const valorLabel =
+    filterStatus === "pendente" ? "Valor pendentes"
+    : filterStatus === "aprovada" ? "Valor aprovadas"
+    : filterStatus === "reprovada" ? "Valor reprovadas"
+    : "Valor total";
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1086,10 +1094,11 @@ export default function RequestsList() {
           />
           <Kpi
             className="col-span-2 md:col-span-1"
-            label="Valor total"
+            label={valorLabel}
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             tone="cyan"
           />
+
         </div>
 
         {/* Filtros */}
