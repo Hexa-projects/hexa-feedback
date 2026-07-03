@@ -751,7 +751,7 @@ export default function ContactsList() {
             </Button>
             <Button onClick={handleCreate} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Criar contato
+              Criar Contato
             </Button>
           </DialogFooter>
         </DialogContent>
