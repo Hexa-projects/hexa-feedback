@@ -36,18 +36,22 @@ type Props = {
   onCreated?: (org: any) => void;
 };
 
-const SEGMENTOS = [
-  "Tecnologia",
-  "Indústria",
-  "Comércio",
-  "Serviços",
-  "Educação",
-  "Saúde",
-  "Financeiro",
-  "Agronegócio",
-  "Construção",
-  "Outros",
-];
+const SEGMENTOS_POR_TIPO: Record<string, string[]> = {
+  Humana: [
+    "Clínica",
+    "Hospital",
+    "Laboratório",
+    "Centro de Diagnóstico",
+    "UPA/Pronto-Socorro",
+    "Outros",
+  ],
+  Veterinária: [
+    "Clínica Veterinária",
+    "Hospital Veterinário",
+    "Outros",
+  ],
+};
+const TIPOS = ["Humana", "Veterinária"];
 
 function maskCnpj(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 14);
