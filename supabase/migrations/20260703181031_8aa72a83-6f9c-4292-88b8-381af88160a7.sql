@@ -1,0 +1,1 @@
+ALTER TABLE public.crm_integrations ADD COLUMN IF NOT EXISTS private_token_enc text;
