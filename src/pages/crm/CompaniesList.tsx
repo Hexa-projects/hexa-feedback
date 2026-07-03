@@ -196,6 +196,9 @@ export default function CompaniesList() {
         return oid ? set.has(oid) : false;
       });
     }
+    if (preset) {
+      list = list.filter(o => matchesPreset(o, preset));
+    }
     if (tableSearch.trim()) {
       const q = tableSearch.trim().toLowerCase();
       list = list.filter(o =>
@@ -205,7 +208,8 @@ export default function CompaniesList() {
       );
     }
     return list;
-  }, [orgs, quick, selectedOwners, tableSearch, myRdId]);
+  }, [orgs, quick, selectedOwners, tableSearch, myRdId, preset]);
+
 
   const filteredOwners = useMemo(() => {
     if (!ownerSearch.trim()) return users;
