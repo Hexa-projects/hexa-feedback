@@ -148,9 +148,9 @@ const AppRoutes = () => (
       {/* Financeiro */}
       <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
 
-      {/* NÚCLEO AI */}
-      <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
-      <Route path="/automations" element={<PrivateRoute><AutomationsPage /></PrivateRoute>} />
+      {/* Legacy AI routes → home */}
+      <Route path="/focus-ai" element={<Navigate to="/home" replace />} />
+      <Route path="/automations" element={<Navigate to="/home" replace />} />
 
       {/* AUDITORIA OPERACIONAL */}
       <Route path="/gargalos" element={<PrivateRoute><GargalosMap /></PrivateRoute>} />
