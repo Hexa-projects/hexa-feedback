@@ -106,7 +106,8 @@ const AppRoutes = () => (
       <Route path="/executive" element={<PrivateRoute><ExecutiveDashboard /></PrivateRoute>} />
 
       {/* CRM */}
-      <Route path="/crm" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
+      <Route path="/crm" element={<PrivateRoute><ContactsList /></PrivateRoute>} />
+      <Route path="/crm/leads" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
       <Route path="/crm/new" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
       <Route path="/crm/kanban" element={<PrivateRoute><KanbanFunnel /></PrivateRoute>} />
       <Route path="/crm/proposals" element={<PrivateRoute><ProposalsList /></PrivateRoute>} />
