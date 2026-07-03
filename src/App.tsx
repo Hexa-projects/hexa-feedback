@@ -115,7 +115,8 @@ const AppRoutes = () => (
       <Route path="/crm/requests" element={<PrivateRoute><RequestsList /></PrivateRoute>} />
       <Route path="/crm/requests/:id" element={<PrivateRoute><RequestDetailPage /></PrivateRoute>} />
       <Route path="/crm/lixeira" element={<PrivateRoute><RequestsTrash /></PrivateRoute>} />
-      <Route path="/crm/integrations/rd-station" element={<PrivateRoute><RdStationIntegration /></PrivateRoute>} />
+      <Route path="/settings/integrations/rd-station" element={<PrivateRoute><RdStationIntegration /></PrivateRoute>} />
+      <Route path="/crm/integrations/rd-station" element={<Navigate to="/settings/integrations/rd-station" replace />} />
       <Route path="/crm/empresas" element={<PrivateRoute><CompaniesList /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
