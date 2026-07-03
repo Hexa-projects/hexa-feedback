@@ -228,6 +228,22 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
 
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
             <div className="space-y-2">
+              <Label htmlFor="cc-cnpj">CNPJ</Label>
+              <div className="relative">
+                <Input
+                  id="cc-cnpj"
+                  placeholder="00.000.000/0000-00"
+                  value={cnpj}
+                  onChange={e => handleCnpjChange(e.target.value)}
+                  inputMode="numeric"
+                />
+                {lookingUp && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="cc-name">
                 Nome da empresa <span className="text-destructive">*</span>
               </Label>
@@ -248,13 +264,49 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="cc-tipo">
+                Tipo <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={tipo}
+                onValueChange={v => {
+                  setTipo(v);
+                  setSegment("");
+                  setTipoError(false);
+                }}
+              >
+                <SelectTrigger
+                  id="cc-tipo"
+                  aria-invalid={tipoError}
+                  className={tipoError ? "border-destructive focus:ring-destructive" : ""}
+                >
+                  <SelectValue placeholder="Selecionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS.map(t => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {tipoError && (
+                <p className="text-xs text-destructive">Tipo é obrigatório</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="cc-segment">Segmento</Label>
-              <Select value={segment} onValueChange={setSegment}>
+              <Select
+                value={segment}
+                onValueChange={setSegment}
+                disabled={!tipo}
+              >
                 <SelectTrigger id="cc-segment">
                   <SelectValue placeholder="Selecionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SEGMENTOS.map(s => (
+                  {(SEGMENTOS_POR_TIPO[tipo] || []).map(s => (
                     <SelectItem key={s} value={s}>
                       {s}
                     </SelectItem>
@@ -293,41 +345,8 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
                 onChange={e => setAddress(e.target.value)}
               />
             </div>
-
-            <div className="pt-2">
-              <div className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase mb-3">
-                Campos personalizados
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cc-cnpj">CNPJ</Label>
-                  <div className="relative">
-                    <Input
-                      id="cc-cnpj"
-                      placeholder="00.000.000/0000-00"
-                      value={cnpj}
-                      onChange={e => handleCnpjChange(e.target.value)}
-                      inputMode="numeric"
-                    />
-                    {lookingUp && (
-                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cc-cnpj-address">Endereço</Label>
-                  <Input
-                    id="cc-cnpj-address"
-                    placeholder="Endereço retornado pelo CNPJ"
-                    value={cnpjAddress}
-                    onChange={e => setCnpjAddress(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
+
 
           <div className="flex items-center justify-between gap-3 p-4 border-t bg-background">
             <Button type="button" variant="outline" onClick={requestClose} disabled={saving}>
