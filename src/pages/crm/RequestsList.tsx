@@ -266,6 +266,7 @@ export default function RequestsList() {
   const [companyInitial, setCompanyInitial] = useState<any>(null);
   const [sellers, setSellers] = useState<{ id: string; nome: string }[]>([]);
   const [vendedorMode, setVendedorMode] = useState<"select" | "other">("select");
+  const [dismissedDocs, setDismissedDocs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -278,6 +279,55 @@ export default function RequestsList() {
       setSellers((comercial.length ? comercial : list).map((p: any) => ({ id: p.id, nome: p.nome })));
     })();
   }, []);
+
+  // Sugere cadastro assim que CPF/CNPJ válido for digitado e não existir no sistema
+  useEffect(() => {
+    if (!open) return;
+    if (suggestOpen) return;
+    const timer = setTimeout(async () => {
+      try {
+        if (docType === "cnpj") {
+          if (!isValidCNPJ(form.cnpj)) return;
+          const digits = form.cnpj.replace(/\D/g, "");
+          if (dismissedDocs.has(digits)) return;
+          const { data } = await (supabase as any)
+            .from("rd_organizations").select("id")
+            .or(`cnpj.eq.${form.cnpj},cnpj.eq.${digits}`)
+            .limit(1);
+          if (data && data.length) return;
+          const endereco = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""}${form.cep ? " - CEP " + form.cep : ""}`;
+          setSuggestKind("empresa");
+          setSuggestData({
+            nome: form.empresa,
+            doc: form.cnpj,
+            telefone: form.telefone,
+            email: form.email_1,
+            endereco: form.rua ? endereco : "",
+          });
+          setSuggestOpen(true);
+        } else {
+          if (!isValidCPF(form.cpf)) return;
+          const digits = form.cpf.replace(/\D/g, "");
+          if (dismissedDocs.has(digits)) return;
+          const { data } = await (supabase as any)
+            .from("commercial_requests").select("id").eq("cnpj", digits).limit(1);
+          if (data && data.length) return;
+          setSuggestKind("contato");
+          setSuggestData({
+            nome: form.cliente_nome,
+            doc: form.cpf,
+            telefone: form.telefone,
+            email: form.email_1,
+          });
+          setSuggestOpen(true);
+        }
+      } catch (err) {
+        console.warn("[suggest-early] check failed", err);
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.cnpj, form.cpf, docType, open, dismissedDocs]);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -958,75 +1008,7 @@ export default function RequestsList() {
       }
     } catch (e) { console.warn("[push] dispatch failed", e); }
 
-    // Sugestão pós-cadastro: contato (CPF) ou empresa (CNPJ) inexistentes
-    if (hasCpf) {
-      try {
-        const phoneDigits = String(form.telefone || "").replace(/\D/g, "");
-        const emailNorm = String(form.email_1 || "").trim().toLowerCase();
-        const cpfDigits = String(form.cpf || "").replace(/\D/g, "");
-        let exists = false;
-        if (phoneDigits) {
-          const { data: byPhone } = await (supabase as any)
-            .from("rd_contacts").select("id").ilike("phone", `%${phoneDigits}%`).limit(1);
-          if (byPhone && byPhone.length) exists = true;
-        }
-        if (!exists && emailNorm) {
-          const { data: byEmail } = await (supabase as any)
-            .from("rd_contacts").select("id").ilike("email", emailNorm).limit(1);
-          if (byEmail && byEmail.length) exists = true;
-        }
-        if (!exists && cpfDigits) {
-          const { data: byCpf } = await (supabase as any)
-            .from("commercial_requests").select("id").eq("cnpj", cpfDigits)
-            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000").limit(1);
-          if (byCpf && byCpf.length) exists = true;
-        }
-        if (!exists) {
-          setSuggestKind("contato");
-          setSuggestData({
-            nome: form.cliente_nome,
-            doc: form.cpf,
-            telefone: form.telefone,
-            email: form.email_1,
-          });
-          setSuggestOpen(true);
-        }
-      } catch (err) {
-        console.warn("[suggest-contact] check failed", err);
-      }
-    } else if (hasCnpj) {
-      try {
-        const cnpjDigits = String(form.cnpj || "").replace(/\D/g, "");
-        const nameNorm = String(form.empresa || "").trim();
-        let exists = false;
-        if (cnpjDigits) {
-          // rd_organizations.cnpj pode estar formatado ou só dígitos — checa ambos
-          const { data: byCnpj } = await (supabase as any)
-            .from("rd_organizations").select("id")
-            .or(`cnpj.eq.${form.cnpj},cnpj.eq.${cnpjDigits}`)
-            .limit(1);
-          if (byCnpj && byCnpj.length) exists = true;
-        }
-        if (!exists && nameNorm) {
-          const { data: byName } = await (supabase as any)
-            .from("rd_organizations").select("id").ilike("name", nameNorm).limit(1);
-          if (byName && byName.length) exists = true;
-        }
-        if (!exists) {
-          setSuggestKind("empresa");
-          setSuggestData({
-            nome: form.empresa,
-            doc: form.cnpj,
-            telefone: form.telefone,
-            email: form.email_1,
-            endereco: enderecoAtendimento,
-          });
-          setSuggestOpen(true);
-        }
-      } catch (err) {
-        console.warn("[suggest-company] check failed", err);
-      }
-    }
+    // Sugestão de cadastro agora ocorre durante a digitação do CPF/CNPJ (ver useEffect acima).
 
 
     setOpen(false);
@@ -2168,7 +2150,16 @@ export default function RequestsList() {
       </Dialog>
 
       {/* Sugerir cadastro (CPF → contato / CNPJ → empresa) */}
-      <Dialog open={suggestOpen} onOpenChange={setSuggestOpen}>
+      <Dialog
+        open={suggestOpen}
+        onOpenChange={(o) => {
+          if (!o && suggestData?.doc) {
+            const d = suggestData.doc.replace(/\D/g, "");
+            if (d) setDismissedDocs((prev) => new Set(prev).add(d));
+          }
+          setSuggestOpen(o);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
@@ -2194,7 +2185,16 @@ export default function RequestsList() {
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setSuggestOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (suggestData?.doc) {
+                  const d = suggestData.doc.replace(/\D/g, "");
+                  if (d) setDismissedDocs((prev) => new Set(prev).add(d));
+                }
+                setSuggestOpen(false);
+              }}
+            >
               Agora não
             </Button>
             <Button
