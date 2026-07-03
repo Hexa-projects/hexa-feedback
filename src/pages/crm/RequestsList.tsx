@@ -770,10 +770,11 @@ export default function RequestsList() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Kpi label="Total" value={kpis.total} />
           <Kpi label="Pendentes" value={kpis.pendentes} tone="amber" />
           <Kpi label="Aprovadas" value={kpis.aprovadas} tone="emerald" />
+          <Kpi label="Reprovadas" value={kpis.reprovadas} tone="rose" />
           <Kpi
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
