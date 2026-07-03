@@ -249,9 +249,11 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       return pathname === to || pathname.startsWith(to + "/");
     };
     const visibleChildren = item.children.filter(c => {
-      if (c.roles && !c.roles.includes(role)) return false;
-      if (c.setores && !(setor && c.setores.includes(setor))) return false;
-      return true;
+      if (!c.roles && !c.setores) return true;
+      const roleMatch = c.roles ? c.roles.includes(role) : false;
+      const setorMatch = c.setores ? !!(setor && c.setores.includes(setor)) : false;
+      if (c.roles && c.setores) return roleMatch || setorMatch;
+      return c.roles ? roleMatch : setorMatch;
     });
     const activeChildTo = visibleChildren
       .filter(c => !c.wip && matchesChild(c.to))
