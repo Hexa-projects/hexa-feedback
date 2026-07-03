@@ -52,7 +52,11 @@ type Contact = {
   telefones: string[];
   cargo: string;
   negociacoes: number;
+  whatsapp?: string;
+  phonesData?: PhoneEntry[];
 };
+
+type PhoneEntry = { tipo: "Comercial" | "Residencial" | "Celular"; numero: string };
 
 const MOCK_CONTACTS: Contact[] = [
   {
