@@ -1,7 +1,7 @@
 import { corsHeaders, serviceRoleClient, exchangeCode, encryptSecret } from "../_shared/rd-client.ts";
 
 const APP_URL = Deno.env.get("APP_PUBLIC_URL") ?? "https://hexaos-v2.lovable.app";
-const RETURN_PATH = "/crm/integrations/rd-station";
+const RETURN_PATH = "/settings/integrations/rd-station";
 
 function redirect(status: "ok" | "error", detail?: string) {
   const url = new URL(APP_URL + RETURN_PATH);

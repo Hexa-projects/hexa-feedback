@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, Users, KeyRound, FileText, Zap, Plug, Settings2,
   Plus, Trash2, Edit2, Save, X, UserCheck, UserX, RefreshCw,
-  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone
+  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone, PlugZap
 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
@@ -848,8 +849,10 @@ function MSTeamsTab() {
 
 
 function IntegrationsTab() {
+  const navigate = useNavigate();
   const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
   const [configuredIntegrations, setConfiguredIntegrations] = useState<Record<string, boolean>>({});
+  const [rdInfo, setRdInfo] = useState<{ status: string; last_sync: string | null; last_error: string | null } | null>(null);
 
   useEffect(() => {
     const checkConfigs = async () => {
@@ -865,7 +868,24 @@ function IntegrationsTab() {
         setConfiguredIntegrations(map);
       }
     };
+    const loadRd = async () => {
+      const { data } = await supabase
+        .from("crm_integrations")
+        .select("status,last_full_sync_at,last_delta_sync_at,last_error")
+        .eq("provider", "rd_station")
+        .maybeSingle();
+      if (data) {
+        setRdInfo({
+          status: (data as any).status ?? "disconnected",
+          last_sync: (data as any).last_delta_sync_at ?? (data as any).last_full_sync_at ?? null,
+          last_error: (data as any).last_error ?? null,
+        });
+      } else {
+        setRdInfo({ status: "disconnected", last_sync: null, last_error: null });
+      }
+    };
     checkConfigs();
+    loadRd();
   }, []);
 
   if (activeIntegration === "whatsapp") {
@@ -877,6 +897,12 @@ function IntegrationsTab() {
 
   const getStatus = (key: string): "ativo" | "pendente" | "erro" => {
     if (key === "openclaw") return "ativo";
+    if (key === "rd_station") {
+      if (!rdInfo) return "pendente";
+      if (rdInfo.status === "connected") return "ativo";
+      if (rdInfo.status === "error") return "erro";
+      return "pendente";
+    }
     return configuredIntegrations[key] ? "ativo" : "pendente";
   };
 
@@ -908,6 +934,21 @@ function IntegrationsTab() {
       descricao: "Gateway de automação e integrações operacionais.",
       icon: Zap,
       config: ["URL", "Token", "Ambiente"],
+    },
+    {
+      key: "rd_station",
+      nome: "RD Station",
+      descricao: "CRM e Marketing: sincronização de contatos, empresas, negócios e webhooks.",
+      icon: PlugZap,
+      config: ["Client ID", "Client Secret", "OAuth", "Webhooks"],
+      extra: rdInfo
+        ? [
+            rdInfo.last_sync
+              ? `Última sync: ${new Date(rdInfo.last_sync).toLocaleString("pt-BR")}`
+              : "Nunca sincronizado",
+            rdInfo.last_error ? `Erro: ${rdInfo.last_error.slice(0, 80)}` : null,
+          ].filter(Boolean) as string[]
+        : [],
     },
   ];
 
@@ -951,6 +992,13 @@ function IntegrationsTab() {
                         <Badge key={c} variant="outline" className="text-xs font-normal">{c}</Badge>
                       ))}
                     </div>
+                    {"extra" in int && (int as any).extra?.length ? (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                        {(int as any).extra.map((line: string) => (
+                          <div key={line}>{line}</div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <Button
@@ -961,6 +1009,8 @@ function IntegrationsTab() {
                       setActiveIntegration("whatsapp");
                     } else if (int.key === "calendar") {
                       setActiveIntegration("calendar");
+                    } else if (int.key === "rd_station") {
+                      navigate("/settings/integrations/rd-station");
                     } else if (getStatus(int.key) === "ativo") {
                       toast.info("Configuração avançada será habilitada em breve");
                     } else {

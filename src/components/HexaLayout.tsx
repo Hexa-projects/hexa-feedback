@@ -66,7 +66,6 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
       { to: "/crm/lixeira", label: "Lixeira", icon: Trash2, roles: ["admin", "gestor"] },
-      { to: "/crm/integrations/rd-station", label: "RD Station", icon: PlugZap, roles: ["admin", "gestor"] },
     ],
   },
   {
