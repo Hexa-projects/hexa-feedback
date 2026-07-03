@@ -28,6 +28,7 @@ interface UserProfile {
   funcao: string;
   onboarding_completo: boolean;
   created_at: string;
+  aprovador_base_conhecimento?: boolean;
 }
 
 interface UserRole {
@@ -319,6 +320,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                   <th className="text-left p-3 font-medium hidden md:table-cell">Setor</th>
                   <th className="text-left p-3 font-medium hidden lg:table-cell">Função</th>
                   <th className="text-left p-3 font-medium">Perfil</th>
+                  <th className="text-center p-3 font-medium hidden md:table-cell" title="Responsável pela aprovação da Base de Conhecimento">Aprovador BC</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Status</th>
                   <th className="text-right p-3 font-medium">Ações</th>
                 </tr>
@@ -365,6 +367,23 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                           {ROLE_LABELS[u.role]}
                         </Badge>
                       )}
+                    </td>
+                    <td className="p-3 hidden md:table-cell text-center">
+                      <Switch
+                        checked={!!u.aprovador_base_conhecimento}
+                        onCheckedChange={async (v) => {
+                          const { error } = await supabase
+                            .from("profiles")
+                            .update({ aprovador_base_conhecimento: v })
+                            .eq("id", u.id);
+                          if (error) {
+                            toast.error("Falha ao atualizar aprovador");
+                            return;
+                          }
+                          setUsers(prev => prev.map(x => x.id === u.id ? { ...x, aprovador_base_conhecimento: v } : x));
+                          toast.success(v ? "Definido como aprovador" : "Removido como aprovador");
+                        }}
+                      />
                     </td>
                     <td className="p-3 hidden md:table-cell">
                       {u.onboarding_completo ? (
