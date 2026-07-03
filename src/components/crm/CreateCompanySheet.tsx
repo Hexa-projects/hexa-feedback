@@ -252,30 +252,19 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
 
   return (
     <>
-      <Sheet
+      <Dialog
         open={open}
         onOpenChange={v => {
           if (!v) requestClose();
           else onOpenChange(true);
         }}
       >
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-lg flex flex-col p-0"
-          onInteractOutside={e => {
-            e.preventDefault();
-            requestClose();
-          }}
-          onEscapeKeyDown={e => {
-            e.preventDefault();
-            requestClose();
-          }}
-        >
-          <SheetHeader className="p-6 border-b">
-            <SheetTitle>{mode === "edit" ? "Editar Empresa" : "Criar Empresa"}</SheetTitle>
-          </SheetHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{mode === "edit" ? "Editar Empresa" : "Criar Empresa"}</DialogTitle>
+          </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <div className="space-y-5 py-2">
             <div className="space-y-2">
               <Label htmlFor="cc-cnpj">CNPJ</Label>
               <div className="relative">
@@ -310,6 +299,16 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
               {nameError && (
                 <p className="text-xs text-destructive">Nome da empresa é obrigatório</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cc-address">Endereço</Label>
+              <Input
+                id="cc-address"
+                placeholder="Digite o endereço da empresa"
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
@@ -384,20 +383,9 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
                 className="min-h-[100px] resize-y"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cc-address">Endereço</Label>
-              <Input
-                id="cc-address"
-                placeholder="Digite o endereço da empresa"
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-              />
-            </div>
           </div>
 
-
-          <div className="flex items-center justify-between gap-3 p-4 border-t bg-background">
+          <DialogFooter className="flex flex-row items-center justify-between gap-3 sm:justify-between">
             <Button type="button" variant="outline" onClick={requestClose} disabled={saving}>
               Cancelar
             </Button>
@@ -405,9 +393,9 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {mode === "edit" ? "Salvar alterações" : "Criar Empresa"}
             </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
         <AlertDialogContent>
