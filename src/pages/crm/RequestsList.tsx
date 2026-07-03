@@ -1669,12 +1669,53 @@ export default function RequestsList() {
                 </Field>
                 <div className="md:col-span-2">
                   <Field label="Vendedor(a) *">
-                    <Input
-                      value={form.responsavel_comercial}
-                      onChange={(e) =>
-                        setForm({ ...form, responsavel_comercial: e.target.value })
-                      }
-                    />
+                    <div className="space-y-2">
+                      <Select
+                        value={
+                          vendedorMode === "other"
+                            ? "__other__"
+                            : sellers.some((s) => s.nome === form.responsavel_comercial)
+                            ? form.responsavel_comercial
+                            : form.responsavel_comercial
+                            ? "__other__"
+                            : ""
+                        }
+                        onValueChange={(v) => {
+                          if (v === "__other__") {
+                            setVendedorMode("other");
+                            if (sellers.some((s) => s.nome === form.responsavel_comercial)) {
+                              setForm({ ...form, responsavel_comercial: "" });
+                            }
+                          } else {
+                            setVendedorMode("select");
+                            setForm({ ...form, responsavel_comercial: v });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um vendedor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sellers.map((s) => (
+                            <SelectItem key={s.id} value={s.nome}>
+                              {s.nome}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__other__">Outro (digitar manualmente)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {(vendedorMode === "other" ||
+                        (form.responsavel_comercial &&
+                          !sellers.some((s) => s.nome === form.responsavel_comercial))) && (
+                        <Input
+                          placeholder="Digite o nome do vendedor(a)"
+                          value={form.responsavel_comercial}
+                          onChange={(e) =>
+                            setForm({ ...form, responsavel_comercial: e.target.value })
+                          }
+                        />
+                      )}
+                    </div>
                   </Field>
                 </div>
               </div>
