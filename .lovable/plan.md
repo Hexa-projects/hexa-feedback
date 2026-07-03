@@ -1,122 +1,104 @@
-# Reinvenção Dashboards HexaOS — Central de Inteligência Operacional
+# Fase 1 — Integração RD Station CRM v2
 
-Objetivo: transformar `/executive`, `/reports`, `/home` e dashboards setoriais em uma arquitetura unificada, com camada de KPIs consistente, filtros globais, drill-down e exportações. Sem remover funcionalidade existente sem substituto.
+Escopo confirmado: **schema + OAuth + sync full/delta + webhook + tela de integração**. UI de merge (leads/companies/deals/kanban unificados) e MCP interno ficam para Fase 2/3. O CRM atual do HexaOS (LeadsList, KanbanFunnel, RequestsList) **não é alterado** nesta fase.
 
-## Escopo (o que vai ser feito)
+## Segurança e segredos
 
-### 1. Fundação: camada de KPIs + design system de dashboard
-Criar componentes reutilizáveis e hooks centralizados. Nada de lógica de KPI espalhada dentro das telas.
+Já salvos: `RD_STATION_CLIENT_ID`, `RD_STATION_CLIENT_SECRET`. Tokens RD (`access_token`, `refresh_token`) vivem apenas no Supabase, criptografados em repouso via `pgsodium` (ou coluna `text` protegida por RLS estrita — decido no momento se `pgsodium` estiver disponível no projeto). Frontend nunca recebe tokens; toda troca passa por Edge Function com JWT do usuário.
 
-**Componentes novos em `src/components/dashboard/`:**
-- `DashboardShell` — layout com header (título, período, última atualização, botão atualizar), filtros e slots
-- `DashboardFilters` + `DateRangeFilter` + `SectorFilter` — filtros globais persistidos em URL/localStorage
-- `KpiCard` / `KpiTrendCard` / `KpiGrid` — card denso com valor, formato, delta vs período anterior, status semântico (healthy/attention/critical/neutral), tooltip com fonte do dado
-- `ChartCard` — wrapper com título, ações, empty/error/loading
-- `TrendLineChart`, `StatusBreakdownChart`, `FunnelChart` — Recharts responsivos
-- `AlertPriorityList` — lista priorizada, cada item com ação rápida e link
-- `DrilldownDrawer` — sheet que abre com tabela paginada dos registros que compõem o KPI
-- `EmptyDashboardState` — estado vazio explicando o que cadastrar
-- `ExportMenu` — CSV/JSON
-- `SectionSummaryTable` — resumo por setor
-- `DataSourceTooltip` — informa origem do dado
+## 1. Migração de banco
 
-**Camada de definição em `src/lib/`:**
-- `kpi-definitions.ts` — tipo `KpiDefinition` com `{ key, label, description, value, previousValue, trend, format, domain, sourceTables, status, target?, drilldownRecords? }`
-- `kpi-utils.ts` — helpers de formato (currency BRL, percent, duration), comparação de período, status semântico, agregações
+Migration única `crm_rd_station_integration` criando:
 
-**Hooks em `src/hooks/dashboard/`:**
-- `useDashboardFilters` — estado global de filtros (período, setor, responsável, unidade, cliente) via Zustand ou contexto
-- `useExecutiveKpis`, `useCommercialKpis`, `useFinanceKpis`, `useOperationsKpis`, `useQualityKpis`, `useStockKpis`, `useLabKpis`, `useProjectKpis`, `usePeopleProcessKpis`
-- `useKpiDrilldown(kpiKey)` — busca paginada dos registros de um KPI
+**Infra de integração**
+- `crm_integrations` — provider (`rd_station`), status, `client_id`, escopo, timestamps. RLS: só admin/CEO.
+- `crm_external_accounts` — 1 conta RD por workspace: `access_token_enc`, `refresh_token_enc`, `expires_at`, `rd_account_id`, `connected_by`, `connected_at`. RLS: só admin/CEO; service_role total.
+- `rd_sync_jobs` — `id`, `type` (`full`|`delta`|`webhook`), `status` (`queued`|`running`|`success`|`error`|`partial`), `started_at`, `finished_at`, `stats jsonb`, `error`, `triggered_by`.
+- `rd_sync_logs` — `job_id`, `entity`, `level` (`info`|`warn`|`error`), `message`, `context jsonb`, `created_at`. Nunca guarda token/secret; sanitização no server.
+- `rd_webhook_events` — `id`, `event_type`, `event_hash` (unique — dedup), `payload jsonb`, `received_at`, `processed_at`, `status`, `error`.
 
-Regras dos hooks: `Promise.all`, `{ data, loading, error, refetch }`, cálculo de período anterior, respeitam filtros globais, ligam-se ao Supabase client existente.
+**Entidades espelhadas (todas com padrão comum)**
+Campos comuns em cada tabela: `id uuid pk default gen_random_uuid()`, `rd_id text unique not null`, `raw_payload jsonb not null`, `rd_created_at timestamptz`, `rd_updated_at timestamptz`, `last_synced_at timestamptz default now()`, `sync_status text default 'synced'`, `deleted_at timestamptz`, `created_at`, `updated_at`.
 
-### 2. Cockpit Executivo — `/executive`
-Refatorar `ExecutiveDashboard.tsx`:
-- Header com período, "atualizado há X min", botão atualizar
-- Filtros globais (sheet no mobile)
-- Grid de KPIs principais (12 cards): receita/despesa/resultado do mês, pipeline total, pipeline ponderado, solicitações pendentes, OS críticas, OS atrasadas, estoque crítico, RNC abertas, ações qualidade atrasadas, projetos atrasados
-- Painel "Atenção agora" — `AlertPriorityList` com solicitações pendentes, OS críticas/vencidas, leads parados, propostas vencendo, contas vencidas, RNC atrasadas, estoque zerado. Cada item linka pro registro.
-- Gráficos: evolução receita/despesa/resultado, pipeline por estágio, OS por status/urgência, qualidade (abertas/atrasadas/eficácia), estoque por faixa
-- `SectionSummaryTable` — Comercial, Operações, Financeiro, Qualidade, Estoque, Laboratório, Projetos com KPIs-chave e link "abrir detalhes" que leva à aba correspondente de `/reports`
+Tabelas: `rd_users`, `rd_custom_fields`, `rd_pipelines`, `rd_pipeline_stages` (FK `pipeline_id → rd_pipelines`), `rd_sources`, `rd_lost_reasons`, `rd_products`, `rd_organizations`, `rd_contacts` (FK opcional `organization_id`), `rd_deals` (FKs `pipeline_id`, `stage_id`, `user_id`, `organization_id`, `contact_id`, `source_id`, `lost_reason_id`), `rd_tasks` (FK opcional `deal_id`, `user_id`).
 
-### 3. Central de BI — `/reports`
-Refatorar `Dashboard.tsx` para uma única rota com abas (mais simples e coerente do que subrotas):
-- Abas: Visão Geral, Comercial, Financeiro, Operações, Qualidade, Estoque, Laboratório, Projetos, Pessoas & Processos
-- Filtros persistentes por aba (localStorage + URL param)
-- `ExportMenu` (CSV/JSON) e botão "Gerar snapshot executivo" gravando em `kpi_snapshots`
-- Cada aba consome seu hook `useXxxKpis` e renderiza `KpiGrid` + `ChartCard`s + `SectionSummaryTable`
-- Drill-down via `DrilldownDrawer` ao clicar em qualquer KPI ou barra de gráfico
-- Skeleton loading por card (falha em um não bloqueia os outros)
-- Estado vazio útil e erro com "tentar novamente"
+Colunas denormalizadas úteis (nome, email, valor, etc.) além do `raw_payload` para queries rápidas na UI.
 
-### 4. Home `/home`
-Manter como visão pessoal do usuário. Ajustar apenas para usar `KpiCard` e linguagem visual dos novos componentes, sem alterar funcionalidade. Card "Insights" continua removido (já foi).
+**GRANTs obrigatórios** em todas as tabelas `public.*`: `SELECT/INSERT/UPDATE/DELETE` para `authenticated`, `ALL` para `service_role`, sem grants para `anon`.
 
-### 5. Dashboards setoriais existentes
-`FinanceDashboard`, `StockDashboard`, `QualityDashboard`, `WorkOrdersList` (header KPIs), `ProjectsList` (header), `LabPartsList` (header): substituir os cards atuais pelos novos `KpiCard`/`KpiGrid` consumindo o hook do domínio. Layout e rotas mantidos. Sem tocar em formulários, listas, criação, edição.
+**RLS**
+- `crm_integrations`, `crm_external_accounts`, `rd_sync_jobs`, `rd_sync_logs`, `rd_webhook_events`: leitura só para roles `admin`/`ceo` (via `has_role`).
+- `rd_*` (dados de negócio): leitura para `authenticated`; mutação apenas via `service_role` (Edge Functions).
 
-### 6. Regras de negócio (implementadas em `kpi-utils` / hooks)
-- Ganho/Fechado = fechamento comercial; Perdido/Cancelado sai do pipeline ativo
-- OS atrasada = não concluída/cancelada com prazo passado
-- RNC/RACP encerrada/cancelada não conta como aberta
-- Ações qualidade concluídas/canceladas não são pendentes
-- Financeiro: previsto vs realizado pelo status; vencidas = pending com `data_vencimento < today`
-- Estoque: crítico = 0; baixo = >0 e ≤ mínimo
-- Projeto atrasado = não concluído com `data_prevista < today`
+**Índices**: `rd_id`, `rd_updated_at`, `deleted_at`, FKs, `event_hash` unique.
 
-### 7. Performance
-- Agregações via `count: 'exact', head: true` sempre que possível
-- `Promise.all` por hook
-- Drill-downs paginados (page size 25)
-- Se um domínio ficar pesado, migração SQL criando view ou RPC (só se necessário — deixar para fase 2)
-- Snapshots vão pra `kpi_snapshots` existente
+## 2. Edge Functions (sete)
 
-### 8. RLS / Perfis
-Não altero políticas nesta entrega. Os hooks respeitam o que o RLS retorna: admin/gestor vê tudo, colaborador vê o setor dele. Diretoria vê consolidado via `is_privileged`.
+Todas com CORS padrão, validação Zod, JWT verificado via `getClaims()` exceto webhook. Nenhum token vazado em logs.
 
-### 9. i18n e encoding
-Toda interface em pt-BR. Corrijo textos com encoding quebrado nos arquivos tocados.
+### `rd-oauth-start`
+- Auth: usuário admin/CEO logado.
+- Gera state (hmac), grava em `crm_integrations.pending_state`, retorna URL de autorização:
+  `https://api.rd.services/auth/dialog?client_id=...&redirect_uri=SUPABASE_URL/functions/v1/rd-oauth-callback&state=...`.
 
-## Fora do escopo (não vou fazer nesta entrega)
-- Novas RLS policies (usa as atuais)
-- Novas migrations SQL a menos que uma view seja obrigatória para performance
-- Redesign de formulários/listas dos módulos
-- Alterações no CRM Kanban, OS, Solicitações, Onboarding, Núcleo removido
-- Novos KPIs que exijam novas colunas de banco
+### `rd-oauth-callback`
+- Público (sem JWT). Valida `state`, troca `code` por tokens em `https://api.rd.services/auth/token`, criptografa e persiste em `crm_external_accounts`, marca `crm_integrations.status='connected'`, redireciona para `/crm/integrations/rd-station?connected=1`.
 
-## Ordem de execução
-1. Fundação (componentes + hooks + kpi-definitions + kpi-utils)
-2. `/reports` como Central de BI com abas — 9 hooks setoriais
-3. `/executive` Cockpit consumindo os mesmos hooks
-4. Substituir cards dos dashboards setoriais (Finance, Stock, Quality, etc.) pelos novos componentes
-5. `npm run build` + verificação de tipos
-6. Ajustes de responsividade (filtros viram sheet no mobile)
+### `rd-refresh-token`
+- Interno. Chamada pelas outras functions antes de qualquer request: se `expires_at - now() < 5min`, faz `POST /auth/token` com `refresh_token`, atualiza **os dois** tokens (RD rotaciona refresh_token) e o `expires_at`.
 
-## Entregáveis técnicos
-```
-src/lib/kpi-definitions.ts
-src/lib/kpi-utils.ts
-src/hooks/dashboard/useDashboardFilters.ts
-src/hooks/dashboard/useExecutiveKpis.ts
-src/hooks/dashboard/useCommercialKpis.ts
-src/hooks/dashboard/useFinanceKpis.ts
-src/hooks/dashboard/useOperationsKpis.ts
-src/hooks/dashboard/useQualityKpis.ts
-src/hooks/dashboard/useStockKpis.ts
-src/hooks/dashboard/useLabKpis.ts
-src/hooks/dashboard/useProjectKpis.ts
-src/hooks/dashboard/usePeopleProcessKpis.ts
-src/hooks/dashboard/useKpiDrilldown.ts
-src/components/dashboard/*.tsx (14 componentes listados)
-src/pages/ExecutiveDashboard.tsx (refatorado)
-src/pages/Dashboard.tsx (vira Central de BI com abas)
-src/pages/finance/FinanceDashboard.tsx (adota componentes)
-src/pages/stock/StockDashboard.tsx (adota componentes)
-src/pages/quality/QualityDashboard.tsx (adota componentes)
-```
+### `rd-sync-full`
+- Auth: admin/CEO. Cria `rd_sync_jobs` (`type=full`), roda em background via `EdgeRuntime.waitUntil`, importa nesta ordem: `users → custom_fields → pipelines → stages → sources → lost_reasons → products → organizations → contacts → deals → tasks`. Paginação (`page`, `limit=200`), upsert por `rd_id`. Após cada entidade, grava `rd_sync_logs`. Atualiza `stats` no job. Trata 429 com backoff exponencial.
 
-## Aviso de tamanho
-Este é um refactor grande (~25 arquivos novos + ~6 refatorados). Vou entregar em uma sequência de mensagens dentro desta task, começando pela fundação, depois `/reports`, depois `/executive`, depois setoriais. Cada fase compila antes de partir pra próxima.
+### `rd-sync-delta`
+- Auth: admin/CEO. Igual ao full mas com filtro `updated_at_period[start]=<last_synced_at>` quando a entidade suportar; entidades sem esse filtro caem para full incremental por `rd_id`. Atualiza `last_synced_at` global no `crm_integrations`.
 
-Confirma que posso seguir com essa arquitetura (abas dentro de `/reports` em vez de subrotas, sem novas migrations agora, dashboards setoriais reaproveitam os novos componentes sem mudar sua rota)?
+### `rd-webhook`
+- Público (RD Station não assina). Retorna `200 OK` em <1s: computa `event_hash = sha256(event_type + payload_id + updated_at)`, faz `INSERT ... ON CONFLICT (event_hash) DO NOTHING` em `rd_webhook_events`, dispara processamento assíncrono via `EdgeRuntime.waitUntil` (upsert na tabela normalizada correspondente + log). Se conflict → já processado, responde 200.
+
+### `rd-create-webhooks`
+- Auth: admin/CEO. Chama `POST /crm/v2/webhooks` no RD para os eventos mínimos listados, apontando para `SUPABASE_URL/functions/v1/rd-webhook`. Idempotente: lista os webhooks existentes primeiro e cria só os que faltam.
+
+`supabase/config.toml`: `rd-oauth-callback` e `rd-webhook` com `verify_jwt = false`; demais com verify_jwt padrão + validação `getClaims()` no código.
+
+## 3. Cliente Supabase compartilhado (Edge)
+
+`supabase/functions/_shared/rd-client.ts`:
+- `getAccessToken(supabase)` — lê `crm_external_accounts`, renova se necessário chamando `rd-refresh-token` internamente.
+- `rdFetch(path, opts)` — wrapper com retry 429/5xx (backoff), headers `Authorization: Bearer`, timeout 25s.
+- `paginate(path, params)` — async iterator que percorre todas as páginas.
+- `encrypt/decrypt` — helpers usando `SUPABASE_SERVICE_ROLE` + `pgsodium` (se disponível) ou fallback AES-GCM com chave derivada de segredo dedicado (`RD_TOKEN_ENC_KEY`, gerado com `generate_secret` se `pgsodium` não estiver instalado).
+
+## 4. Frontend — apenas a tela de integração
+
+Nova rota: `/crm/integrations/rd-station` → `src/pages/crm/integrations/RdStationIntegration.tsx`.
+
+Componentes:
+- Header com status (badge `Conectado`/`Desconectado`), última sincronização, ID da conta RD.
+- Botão **Conectar RD Station** → chama `rd-oauth-start` via `supabase.functions.invoke`, redireciona para URL retornada.
+- Botão **Sincronização completa** → dispara `rd-sync-full`, mostra progresso via polling em `rd_sync_jobs` (Realtime na Fase 2).
+- Botão **Sincronizar alterações** → `rd-sync-delta`.
+- Botão **Registrar webhooks** → `rd-create-webhooks`.
+- Cards com contagens: `SELECT count(*) FROM rd_pipelines/rd_deals/…` (view agregada `rd_sync_counts`).
+- Tabela de últimos jobs (`rd_sync_jobs` order by `started_at desc limit 10`) com status e stats.
+- Painel "Erros recentes" — últimos 20 registros de `rd_sync_logs` com `level='error'`.
+- Painel de webhooks ativos (lista consultada via nova função `rd-list-webhooks` — small, incluída junto de `rd-create-webhooks`).
+
+Link no menu lateral (`HexaLayout`) só para admin/CEO: **Integrações → RD Station** (sob o grupo "Configurações" ou "CRM"). Nenhuma outra tela do CRM é tocada.
+
+## 5. Validação
+
+- `npm run build` limpo, tipagem OK.
+- Fluxo manual: conectar → sync full → verificar contagens → registrar webhooks → simular evento (curl) → confirmar dedup.
+- `rd_sync_logs` sem nenhum token exposto (checar amostra).
+- RLS testada: usuário comum não vê `crm_external_accounts`.
+
+## Fora de escopo (Fases 2/3)
+
+- Rotas `/crm/leads`, `/crm/companies`, `/crm/contacts`, `/crm/deals`, `/crm/kanban`, `/crm/tasks`, `/crm/sync-logs` unificados.
+- Merge/dedup entre leads HexaOS ↔ contacts RD (por email/CNPJ/telefone).
+- Camada MCP interna (`rd.list_*`, `rd.search_crm`, etc.).
+- Realtime na UI (polling agora, Realtime depois).
+- Reprocessamento manual de webhooks falhos.
+
+Confirmando este plano, eu executo: migration → 3 secrets adicionais se necessário (`RD_TOKEN_ENC_KEY` via `generate_secret`) → 8 Edge Functions + shared client → tela React → deploy → build check.
