@@ -426,9 +426,32 @@ export default function ContactsList() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [search, pageSize, filterEmpresa, filterCargo, filterEmail, filterPhone, filterPhoneType, filterDeals]);
 
-  const activeFilters = search.trim() ? 1 : 0;
+  const activeFilters =
+    (search.trim() ? 1 : 0) +
+    (filterEmpresa !== "all" ? 1 : 0) +
+    (filterCargo.trim() ? 1 : 0) +
+    (filterEmail !== "any" ? 1 : 0) +
+    (filterPhone !== "any" ? 1 : 0) +
+    (filterPhoneType !== "any" ? 1 : 0) +
+    (filterDeals !== "any" ? 1 : 0);
+
+  const empresaOptions = useMemo(() => {
+    const s = new Set<string>();
+    contacts.forEach(c => { if (c.empresa.trim()) s.add(c.empresa); });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [contacts]);
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setFilterEmpresa("all");
+    setFilterCargo("");
+    setFilterEmail("any");
+    setFilterPhone("any");
+    setFilterPhoneType("any");
+    setFilterDeals("any");
+  };
 
   const pageSelectedCount = pageRows.filter(r => selected.has(r.id)).length;
   const allSelected = pageRows.length > 0 && pageSelectedCount === pageRows.length;
