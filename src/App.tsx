@@ -94,10 +94,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => (
-  <BrowserRouter>
-    <PwaInstallPrompt />
-    <PwaUpdatePrompt />
-    <Routes>
+  <Routes>
 
       <Route path="/" element={<Login />} />
       <Route path="/docs" element={<Suspense fallback={<PageLoader />}><PublicApiDocs /></Suspense>} />
@@ -192,21 +189,24 @@ const AppRoutes = () => (
       <Route path="/processes" element={<Navigate to="/coleta" replace />} />
       <Route path="/suggestions" element={<Navigate to="/coleta" replace />} />
 
-      <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
-    </Routes>
-  </BrowserRouter>
+    <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
+  </Routes>
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <PwaInstallPrompt />
+          <PwaUpdatePrompt />
+          <AppRoutes />
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );
 
 export default App;
