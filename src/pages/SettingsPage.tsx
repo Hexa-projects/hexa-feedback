@@ -849,8 +849,10 @@ function MSTeamsTab() {
 
 
 function IntegrationsTab() {
+  const navigate = useNavigate();
   const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
   const [configuredIntegrations, setConfiguredIntegrations] = useState<Record<string, boolean>>({});
+  const [rdInfo, setRdInfo] = useState<{ status: string; last_sync: string | null; last_error: string | null } | null>(null);
 
   useEffect(() => {
     const checkConfigs = async () => {
@@ -866,7 +868,24 @@ function IntegrationsTab() {
         setConfiguredIntegrations(map);
       }
     };
+    const loadRd = async () => {
+      const { data } = await supabase
+        .from("crm_integrations")
+        .select("status,last_full_sync_at,last_delta_sync_at,last_error")
+        .eq("provider", "rd_station")
+        .maybeSingle();
+      if (data) {
+        setRdInfo({
+          status: (data as any).status ?? "disconnected",
+          last_sync: (data as any).last_delta_sync_at ?? (data as any).last_full_sync_at ?? null,
+          last_error: (data as any).last_error ?? null,
+        });
+      } else {
+        setRdInfo({ status: "disconnected", last_sync: null, last_error: null });
+      }
+    };
     checkConfigs();
+    loadRd();
   }, []);
 
   if (activeIntegration === "whatsapp") {
@@ -878,6 +897,12 @@ function IntegrationsTab() {
 
   const getStatus = (key: string): "ativo" | "pendente" | "erro" => {
     if (key === "openclaw") return "ativo";
+    if (key === "rd_station") {
+      if (!rdInfo) return "pendente";
+      if (rdInfo.status === "connected") return "ativo";
+      if (rdInfo.status === "error") return "erro";
+      return "pendente";
+    }
     return configuredIntegrations[key] ? "ativo" : "pendente";
   };
 
