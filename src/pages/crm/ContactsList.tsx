@@ -430,7 +430,7 @@ export default function ContactsList() {
         </Popover>
 
         <div className="flex items-center gap-2 ml-auto">
-          <Button onClick={() => setCreateOpen(true)}>Criar contato</Button>
+          <Button onClick={openCreateContact}>Criar contato</Button>
         </div>
       </div>
 
