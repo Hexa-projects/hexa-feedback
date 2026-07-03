@@ -605,7 +605,7 @@ export default function CompaniesList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrgs.map(o => {
+                  {pageRows.map(o => {
                     const ownerId = ownerIdOf(o);
                     const owner = ownerId ? ownersById.get(ownerId) : null;
                     return (
