@@ -21,6 +21,7 @@ const ContractsList = lazy(() => import("./pages/crm/ContractsList"));
 const RequestsList = lazy(() => import("./pages/crm/RequestsList"));
 const RequestDetailPage = lazy(() => import("./pages/crm/RequestDetailPage"));
 const RequestsTrash = lazy(() => import("./pages/crm/RequestsTrash"));
+const RdStationIntegration = lazy(() => import("./pages/crm/integrations/RdStationIntegration"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
 const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
 const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
@@ -108,6 +109,7 @@ const AppRoutes = () => (
       <Route path="/crm/requests" element={<PrivateRoute><RequestsList /></PrivateRoute>} />
       <Route path="/crm/requests/:id" element={<PrivateRoute><RequestDetailPage /></PrivateRoute>} />
       <Route path="/crm/lixeira" element={<PrivateRoute><RequestsTrash /></PrivateRoute>} />
+      <Route path="/crm/integrations/rd-station" element={<PrivateRoute><RdStationIntegration /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
       {/* Projetos & Implantação */}
