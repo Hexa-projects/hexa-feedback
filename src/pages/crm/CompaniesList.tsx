@@ -10,9 +10,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Building2, ChevronDown, Filter, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
+
+const PAGE_SIZES = [10, 25, 50, 100];
 
 type Org = {
   id: string;
@@ -247,6 +256,25 @@ export default function CompaniesList() {
     users.forEach(u => m.set(u.rd_id, u));
     return m;
   }, [users]);
+
+  // pagination
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const total = filteredOrgs.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = filteredOrgs.slice(start, start + pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [quick, selectedOwners, preset, tableSearch]);
+
+  const pageNumbers = useMemo(() => buildPages(currentPage, totalPages), [
+    currentPage,
+    totalPages,
+  ]);
 
   const openPopover = (v: boolean) => {
     if (v) {
@@ -577,7 +605,7 @@ export default function CompaniesList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrgs.map(o => {
+                  {pageRows.map(o => {
                     const ownerId = ownerIdOf(o);
                     const owner = ownerId ? ownersById.get(ownerId) : null;
                     return (
@@ -595,6 +623,73 @@ export default function CompaniesList() {
                 </TableBody>
               </Table>
             )}
+
+            {/* Rodapé de paginação */}
+            {!loading && filteredOrgs.length > 0 && (
+              <div className="flex items-center justify-between gap-3 p-3 border-t flex-wrap">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Exibindo</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={v => setPageSize(Number(v))}
+                  >
+                    <SelectTrigger className="h-8 w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZES.map(s => (
+                        <SelectItem key={s} value={String(s)}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span>de {total} Empresas</span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  {pageNumbers.map((n, i) =>
+                    n === "..." ? (
+                      <span
+                        key={`e-${i}`}
+                        className="px-2 text-muted-foreground text-sm"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={n}
+                        size="sm"
+                        variant={n === currentPage ? "default" : "outline"}
+                        className={cn(
+                          "min-w-[36px]",
+                          n === currentPage && "bg-primary text-primary-foreground",
+                        )}
+                        onClick={() => setPage(n as number)}
+                      >
+                        {n}
+                      </Button>
+                    ),
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -605,4 +700,16 @@ export default function CompaniesList() {
       />
     </HexaLayout>
   );
+}
+
+function buildPages(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) pages.push("...");
+  for (let i = left; i <= right; i++) pages.push(i);
+  if (right < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
 }
