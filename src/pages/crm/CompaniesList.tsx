@@ -10,8 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Building2, ChevronDown, Filter, Search, X } from "lucide-react";
+import { Building2, ChevronDown, Filter, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
 
 type Org = {
   id: string;
@@ -174,6 +175,9 @@ export default function CompaniesList() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Create company sheet
+  const [createOpen, setCreateOpen] = useState(false);
+
   useEffect(() => {
     (async () => {
 
@@ -296,6 +300,9 @@ export default function CompaniesList() {
               Empresas sincronizadas do RD Station CRM
             </p>
           </div>
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Criar Empresa
+          </Button>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -591,6 +598,11 @@ export default function CompaniesList() {
           </CardContent>
         </Card>
       </div>
+      <CreateCompanySheet
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={org => setOrgs(prev => [org as Org, ...prev])}
+      />
     </HexaLayout>
   );
 }
