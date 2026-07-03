@@ -517,7 +517,15 @@ export default function ContactsList() {
                 </tr>
               ) : (
                 pageRows.map(c => (
-                  <tr key={c.id} className="border-b last:border-b-0 hover:bg-muted/30">
+                  <tr
+                    key={c.id}
+                    className={cn(
+                      "border-b last:border-b-0",
+                      selected.has(c.id)
+                        ? "bg-primary/10 hover:bg-primary/15"
+                        : "hover:bg-muted/30",
+                    )}
+                  >
                     <td className="p-3">
                       <Checkbox
                         checked={selected.has(c.id)}
