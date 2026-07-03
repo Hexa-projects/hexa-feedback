@@ -20,7 +20,6 @@ Deno.serve(async (req) => {
     const callbackUrl = creds.redirect_uri;
 
     const state = crypto.randomUUID() + "." + crypto.randomUUID();
-    const callbackUrl = redirectUri();
 
     // Ensure integration row exists, then update
     const { error: upsertError } = await svc.from("crm_integrations").upsert(
