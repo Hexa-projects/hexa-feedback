@@ -14,6 +14,7 @@ import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
 import { differenceInHours } from "date-fns";
 import RequestDetailModal from "@/pages/crm/RequestDetailModal";
+import OwnerFilterPopover, { type OwnerQuick, type OwnerOption } from "@/components/crm/OwnerFilterPopover";
 
 const extractRequestId = (notas: string | null | undefined): string | null => {
   if (!notas) return null;
@@ -120,6 +121,7 @@ export default function KanbanFunnel() {
   const { user, role } = useAuth();
   const canEditRequest = role === "admin" || role === "gestor";
   const [leads, setLeads] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<OwnerOption[]>([]);
   const [requestsById, setRequestsById] = useState<Record<string, any>>({});
   const [activeRequest, setActiveRequest] = useState<{ requestId: string; leadId: string } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -140,7 +142,8 @@ export default function KanbanFunnel() {
   });
   const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
   const [configOpen, setConfigOpen] = useState(false);
-  const [filterDeal, setFilterDeal] = useState<string>("todas");
+  const [ownerQuick, setOwnerQuick] = useState<OwnerQuick>("all");
+  const [selectedOwners, setSelectedOwners] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("em_andamento");
   const [filterSort, setFilterSort] = useState<string>("recentes");
 
@@ -191,6 +194,9 @@ export default function KanbanFunnel() {
         setRequestsById(map);
       }
     });
+    supabase.from("profiles").select("id, nome").order("nome", { ascending: true }).then(({ data }) => {
+      setProfiles((data || []).map((p: any) => ({ id: p.id, name: p.nome || "Sem nome" })));
+    });
   }, [user]);
 
   const handleDrop = async (newStatus: string) => {
@@ -235,13 +241,18 @@ export default function KanbanFunnel() {
 
   // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
   // Also hide leads that were soft-deleted (status = "lixeira").
-  const filteredLeads = useMemo(
-    () =>
-      leads.filter(
-        (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
-      ),
-    [leads, selectedFunnel],
-  );
+  const filteredLeads = useMemo(() => {
+    let list = leads.filter(
+      (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
+    );
+    if (ownerQuick === "mine" && user?.id) {
+      list = list.filter((l) => l.user_id === user.id);
+    } else if (selectedOwners.length > 0) {
+      const set = new Set(selectedOwners);
+      list = list.filter((l) => l.user_id && set.has(l.user_id));
+    }
+    return list;
+  }, [leads, selectedFunnel, ownerQuick, selectedOwners, user?.id]);
 
   const handleDeleteLead = async (lead: any) => {
     if (!canEditRequest) return;
@@ -309,13 +320,17 @@ export default function KanbanFunnel() {
         {selectedFunnel === "prospeccao" && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={filterDeal} onValueChange={setFilterDeal}>
-                <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as negociações</SelectItem>
-                  <SelectItem value="minhas">Minhas negociações</SelectItem>
-                </SelectContent>
-              </Select>
+              <OwnerFilterPopover
+                owners={profiles}
+                quick={ownerQuick}
+                selectedOwners={selectedOwners}
+                onChange={(q, ids) => {
+                  setOwnerQuick(q);
+                  setSelectedOwners(ids);
+                }}
+                allLabel="Todas as negociações"
+                mineLabel="Minhas negociações"
+              />
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
