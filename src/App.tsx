@@ -9,6 +9,9 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 // Eagerly loaded (auth flow)
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
+import PwaInstallPrompt from "./components/pwa/PwaInstallPrompt";
+import PwaUpdatePrompt from "./components/pwa/PwaUpdatePrompt";
+
 
 // Lazy-loaded pages
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -92,7 +95,10 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <BrowserRouter>
+    <PwaInstallPrompt />
+    <PwaUpdatePrompt />
     <Routes>
+
       <Route path="/" element={<Login />} />
       <Route path="/docs" element={<Suspense fallback={<PageLoader />}><PublicApiDocs /></Suspense>} />
       <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
