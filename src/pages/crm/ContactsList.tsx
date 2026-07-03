@@ -14,6 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -259,8 +269,14 @@ export default function ContactsList() {
 
   const activeFilters = search.trim() ? 1 : 0;
 
-  const allSelected =
-    pageRows.length > 0 && pageRows.every(r => selected.has(r.id));
+  const pageSelectedCount = pageRows.filter(r => selected.has(r.id)).length;
+  const allSelected = pageRows.length > 0 && pageSelectedCount === pageRows.length;
+  const someSelected = pageSelectedCount > 0 && pageSelectedCount < pageRows.length;
+  const headerCheckboxState: boolean | "indeterminate" = allSelected
+    ? true
+    : someSelected
+      ? "indeterminate"
+      : false;
   const toggleAll = () => {
     const next = new Set(selected);
     if (allSelected) pageRows.forEach(r => next.delete(r.id));
@@ -273,6 +289,13 @@ export default function ContactsList() {
     else next.add(id);
     setSelected(next);
   };
+  const clearSelection = () => setSelected(new Set());
+  const selectAllFiltered = () => {
+    setSelected(new Set(sorted.map(r => r.id)));
+  };
+  const selectedCount = selected.size;
+  const allFilteredSelected =
+    sorted.length > 0 && sorted.every(r => selected.has(r.id));
 
   const pageNumbers = useMemo(() => buildPages(currentPage, totalPages), [
     currentPage,
@@ -384,6 +407,17 @@ export default function ContactsList() {
     }
   };
 
+  // Delete confirm
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const handleDeleteSelected = () => {
+    const ids = new Set(selected);
+    setContacts(prev => prev.filter(c => !ids.has(c.id)));
+    const n = ids.size;
+    setSelected(new Set());
+    setDeleteConfirmOpen(false);
+    toast.success(`${n} contato${n > 1 ? "s" : ""} excluído${n > 1 ? "s" : ""}`);
+  };
+
   return (
     <HexaLayout>
       <div className="space-y-4">
@@ -434,6 +468,58 @@ export default function ContactsList() {
         </div>
       </div>
 
+      {/* Barra de ações em massa */}
+      {selectedCount > 0 && (
+        <div className="rounded-lg overflow-hidden border">
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 text-slate-100 flex-wrap">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-medium">{selectedCount} selecionado{selectedCount > 1 ? "s" : ""}</span>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-slate-300 hover:text-white underline-offset-2 hover:underline"
+              >
+                Limpar seleção
+              </button>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <button
+                type="button"
+                className="text-sky-400 hover:text-sky-300 font-medium"
+                onClick={() => toast.info("Adicionar ou Alterar em breve")}
+              >
+                Adicionar ou Alterar
+              </button>
+              <button
+                type="button"
+                className="text-sky-400 hover:text-sky-300 font-medium"
+                onClick={() => toast.info("Criar Negociação em breve")}
+              >
+                Criar Negociação
+              </button>
+              <button
+                type="button"
+                className="text-red-400 hover:text-red-300 font-medium"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+          {!allFilteredSelected && sorted.length > pageRows.length && (
+            <div className="px-4 py-2 bg-muted/60 text-sm text-muted-foreground flex items-center justify-center">
+              <button
+                type="button"
+                className="text-primary hover:underline"
+                onClick={selectAllFiltered}
+              >
+                Selecionar todos os {sorted.length} itens deste filtro
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabela */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -442,7 +528,7 @@ export default function ContactsList() {
               <tr className="border-b bg-muted/40 text-muted-foreground">
                 <th className="w-10 p-3 text-left">
                   <Checkbox
-                    checked={allSelected}
+                    checked={headerCheckboxState}
                     onCheckedChange={toggleAll}
                     aria-label="Selecionar todos"
                   />
@@ -483,7 +569,15 @@ export default function ContactsList() {
                 </tr>
               ) : (
                 pageRows.map(c => (
-                  <tr key={c.id} className="border-b last:border-b-0 hover:bg-muted/30">
+                  <tr
+                    key={c.id}
+                    className={cn(
+                      "border-b last:border-b-0",
+                      selected.has(c.id)
+                        ? "bg-primary/10 hover:bg-primary/15"
+                        : "hover:bg-muted/30",
+                    )}
+                  >
                     <td className="p-3">
                       <Checkbox
                         checked={selected.has(c.id)}
@@ -864,6 +958,26 @@ export default function ContactsList() {
         }
         onSaved={handleCompanySaved}
       />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja excluir {selectedCount} contato{selectedCount > 1 ? "s" : ""}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSelected}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </HexaLayout>
   );
