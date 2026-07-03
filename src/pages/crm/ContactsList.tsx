@@ -495,12 +495,24 @@ export default function ContactsList() {
                       <button
                         type="button"
                         className="text-primary hover:underline font-medium text-left"
-                        onClick={() => toast.info(`Contato: ${c.nome}`)}
+                        onClick={() => openEditContact(c)}
                       >
                         {c.nome}
                       </button>
                     </td>
-                    <td className="p-3">{c.empresa || ""}</td>
+                    <td className="p-3">
+                      {c.empresa ? (
+                        <button
+                          type="button"
+                          className="text-primary hover:underline text-left"
+                          onClick={() => openEditCompany(c.empresa)}
+                        >
+                          {c.empresa}
+                        </button>
+                      ) : (
+                        ""
+                      )}
+                    </td>
                     <td className="p-3 max-w-[220px]">
                       <div className="truncate" title={c.emails.join(", ")}>
                         {c.emails.join(", ")}
