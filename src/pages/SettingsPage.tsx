@@ -384,7 +384,11 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
               </thead>
               <tbody>
                 {filtered.map(u => (
-                  <tr key={u.id} className="border-t hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={u.id}
+                    onDoubleClick={() => openUserModal(u)}
+                    className="border-t hover:bg-muted/30 transition-colors cursor-pointer select-none"
+                  >
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
