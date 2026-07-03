@@ -527,6 +527,7 @@ export default function CompaniesList() {
                 {tableSearch.trim() && (
                   <button
                     type="button"
+                    aria-label="Limpar busca"
                     onClick={() => {
                       setTableSearch("");
                       searchInputRef.current?.focus();
