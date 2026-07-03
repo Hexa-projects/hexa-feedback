@@ -4,10 +4,12 @@ import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RefreshCw, PlugZap, DownloadCloud, Webhook, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { RefreshCw, PlugZap, DownloadCloud, Webhook, AlertTriangle, CheckCircle2, Clock, KeyRound, Save, Copy, Eye, EyeOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -47,6 +49,10 @@ export default function RdStationIntegration() {
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
+  const [creds, setCreds] = useState({ client_id: "", client_secret: "", redirect_uri: "" });
+  const [defaultRedirect, setDefaultRedirect] = useState("");
+  const [hasSecret, setHasSecret] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   async function load() {
     const [i, c, j, l] = await Promise.all([
