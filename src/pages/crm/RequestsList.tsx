@@ -2218,7 +2218,16 @@ export default function RequestsList() {
       </Dialog>
 
       {/* Sugerir cadastro (CPF → contato / CNPJ → empresa) */}
-      <Dialog open={suggestOpen} onOpenChange={setSuggestOpen}>
+      <Dialog
+        open={suggestOpen}
+        onOpenChange={(o) => {
+          if (!o && suggestData?.doc) {
+            const d = suggestData.doc.replace(/\D/g, "");
+            if (d) setDismissedDocs((prev) => new Set(prev).add(d));
+          }
+          setSuggestOpen(o);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
