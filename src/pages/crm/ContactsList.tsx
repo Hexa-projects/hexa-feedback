@@ -476,7 +476,7 @@ export default function ContactsList() {
               <tr className="border-b bg-muted/40 text-muted-foreground">
                 <th className="w-10 p-3 text-left">
                   <Checkbox
-                    checked={allSelected}
+                    checked={headerCheckboxState}
                     onCheckedChange={toggleAll}
                     aria-label="Selecionar todos"
                   />
