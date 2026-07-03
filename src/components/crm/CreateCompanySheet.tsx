@@ -154,20 +154,26 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
   };
 
   const handleSubmit = async () => {
+    let hasError = false;
     if (!name.trim()) {
       setNameError(true);
-      return;
+      hasError = true;
     }
+    if (!tipo) {
+      setTipoError(true);
+      hasError = true;
+    }
+    if (hasError) return;
     setSaving(true);
     try {
       const rd_id = `local-${crypto.randomUUID()}`;
       const raw_payload: any = {
         name: name.trim(),
+        tipo: tipo || null,
         segment: segment || null,
         website: url || null,
         description: summary || null,
         address: address || null,
-        cnpj_address: cnpjAddress || null,
         created_at: new Date().toISOString(),
         source: "hexaos-manual",
       };
