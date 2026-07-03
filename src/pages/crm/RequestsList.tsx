@@ -264,6 +264,20 @@ export default function RequestsList() {
   const [savingContact, setSavingContact] = useState(false);
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [companyInitial, setCompanyInitial] = useState<any>(null);
+  const [sellers, setSellers] = useState<{ id: string; nome: string }[]>([]);
+  const [vendedorMode, setVendedorMode] = useState<"select" | "other">("select");
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("id, nome, setor")
+        .order("nome", { ascending: true });
+      const list = (data || []).filter((p: any) => p.nome);
+      const comercial = list.filter((p: any) => (p.setor || "").toString().toLowerCase() === "comercial");
+      setSellers((comercial.length ? comercial : list).map((p: any) => ({ id: p.id, nome: p.nome })));
+    })();
+  }, []);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -1655,12 +1669,53 @@ export default function RequestsList() {
                 </Field>
                 <div className="md:col-span-2">
                   <Field label="Vendedor(a) *">
-                    <Input
-                      value={form.responsavel_comercial}
-                      onChange={(e) =>
-                        setForm({ ...form, responsavel_comercial: e.target.value })
-                      }
-                    />
+                    <div className="space-y-2">
+                      <Select
+                        value={
+                          vendedorMode === "other"
+                            ? "__other__"
+                            : sellers.some((s) => s.nome === form.responsavel_comercial)
+                            ? form.responsavel_comercial
+                            : form.responsavel_comercial
+                            ? "__other__"
+                            : ""
+                        }
+                        onValueChange={(v) => {
+                          if (v === "__other__") {
+                            setVendedorMode("other");
+                            if (sellers.some((s) => s.nome === form.responsavel_comercial)) {
+                              setForm({ ...form, responsavel_comercial: "" });
+                            }
+                          } else {
+                            setVendedorMode("select");
+                            setForm({ ...form, responsavel_comercial: v });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um vendedor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sellers.map((s) => (
+                            <SelectItem key={s.id} value={s.nome}>
+                              {s.nome}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__other__">Outro (digitar manualmente)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {(vendedorMode === "other" ||
+                        (form.responsavel_comercial &&
+                          !sellers.some((s) => s.nome === form.responsavel_comercial))) && (
+                        <Input
+                          placeholder="Digite o nome do vendedor(a)"
+                          value={form.responsavel_comercial}
+                          onChange={(e) =>
+                            setForm({ ...form, responsavel_comercial: e.target.value })
+                          }
+                        />
+                      )}
+                    </div>
                   </Field>
                 </div>
               </div>
