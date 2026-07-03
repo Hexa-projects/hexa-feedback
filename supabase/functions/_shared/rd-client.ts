@@ -102,14 +102,35 @@ export function redirectUri(): string {
   return `${requiredEnv("SUPABASE_URL")}/functions/v1/rd-oauth-callback`;
 }
 
+export async function getOAuthCredentials(svc?: SupabaseClient): Promise<{ client_id: string; client_secret: string; redirect_uri: string }> {
+  const client = svc ?? serviceRoleClient();
+  const { data } = await client
+    .from("crm_integrations")
+    .select("client_id, client_secret_enc, redirect_uri")
+    .eq("provider", "rd_station")
+    .maybeSingle();
+  const client_id = (data?.client_id as string | null) || Deno.env.get("RD_STATION_CLIENT_ID") || "";
+  let client_secret = "";
+  if (data?.client_secret_enc) {
+    try { client_secret = await decryptSecret(data.client_secret_enc as string); } catch (_) { client_secret = ""; }
+  }
+  if (!client_secret) client_secret = Deno.env.get("RD_STATION_CLIENT_SECRET") ?? "";
+  const redirect_uri = (data?.redirect_uri as string | null) || redirectUri();
+  if (!client_id) throw new Error("RD_STATION_CLIENT_ID not configured");
+  if (!client_secret) throw new Error("RD_STATION_CLIENT_SECRET not configured");
+  return { client_id, client_secret, redirect_uri };
+}
+
 export async function exchangeCode(code: string) {
+  const creds = await getOAuthCredentials();
   const res = await fetch(RD_AUTH_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_id: Deno.env.get("RD_STATION_CLIENT_ID"),
-      client_secret: Deno.env.get("RD_STATION_CLIENT_SECRET"),
+      client_id: creds.client_id,
+      client_secret: creds.client_secret,
       code,
+      redirect_uri: creds.redirect_uri,
     }),
   });
   if (!res.ok) throw new Error(`token exchange failed: ${res.status} ${await res.text()}`);
@@ -117,12 +138,13 @@ export async function exchangeCode(code: string) {
 }
 
 export async function refreshTokens(refreshToken: string) {
+  const creds = await getOAuthCredentials();
   const res = await fetch(RD_AUTH_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_id: Deno.env.get("RD_STATION_CLIENT_ID"),
-      client_secret: Deno.env.get("RD_STATION_CLIENT_SECRET"),
+      client_id: creds.client_id,
+      client_secret: creds.client_secret,
       refresh_token: refreshToken,
     }),
   });
