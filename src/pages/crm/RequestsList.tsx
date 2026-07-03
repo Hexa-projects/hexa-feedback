@@ -591,8 +591,9 @@ export default function RequestsList() {
     const total = items.length;
     const pendentes = items.filter((i) => i.status === "pendente").length;
     const aprovadas = items.filter((i) => i.status === "aprovada").length;
+    const reprovadas = items.filter((i) => i.status === "reprovada").length;
     const valor = items.reduce((sum, i) => sum + (Number(i.preco) || 0), 0);
-    return { total, pendentes, aprovadas, valor };
+    return { total, pendentes, aprovadas, reprovadas, valor };
   }, [items]);
 
   const handleSubmit = async (e: React.FormEvent) => {
