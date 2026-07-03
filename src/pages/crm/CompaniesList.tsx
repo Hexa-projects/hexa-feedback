@@ -175,6 +175,9 @@ export default function CompaniesList() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Create company sheet
+  const [createOpen, setCreateOpen] = useState(false);
+
   useEffect(() => {
     (async () => {
 
