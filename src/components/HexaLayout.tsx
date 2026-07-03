@@ -20,6 +20,7 @@ interface NavChild {
   wip?: boolean;
   roles?: string[];
   setores?: string[];
+  ceoOrAdmin?: boolean;
 }
 
 interface NavGroup {
@@ -66,7 +67,8 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/crm/kanban", label: "Negociações", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
-      { to: "/crm/lixeira", label: "Lixeira", icon: Trash2, roles: ["admin", "gestor"] },
+      { to: "/crm/lixeira", label: "Lixeira Solicitações", icon: Trash2, roles: ["admin", "gestor"] },
+      { to: "/crm/trash", label: "Lixeira", icon: Trash2, ceoOrAdmin: true },
     ],
   },
   {
@@ -248,7 +250,9 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       if (to === "/home") return pathname === "/home";
       return pathname === to || pathname.startsWith(to + "/");
     };
+    const isCeoOrAdmin = role === "admin" || /ceo|chief executive|s[óo]cio|diretor executivo|fundador/i.test(profile?.funcao || "");
     const visibleChildren = item.children.filter(c => {
+      if (c.ceoOrAdmin && !isCeoOrAdmin) return false;
       if (!c.roles && !c.setores) return true;
       const roleMatch = c.roles ? c.roles.includes(role) : false;
       const setorMatch = c.setores ? !!(setor && c.setores.includes(setor)) : false;

@@ -25,6 +25,7 @@ const ContractsList = lazy(() => import("./pages/crm/ContractsList"));
 const RequestsList = lazy(() => import("./pages/crm/RequestsList"));
 const RequestDetailPage = lazy(() => import("./pages/crm/RequestDetailPage"));
 const RequestsTrash = lazy(() => import("./pages/crm/RequestsTrash"));
+const CrmTrash = lazy(() => import("./pages/crm/CrmTrash"));
 const RdStationIntegration = lazy(() => import("./pages/crm/integrations/RdStationIntegration"));
 const CompaniesList = lazy(() => import("./pages/crm/CompaniesList"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
@@ -115,6 +116,7 @@ const AppRoutes = () => (
       <Route path="/crm/requests" element={<PrivateRoute><RequestsList /></PrivateRoute>} />
       <Route path="/crm/requests/:id" element={<PrivateRoute><RequestDetailPage /></PrivateRoute>} />
       <Route path="/crm/lixeira" element={<PrivateRoute><RequestsTrash /></PrivateRoute>} />
+      <Route path="/crm/trash" element={<PrivateRoute><CrmTrash /></PrivateRoute>} />
       <Route path="/settings/integrations/rd-station" element={<PrivateRoute><RdStationIntegration /></PrivateRoute>} />
       <Route path="/crm/integrations/rd-station" element={<Navigate to="/settings/integrations/rd-station" replace />} />
       <Route path="/crm/empresas" element={<PrivateRoute><CompaniesList /></PrivateRoute>} />
