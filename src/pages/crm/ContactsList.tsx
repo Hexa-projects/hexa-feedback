@@ -182,11 +182,14 @@ export default function ContactsList() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nome: "",
-    empresa: "",
-    email: "",
-    telefone: "",
     cargo: "",
+    whatsapp: "",
+    empresa: "",
   });
+  const [phones, setPhones] = useState<PhoneEntry[]>([
+    { tipo: "Celular", numero: "" },
+  ]);
+  const [emails, setEmails] = useState<string[]>([""]);
   const [nomeError, setNomeError] = useState(false);
   const [companyPopoverOpen, setCompanyPopoverOpen] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
