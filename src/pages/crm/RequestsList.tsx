@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Popover, PopoverContent, PopoverTrigger,
+  Popover, PopoverContent, PopoverTrigger, PopoverAnchor,
 } from "@/components/ui/popover";
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -1299,35 +1299,44 @@ export default function RequestsList() {
                   {docType === "cnpj" ? (
                     <Field label="Nome da empresa">
                       <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
-                        <PopoverTrigger asChild>
+                        <PopoverAnchor asChild>
                           <Input
                             placeholder="Buscar empresa cadastrada..."
+                            autoComplete="off"
                             value={form.empresa}
-                            onFocus={() => setCompanyOpen(true)}
+                            onFocus={() => { if (form.empresa.trim().length >= 2) setCompanyOpen(true); }}
                             onChange={(e) => {
                               const v = e.target.value;
-                              setCompanyOpen(true);
                               if (v.trim() === "") {
+                                setCompanyOpen(false);
                                 setForm((f) => ({ ...f, empresa: "", cnpj: "", telefone: "", email_1: "", contato: "" }));
                               } else {
-                                setForm({ ...form, empresa: v });
+                                setCompanyOpen(v.trim().length >= 2);
+                                setForm((f) => ({ ...f, empresa: v }));
                               }
                             }}
                           />
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        </PopoverAnchor>
+                        <PopoverContent
+                          className="p-0 w-[--radix-popover-trigger-width]"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                          onInteractOutside={(e) => {
+                            // Don't close when interacting with the trigger input itself
+                            const t = e.target as HTMLElement;
+                            if (t?.tagName === "INPUT") e.preventDefault();
+                          }}
+                        >
                           <Command shouldFilter={false}>
                             <CommandList>
-                              {form.empresa.trim().length < 2 ? (
-                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                              ) : companySugs.length === 0 ? (
+                              {companySugs.length === 0 ? (
                                 <CommandEmpty>Nenhuma empresa encontrada</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Empresas cadastradas">
                                   {companySugs.map((s, i) => (
                                     <CommandItem
-                                      key={i}
-                                      value={s.empresa}
+                                      key={`${s.empresa}-${s.cnpj ?? i}`}
+                                      value={`${s.empresa}-${s.cnpj ?? i}`}
                                       onSelect={() => {
                                         setForm((f) => ({
                                           ...f,
@@ -1342,6 +1351,7 @@ export default function RequestsList() {
                                           cidade_empresa: s.cidade || f.cidade_empresa,
                                           uf_empresa: s.uf || f.uf_empresa,
                                         }));
+                                        setCompanySugs([]);
                                         setCompanyOpen(false);
                                       }}
                                     >
@@ -1361,35 +1371,43 @@ export default function RequestsList() {
                   ) : (
                     <Field label="Nome">
                       <Popover open={contactOpen} onOpenChange={setContactOpen}>
-                        <PopoverTrigger asChild>
+                        <PopoverAnchor asChild>
                           <Input
                             placeholder="Buscar contato cadastrado..."
+                            autoComplete="off"
                             value={form.cliente_nome}
-                            onFocus={() => setContactOpen(true)}
+                            onFocus={() => { if (form.cliente_nome.trim().length >= 2) setContactOpen(true); }}
                             onChange={(e) => {
                               const v = e.target.value;
-                              setContactOpen(true);
                               if (v.trim() === "") {
+                                setContactOpen(false);
                                 setForm((f) => ({ ...f, cliente_nome: "", cpf: "", telefone: "", email_1: "" }));
                               } else {
-                                setForm({ ...form, cliente_nome: v });
+                                setContactOpen(v.trim().length >= 2);
+                                setForm((f) => ({ ...f, cliente_nome: v }));
                               }
                             }}
                           />
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        </PopoverAnchor>
+                        <PopoverContent
+                          className="p-0 w-[--radix-popover-trigger-width]"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                          onInteractOutside={(e) => {
+                            const t = e.target as HTMLElement;
+                            if (t?.tagName === "INPUT") e.preventDefault();
+                          }}
+                        >
                           <Command shouldFilter={false}>
                             <CommandList>
-                              {form.cliente_nome.trim().length < 2 ? (
-                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                              ) : contactSugs.length === 0 ? (
+                              {contactSugs.length === 0 ? (
                                 <CommandEmpty>Nenhum contato encontrado</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Contatos cadastrados">
                                   {contactSugs.map((s, i) => (
                                     <CommandItem
-                                      key={i}
-                                      value={s.nome}
+                                      key={`${s.nome}-${i}`}
+                                      value={`${s.nome}-${i}`}
                                       onSelect={() => {
                                         setForm((f) => ({
                                           ...f,
@@ -1399,6 +1417,7 @@ export default function RequestsList() {
                                           telefone: s.telefone || f.telefone,
                                           email_1: s.email || f.email_1,
                                         }));
+                                        setContactSugs([]);
                                         setContactOpen(false);
                                       }}
                                     >
