@@ -266,6 +266,7 @@ export default function RequestsList() {
   const [companyInitial, setCompanyInitial] = useState<any>(null);
   const [sellers, setSellers] = useState<{ id: string; nome: string }[]>([]);
   const [vendedorMode, setVendedorMode] = useState<"select" | "other">("select");
+  const [dismissedDocs, setDismissedDocs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
