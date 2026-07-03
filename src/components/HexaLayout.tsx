@@ -250,7 +250,9 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       if (to === "/home") return pathname === "/home";
       return pathname === to || pathname.startsWith(to + "/");
     };
+    const isCeoOrAdmin = role === "admin" || /ceo|chief executive|s[óo]cio|diretor executivo|fundador/i.test(profile?.funcao || "");
     const visibleChildren = item.children.filter(c => {
+      if (c.ceoOrAdmin && !isCeoOrAdmin) return false;
       if (!c.roles && !c.setores) return true;
       const roleMatch = c.roles ? c.roles.includes(role) : false;
       const setorMatch = c.setores ? !!(setor && c.setores.includes(setor)) : false;
