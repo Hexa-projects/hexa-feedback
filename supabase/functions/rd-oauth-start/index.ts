@@ -1,5 +1,5 @@
 // rd-oauth-start: initiates OAuth flow for RD Station CRM
-import { corsHeaders, jsonResponse, RD_AUTH_DIALOG_URL, redirectUri, requireAdmin, serviceRoleClient } from "../_shared/rd-client.ts";
+import { corsHeaders, jsonResponse, RD_AUTH_DIALOG_URL, requireAdmin, serviceRoleClient, getOAuthCredentials } from "../_shared/rd-client.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -10,11 +10,16 @@ Deno.serve(async (req) => {
 
     const svc = serviceRoleClient();
 
-    const clientId = Deno.env.get("RD_STATION_CLIENT_ID");
-    if (!clientId) return jsonResponse({ error: "RD_STATION_CLIENT_ID not configured" }, 500);
+    let creds;
+    try {
+      creds = await getOAuthCredentials(svc);
+    } catch (e) {
+      return jsonResponse({ error: (e as Error).message }, 500);
+    }
+    const clientId = creds.client_id;
+    const callbackUrl = creds.redirect_uri;
 
     const state = crypto.randomUUID() + "." + crypto.randomUUID();
-    const callbackUrl = redirectUri();
 
     // Ensure integration row exists, then update
     const { error: upsertError } = await svc.from("crm_integrations").upsert(

@@ -4,10 +4,12 @@ import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RefreshCw, PlugZap, DownloadCloud, Webhook, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { RefreshCw, PlugZap, DownloadCloud, Webhook, AlertTriangle, CheckCircle2, Clock, KeyRound, Save, Copy, Eye, EyeOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -47,6 +49,10 @@ export default function RdStationIntegration() {
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
+  const [creds, setCreds] = useState({ client_id: "", client_secret: "", redirect_uri: "" });
+  const [defaultRedirect, setDefaultRedirect] = useState("");
+  const [hasSecret, setHasSecret] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   async function load() {
     const [i, c, j, l] = await Promise.all([
@@ -61,8 +67,39 @@ export default function RdStationIntegration() {
     setErrors((l.data as LogRow[]) ?? []);
   }
 
+  async function loadCreds() {
+    try {
+      const { data, error } = await supabase.functions.invoke("rd-save-credentials", { method: "GET" as any });
+      if (error) throw error;
+      setCreds((c) => ({ ...c, client_id: data?.client_id ?? "", redirect_uri: data?.redirect_uri ?? "" }));
+      setDefaultRedirect(data?.default_redirect_uri ?? "");
+      setHasSecret(!!data?.has_client_secret);
+    } catch (_) { /* silencioso */ }
+  }
+
+  async function saveCreds() {
+    setBusy("save-creds");
+    try {
+      const { error } = await supabase.functions.invoke("rd-save-credentials", {
+        method: "POST",
+        body: {
+          client_id: creds.client_id.trim(),
+          client_secret: creds.client_secret.trim(),
+          redirect_uri: creds.redirect_uri.trim() || null,
+        },
+      });
+      if (error) throw error;
+      toast.success("Credenciais salvas com segurança");
+      setCreds((c) => ({ ...c, client_secret: "" }));
+      await loadCreds();
+    } catch (err: any) {
+      toast.error("Falha ao salvar: " + await getFunctionErrorMessage(err));
+    } finally { setBusy(null); }
+  }
+
   useEffect(() => {
     load();
+    loadCreds();
     const t = setInterval(load, 8000);
     return () => clearInterval(t);
   }, []);
@@ -141,6 +178,80 @@ export default function RdStationIntegration() {
             {integ?.status ?? "carregando..."}
           </Badge>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" /> Credenciais OAuth
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Cole o <strong>Client ID</strong> e <strong>Client Secret</strong> do seu app no RD Station App Store.
+              O secret é armazenado criptografado e nunca é devolvido para o navegador.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="rd-client-id">Client ID</Label>
+                <Input
+                  id="rd-client-id"
+                  autoComplete="off"
+                  value={creds.client_id}
+                  onChange={(e) => setCreds({ ...creds, client_id: e.target.value })}
+                  placeholder="ex.: 1a2b3c4d-..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rd-client-secret">
+                  Client Secret {hasSecret && <span className="text-emerald-600 text-xs">• salvo</span>}
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="rd-client-secret"
+                    type={showSecret ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={creds.client_secret}
+                    onChange={(e) => setCreds({ ...creds, client_secret: e.target.value })}
+                    placeholder={hasSecret ? "••••••••  (deixe em branco para manter)" : "cole o secret"}
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={() => setShowSecret((s) => !s)}>
+                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rd-redirect">Redirect URI (Callback URL)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="rd-redirect"
+                  value={creds.redirect_uri || defaultRedirect}
+                  onChange={(e) => setCreds({ ...creds, redirect_uri: e.target.value })}
+                  placeholder={defaultRedirect}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(creds.redirect_uri || defaultRedirect);
+                    toast.success("Redirect URI copiada");
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Cadastre exatamente esta URL como <em>Callback URL</em> no app do RD Station.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={saveCreds} disabled={busy === "save-creds" || !creds.client_id.trim()}>
+                <Save className="w-4 h-4 mr-1.5" /> Salvar credenciais
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader><CardTitle className="text-base">Conexão</CardTitle></CardHeader>
