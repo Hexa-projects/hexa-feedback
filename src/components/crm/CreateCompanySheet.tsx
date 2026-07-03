@@ -128,7 +128,7 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
   };
 
   useEffect(() => {
-    if (open && mode === "edit" && initial) {
+    if (open && initial) {
       setName(initial.name || "");
       setTipo(initial.tipo || "");
       setSegment(initial.segment || "");
@@ -138,9 +138,6 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
       setCnpj(initial.cnpj || "");
       setNameError(false);
       setTipoError(false);
-    }
-    if (!open && mode === "create") {
-      // keep create behavior as-is
     }
   }, [open, mode, initial]);
 
