@@ -67,8 +67,39 @@ export default function RdStationIntegration() {
     setErrors((l.data as LogRow[]) ?? []);
   }
 
+  async function loadCreds() {
+    try {
+      const { data, error } = await supabase.functions.invoke("rd-save-credentials", { method: "GET" as any });
+      if (error) throw error;
+      setCreds((c) => ({ ...c, client_id: data?.client_id ?? "", redirect_uri: data?.redirect_uri ?? "" }));
+      setDefaultRedirect(data?.default_redirect_uri ?? "");
+      setHasSecret(!!data?.has_client_secret);
+    } catch (_) { /* silencioso */ }
+  }
+
+  async function saveCreds() {
+    setBusy("save-creds");
+    try {
+      const { error } = await supabase.functions.invoke("rd-save-credentials", {
+        method: "POST",
+        body: {
+          client_id: creds.client_id.trim(),
+          client_secret: creds.client_secret.trim(),
+          redirect_uri: creds.redirect_uri.trim() || null,
+        },
+      });
+      if (error) throw error;
+      toast.success("Credenciais salvas com segurança");
+      setCreds((c) => ({ ...c, client_secret: "" }));
+      await loadCreds();
+    } catch (err: any) {
+      toast.error("Falha ao salvar: " + await getFunctionErrorMessage(err));
+    } finally { setBusy(null); }
+  }
+
   useEffect(() => {
     load();
+    loadCreds();
     const t = setInterval(load, 8000);
     return () => clearInterval(t);
   }, []);
