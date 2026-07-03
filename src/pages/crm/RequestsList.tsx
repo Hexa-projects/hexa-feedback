@@ -1321,7 +1321,7 @@ export default function RequestsList() {
                               {form.empresa.trim().length < 2 ? (
                                 <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
                               ) : companySugs.length === 0 ? (
-                                <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
+                                <CommandEmpty>Nenhuma empresa encontrada</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Empresas cadastradas">
                                   {companySugs.map((s, i) => (
@@ -1336,6 +1336,11 @@ export default function RequestsList() {
                                           telefone: s.telefone || f.telefone,
                                           email_1: s.email_1 || f.email_1,
                                           contato: s.contato || f.contato,
+                                          cep_empresa: s.cep ? maskCEP(s.cep) : f.cep_empresa,
+                                          rua_empresa: s.rua || f.rua_empresa,
+                                          bairro_empresa: s.bairro || f.bairro_empresa,
+                                          cidade_empresa: s.cidade || f.cidade_empresa,
+                                          uf_empresa: s.uf || f.uf_empresa,
                                         }));
                                         setCompanyOpen(false);
                                       }}
