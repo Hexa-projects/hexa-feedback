@@ -240,7 +240,6 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       .sort((a, b) => b.to.length - a.to.length)[0]?.to;
     const isAnyChildActive = !!activeChildTo;
     const isOpen = openGroups[item.id] ?? false;
-    const isHighlighted = item.id === "nucleo_ai";
 
     return (
       <div key={item.id}>
@@ -249,12 +248,10 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
             isAnyChildActive
               ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-              : isHighlighted
-              ? "text-hexa-amber hover:bg-sidebar-accent/50"
               : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           }`}
         >
-          <item.icon className={`w-4 h-4 shrink-0 ${isHighlighted ? "text-hexa-amber" : ""}`} />
+          <item.icon className="w-4 h-4 shrink-0" />
           <span className="flex-1 text-left">{item.label}</span>
           <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         </button>
