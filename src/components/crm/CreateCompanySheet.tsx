@@ -200,6 +200,20 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
     if (hasError) return;
     setSaving(true);
     try {
+      if (mode === "edit") {
+        onSaved?.({
+          name: name.trim(),
+          tipo,
+          segment,
+          url,
+          summary,
+          address,
+          cnpj,
+        });
+        toast.success("Empresa atualizada com sucesso");
+        onOpenChange(false);
+        return;
+      }
       const rd_id = `local-${crypto.randomUUID()}`;
       const raw_payload: any = {
         name: name.trim(),
@@ -229,7 +243,7 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao criar empresa");
+      toast.error(err?.message || (mode === "edit" ? "Erro ao atualizar empresa" : "Erro ao criar empresa"));
     } finally {
       setSaving(false);
     }
