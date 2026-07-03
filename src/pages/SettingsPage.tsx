@@ -236,6 +236,57 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
   const [editSetor, setEditSetor] = useState("");
   const [search, setSearch] = useState("");
 
+  // Full-edit modal state
+  const [modalUser, setModalUser] = useState<UserWithRole | null>(null);
+  const [form, setForm] = useState({ nome: "", email: "", setor: "", funcao: "", role: "colaborador" as "admin" | "gestor" | "colaborador" });
+  const [initialForm, setInitialForm] = useState(form);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const [savingModal, setSavingModal] = useState(false);
+
+  const openUserModal = (u: UserWithRole) => {
+    const f = { nome: u.nome || "", email: u.email || "", setor: u.setor || "", funcao: u.funcao || "", role: u.role };
+    setForm(f);
+    setInitialForm(f);
+    setModalUser(u);
+  };
+
+  const isDirty = () => JSON.stringify(form) !== JSON.stringify(initialForm);
+
+  const attemptClose = () => {
+    if (isDirty()) setConfirmDiscardOpen(true);
+    else setModalUser(null);
+  };
+
+  const saveModal = async () => {
+    if (!modalUser) return;
+    if (!form.nome.trim() || !form.email.trim()) {
+      toast.error("Nome e e-mail são obrigatórios");
+      return;
+    }
+    setSavingModal(true);
+    const { error: pErr } = await supabase
+      .from("profiles")
+      .update({ nome: form.nome.trim(), setor: form.setor, funcao: form.funcao })
+      .eq("id", modalUser.id);
+    if (pErr) {
+      setSavingModal(false);
+      toast.error("Falha ao atualizar perfil");
+      return;
+    }
+    if (form.role !== modalUser.role) {
+      const existing = await supabase.from("user_roles").select("id").eq("user_id", modalUser.id).maybeSingle();
+      if (existing.data) {
+        await supabase.from("user_roles").update({ role: form.role }).eq("user_id", modalUser.id);
+      } else {
+        await supabase.from("user_roles").insert({ user_id: modalUser.id, role: form.role });
+      }
+    }
+    setUsers(prev => prev.map(x => x.id === modalUser.id ? { ...x, nome: form.nome.trim(), setor: form.setor, funcao: form.funcao, role: form.role } : x));
+    setSavingModal(false);
+    setModalUser(null);
+    toast.success("Usuário atualizado com sucesso");
+  };
+
   useEffect(() => {
     loadUsers();
   }, []);
