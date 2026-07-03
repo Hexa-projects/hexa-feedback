@@ -611,7 +611,7 @@ export default function ContactsList() {
                     colSpan={8}
                     className="p-8 text-center text-muted-foreground"
                   >
-                    Nenhum contato encontrado
+                    {loading ? "Carregando contatos..." : "Nenhum contato encontrado. Rode uma sincronização em Configurações → Integrações → RD Station."}
                   </td>
                 </tr>
               ) : (
