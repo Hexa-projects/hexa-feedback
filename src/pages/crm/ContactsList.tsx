@@ -621,23 +621,101 @@ export default function ContactsList() {
               Filtros ({activeFilters})
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80">
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Buscar</div>
-              <Input
-                placeholder="Nome, e-mail, telefone ou empresa"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                autoFocus
-              />
-              <div className="flex justify-between">
+          <PopoverContent align="start" className="w-[380px] max-h-[80vh] overflow-y-auto">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Busca livre</Label>
+                <Input
+                  placeholder="Nome, e-mail, telefone, cargo ou empresa"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Empresa</Label>
+                <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="all">Todas as empresas</SelectItem>
+                    <SelectItem value="__none__">Sem empresa vinculada</SelectItem>
+                    {empresaOptions.map(e => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Cargo contém</Label>
+                <Input
+                  placeholder="Ex: Diretor, Gerente..."
+                  value={filterCargo}
+                  onChange={e => setFilterCargo(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">E-mail</Label>
+                  <Select value={filterEmail} onValueChange={(v: any) => setFilterEmail(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      <SelectItem value="with">Com e-mail</SelectItem>
+                      <SelectItem value="without">Sem e-mail</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Telefone</Label>
+                  <Select value={filterPhone} onValueChange={(v: any) => setFilterPhone(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      <SelectItem value="with">Com telefone</SelectItem>
+                      <SelectItem value="without">Sem telefone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tipo de telefone</Label>
+                <Select value={filterPhoneType} onValueChange={(v: any) => setFilterPhoneType(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Qualquer tipo</SelectItem>
+                    <SelectItem value="Celular">Celular</SelectItem>
+                    <SelectItem value="Comercial">Comercial</SelectItem>
+                    <SelectItem value="Residencial">Residencial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Negociações</Label>
+                <Select value={filterDeals} onValueChange={(v: any) => setFilterDeals(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Todas</SelectItem>
+                    <SelectItem value="none">Sem negociação</SelectItem>
+                    <SelectItem value="with">Com pelo menos 1</SelectItem>
+                    <SelectItem value="gte3">3 ou mais</SelectItem>
+                    <SelectItem value="gte5">5 ou mais</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-between pt-2 border-t">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSearch("")}
-                  disabled={!search}
+                  onClick={clearAllFilters}
+                  disabled={activeFilters === 0}
                 >
-                  Limpar
+                  Limpar tudo
                 </Button>
                 <Button size="sm" onClick={() => setFilterOpen(false)}>
                   Aplicar
