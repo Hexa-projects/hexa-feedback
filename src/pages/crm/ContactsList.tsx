@@ -150,15 +150,17 @@ const PAGE_SIZES = [10, 25, 50, 100];
 
 function maskPhone(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 10) {
-    return d
-      .replace(/^(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  }
-  return d
-    .replace(/^(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2");
+  if (!d) return "";
+  let out = "+55";
+  if (d.length > 0) out += " (" + d.slice(0, 2);
+  if (d.length >= 2) out += ")";
+  if (d.length > 2) out += " " + d.slice(2, 7);
+  if (d.length > 7) out += "-" + d.slice(7, 11);
+  return out;
 }
+
+type PhoneEntry = { tipo: "Comercial" | "Residencial" | "Celular"; numero: string };
+const PHONE_TYPES: PhoneEntry["tipo"][] = ["Comercial", "Residencial", "Celular"];
 
 type SortDir = "asc" | "desc";
 
