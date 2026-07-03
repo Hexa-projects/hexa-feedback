@@ -226,12 +226,58 @@ export default function ContactsList() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("rd_organizations")
-        .select("id, name")
-        .order("name", { ascending: true })
-        .limit(500);
-      if (data) setCompanies(data as any);
+      setLoading(true);
+      const [{ data: cts }, { data: orgs }, { data: deals }] = await Promise.all([
+        supabase
+          .from("rd_contacts")
+          .select("id, rd_id, name, email, phone, organization_rd_id, raw_payload")
+          .is("deleted_at", null)
+          .order("name", { ascending: true })
+          .limit(5000),
+        supabase
+          .from("rd_organizations")
+          .select("id, rd_id, name")
+          .is("deleted_at", null)
+          .limit(5000),
+        supabase
+          .from("rd_deals")
+          .select("contact_rd_id")
+          .is("deleted_at", null)
+          .not("contact_rd_id", "is", null)
+          .limit(20000),
+      ]);
+      const orgMap = new Map<string, string>();
+      (orgs || []).forEach((o: any) => o.rd_id && orgMap.set(o.rd_id, o.name || ""));
+      setCompanies(((orgs || []) as any).map((o: any) => ({ id: o.id, name: o.name })).filter((o: any) => o.name));
+      const dealCount = new Map<string, number>();
+      (deals || []).forEach((d: any) => {
+        if (!d.contact_rd_id) return;
+        dealCount.set(d.contact_rd_id, (dealCount.get(d.contact_rd_id) || 0) + 1);
+      });
+      const mapped: Contact[] = (cts || []).map((c: any) => {
+        const raw = c.raw_payload || {};
+        const emails: string[] = Array.isArray(raw.emails)
+          ? raw.emails.map((e: any) => e?.email).filter(Boolean)
+          : (c.email ? [c.email] : []);
+        const phonesData: PhoneEntry[] = Array.isArray(raw.phones)
+          ? raw.phones.map((p: any) => ({
+              tipo: (p?.type === "cellphone" ? "Celular" : p?.type === "work" ? "Comercial" : p?.type === "home" ? "Residencial" : "Celular") as PhoneEntry["tipo"],
+              numero: p?.phone || "",
+            })).filter((p: PhoneEntry) => p.numero)
+          : (c.phone ? [{ tipo: "Celular" as const, numero: c.phone }] : []);
+        return {
+          id: c.id,
+          nome: c.name || "(sem nome)",
+          empresa: c.organization_rd_id ? (orgMap.get(c.organization_rd_id) || "") : "",
+          emails,
+          telefones: phonesData.map(p => p.numero),
+          phonesData,
+          cargo: raw.title || raw.job_title || raw.position || "",
+          negociacoes: dealCount.get(c.rd_id) || 0,
+        };
+      });
+      setContacts(mapped);
+      setLoading(false);
     })();
   }, []);
 
