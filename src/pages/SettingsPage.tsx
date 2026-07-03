@@ -320,6 +320,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                   <th className="text-left p-3 font-medium hidden md:table-cell">Setor</th>
                   <th className="text-left p-3 font-medium hidden lg:table-cell">Função</th>
                   <th className="text-left p-3 font-medium">Perfil</th>
+                  <th className="text-center p-3 font-medium hidden md:table-cell" title="Responsável pela aprovação da Base de Conhecimento">Aprovador BC</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Status</th>
                   <th className="text-right p-3 font-medium">Ações</th>
                 </tr>
