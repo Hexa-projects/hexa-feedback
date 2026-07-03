@@ -255,6 +255,11 @@ export default function RequestsList() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<any | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestData, setSuggestData] = useState<{ nome: string; cpf: string; telefone: string; email: string } | null>(null);
+  const [createContactOpen, setCreateContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ nome: "", cpf: "", telefone: "", email: "" });
+  const [savingContact, setSavingContact] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -934,6 +939,53 @@ export default function RequestsList() {
         }).catch((err) => console.warn("[push] notify-ceos-push failed", err));
       }
     } catch (e) { console.warn("[push] dispatch failed", e); }
+
+    // Se for CPF e o contato não estiver cadastrado, sugerir cadastro
+    if (hasCpf) {
+      try {
+        const phoneDigits = String(form.telefone || "").replace(/\D/g, "");
+        const emailNorm = String(form.email_1 || "").trim().toLowerCase();
+        const cpfDigits = String(form.cpf || "").replace(/\D/g, "");
+        let exists = false;
+        if (phoneDigits) {
+          const { data: byPhone } = await (supabase as any)
+            .from("rd_contacts")
+            .select("id")
+            .ilike("phone", `%${phoneDigits}%`)
+            .limit(1);
+          if (byPhone && byPhone.length) exists = true;
+        }
+        if (!exists && emailNorm) {
+          const { data: byEmail } = await (supabase as any)
+            .from("rd_contacts")
+            .select("id")
+            .ilike("email", emailNorm)
+            .limit(1);
+          if (byEmail && byEmail.length) exists = true;
+        }
+        if (!exists && cpfDigits) {
+          const { data: byCpf } = await (supabase as any)
+            .from("commercial_requests")
+            .select("id")
+            .eq("cnpj", cpfDigits)
+            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000")
+            .limit(1);
+          if (byCpf && byCpf.length) exists = true;
+        }
+        if (!exists) {
+          setSuggestData({
+            nome: form.cliente_nome,
+            cpf: form.cpf,
+            telefone: form.telefone,
+            email: form.email_1,
+          });
+          setSuggestOpen(true);
+        }
+      } catch (err) {
+        console.warn("[suggest-contact] check failed", err);
+      }
+    }
+
     setOpen(false);
     setForm({ ...emptyForm });
     load();
@@ -2030,7 +2082,124 @@ export default function RequestsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sugerir cadastro de contato (CPF não encontrado) */}
+      <Dialog open={suggestOpen} onOpenChange={setSuggestOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cadastrar novo contato</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              O CPF informado não está cadastrado no sistema. Deseja adicionar este cliente à sua lista de contatos?
+            </p>
+            {suggestData && (
+              <div className="rounded-md border bg-muted/40 p-3 space-y-1">
+                <div><span className="text-muted-foreground">Nome:</span> <strong>{suggestData.nome || "—"}</strong></div>
+                <div><span className="text-muted-foreground">CPF:</span> <strong>{suggestData.cpf || "—"}</strong></div>
+                <div><span className="text-muted-foreground">Telefone:</span> <strong>{suggestData.telefone || "—"}</strong></div>
+                <div><span className="text-muted-foreground">E-mail:</span> <strong>{suggestData.email || "—"}</strong></div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSuggestOpen(false)}>
+              Agora não
+            </Button>
+            <Button
+              onClick={() => {
+                if (suggestData) {
+                  setContactForm({
+                    nome: suggestData.nome || "",
+                    cpf: suggestData.cpf || "",
+                    telefone: suggestData.telefone || "",
+                    email: suggestData.email || "",
+                  });
+                }
+                setSuggestOpen(false);
+                setCreateContactOpen(true);
+              }}
+            >
+              Cadastrar contato
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Criar Contato pré-preenchido */}
+      <Dialog open={createContactOpen} onOpenChange={setCreateContactOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Criar Contato</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Field label="Nome *">
+              <Input
+                value={contactForm.nome}
+                onChange={(e) => setContactForm({ ...contactForm, nome: e.target.value })}
+                placeholder="Digite o nome do contato"
+              />
+            </Field>
+            <Field label="CPF">
+              <Input
+                value={contactForm.cpf}
+                onChange={(e) => setContactForm({ ...contactForm, cpf: maskCPF(e.target.value) })}
+                placeholder="000.000.000-00"
+              />
+            </Field>
+            <Field label="Telefone">
+              <Input
+                value={contactForm.telefone}
+                onChange={(e) => setContactForm({ ...contactForm, telefone: maskPhone(e.target.value) })}
+                placeholder="(11) 91234-5678"
+              />
+            </Field>
+            <Field label="E-mail 1">
+              <Input
+                type="email"
+                value={contactForm.email}
+                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                placeholder="email@exemplo.com"
+              />
+            </Field>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCreateContactOpen(false)} disabled={savingContact}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={savingContact || !contactForm.nome.trim()}
+              onClick={async () => {
+                setSavingContact(true);
+                const phoneDigits = contactForm.telefone.replace(/\D/g, "");
+                const cpfDigits = contactForm.cpf.replace(/\D/g, "");
+                const payload: any = {
+                  name: contactForm.nome.trim(),
+                  email: contactForm.email.trim() || null,
+                  phone: phoneDigits || null,
+                  sync_status: "local",
+                  raw_payload: cpfDigits ? { cpf: cpfDigits } : {},
+                };
+                const { error } = await (supabase as any)
+                  .from("rd_contacts")
+                  .insert(payload);
+                setSavingContact(false);
+                if (error) {
+                  toast.error("Erro ao cadastrar contato: " + error.message);
+                  return;
+                }
+                toast.success("Contato cadastrado com sucesso");
+                setCreateContactOpen(false);
+                setContactForm({ nome: "", cpf: "", telefone: "", email: "" });
+              }}
+            >
+              Criar Contato
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </HexaLayout>
+
   );
 }
 
