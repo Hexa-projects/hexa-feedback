@@ -32,7 +32,6 @@ export default function HomePage() {
   const { user, profile } = useAuth();
   const [leads, setLeads] = useState<any[]>([]);
   const [interactions, setInteractions] = useState<any[]>([]);
-  const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,11 +39,9 @@ export default function HomePage() {
     Promise.all([
       supabase.from("leads").select("*").order("created_at", { ascending: false }),
       supabase.from("lead_interactions").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("focus_ai_insights").select("*").eq("status", "pendente").order("created_at", { ascending: false }).limit(5),
-    ]).then(([leadsRes, intRes, insRes]) => {
+    ]).then(([leadsRes, intRes]) => {
       setLeads(leadsRes.data || []);
       setInteractions(intRes.data || []);
-      setInsights(insRes.data || []);
       setLoading(false);
     });
   }, [user]);
