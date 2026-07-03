@@ -43,7 +43,7 @@ function splitEndereco(end: string | null | undefined) {
   return { raw, cep };
 }
 
-export default function RequestDetailModal({ requestId, leadId, open, onClose, canEdit, onDelete }: Props) {
+export default function RequestDetailModal({ requestId, leadId, open, onClose, canEdit, onDelete, footerExtras, extraContent }: Props) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any | null>(null);
   const [editMode, setEditMode] = useState(false);
