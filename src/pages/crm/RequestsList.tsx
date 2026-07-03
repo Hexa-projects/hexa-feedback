@@ -1236,7 +1236,9 @@ export default function RequestsList() {
                         <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                           <Command shouldFilter={false}>
                             <CommandList>
-                              {companySugs.length === 0 ? (
+                              {form.empresa.trim().length < 2 ? (
+                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
+                              ) : companySugs.length === 0 ? (
                                 <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Empresas cadastradas">
