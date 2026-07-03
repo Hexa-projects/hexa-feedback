@@ -1383,7 +1383,7 @@ export default function RequestsList() {
                               {form.cliente_nome.trim().length < 2 ? (
                                 <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
                               ) : contactSugs.length === 0 ? (
-                                <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
+                                <CommandEmpty>Nenhum contato encontrado</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Contatos cadastrados">
                                   {contactSugs.map((s, i) => (
@@ -1404,6 +1404,9 @@ export default function RequestsList() {
                                     >
                                       <div className="flex flex-col">
                                         <span className="font-medium">{s.nome}</span>
+                                        {s.empresa && (
+                                          <span className="text-xs text-muted-foreground">{s.empresa}</span>
+                                        )}
                                         {(s.email || s.telefone) && (
                                           <span className="text-xs text-muted-foreground">{[s.email, s.telefone].filter(Boolean).join(" · ")}</span>
                                         )}
