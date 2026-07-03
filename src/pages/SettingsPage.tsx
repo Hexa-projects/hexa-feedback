@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, Users, KeyRound, FileText, Zap, Plug, Settings2,
   Plus, Trash2, Edit2, Save, X, UserCheck, UserX, RefreshCw,
-  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone
+  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone, PlugZap
 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
