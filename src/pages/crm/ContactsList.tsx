@@ -854,6 +854,16 @@ export default function ContactsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateCompanySheet
+        open={companyEditOpen}
+        onOpenChange={setCompanyEditOpen}
+        mode="edit"
+        initial={
+          companyDataMap[companyEditName] || { name: companyEditName }
+        }
+        onSaved={handleCompanySaved}
+      />
       </div>
     </HexaLayout>
   );
