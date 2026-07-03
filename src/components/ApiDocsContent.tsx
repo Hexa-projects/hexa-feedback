@@ -276,7 +276,7 @@ export default function ApiDocsContent() {
 
         {/* ═══ ACTION API ═══ */}
         <TabsContent value="actions" className="space-y-6">
-          <SectionTitle icon={Code2} title="Action API" subtitle="Permite ao Focus AI propor e executar ações administrativas com governança." />
+          <SectionTitle icon={Code2} title="Action API" subtitle="Permite à IA propor e executar ações administrativas com governança." />
           <Card>
             <CardHeader><CardTitle className="text-base">URL Base</CardTitle></CardHeader>
             <CardContent>
