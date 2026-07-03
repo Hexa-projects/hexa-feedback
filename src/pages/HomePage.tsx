@@ -359,42 +359,6 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Focus AI Insights */}
-          <Card>
-            <CardHeader className="pb-2 flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary" /> Insights Focus AI
-              </CardTitle>
-              <Link to="/focus-ai">
-                <Button variant="ghost" size="sm" className="gap-1 text-xs">Ver mais <ArrowRight className="w-3 h-3" /></Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-sm text-muted-foreground py-4">Carregando...</p>
-              ) : insights.length === 0 ? (
-                <div className="text-center py-8">
-                  <Zap className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Nenhum insight pendente</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {insights.map(ins => (
-                    <div key={ins.id} className="p-3 rounded-lg border bg-primary/5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-[10px]">{ins.tipo}</Badge>
-                        <Badge className="text-[10px] bg-primary/10 text-primary border-0">{ins.prioridade}</Badge>
-                      </div>
-                      <p className="text-sm font-medium">{ins.titulo}</p>
-                      {ins.acao_recomendada && (
-                        <p className="text-xs text-muted-foreground mt-1">→ {ins.acao_recomendada}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </HexaLayout>
