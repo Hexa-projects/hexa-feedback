@@ -166,57 +166,11 @@ export default function DataImporter() {
   };
 
   const runDryRun = async () => {
-    if (!user || !targetTable) return;
-    setLoading(true);
-    try {
-      const session = (await supabase.auth.getSession()).data.session;
-      const resp = await supabase.functions.invoke("openclaw-data-sync", {
-        body: {
-          action: "etl_dry_run",
-          target_table: targetTable,
-          column_map: columnMap,
-          headers: fileHeaders,
-          rows: fileRows.slice(0, 500), // limit to 500 for dry run
-          user_id: user.id,
-        },
-      });
-
-      if (resp.error) throw new Error(resp.error.message);
-      setDryRunResult(resp.data as DryRunResult);
-      setStep("preview");
-    } catch (err: any) {
-      toast.error(err.message || "Erro na simulação.");
-    } finally {
-      setLoading(false);
-    }
+    toast.error("Importação ETL temporariamente indisponível — integração externa removida. Será reativada com a nova IA.");
   };
 
   const executeImport = async () => {
-    if (!user || !targetTable) return;
-    setLoading(true);
-    setStep("importing");
-    try {
-      const resp = await supabase.functions.invoke("openclaw-data-sync", {
-        body: {
-          action: "etl_execute",
-          target_table: targetTable,
-          column_map: columnMap,
-          headers: fileHeaders,
-          rows: fileRows,
-          user_id: user.id,
-        },
-      });
-
-      if (resp.error) throw new Error(resp.error.message);
-      setImportResult(resp.data as { inserted: number; errors: number });
-      setStep("done");
-      toast.success("Importação concluída!");
-    } catch (err: any) {
-      toast.error(err.message || "Erro na importação.");
-      setStep("preview");
-    } finally {
-      setLoading(false);
-    }
+    toast.error("Importação ETL temporariamente indisponível — integração externa removida. Será reativada com a nova IA.");
   };
 
   const reset = () => {

@@ -173,7 +173,7 @@ export default function AIChat() {
     focus: {
       icon: Brain,
       label: "IA Operacional",
-      sublabel: "OpenClaw · Análise autônoma",
+      sublabel: "Análise autônoma",
       color: "text-hexa-amber-dark",
       bg: "bg-hexa-amber/10",
       description: "Análises profundas, insights de negócio e automações inteligentes.",

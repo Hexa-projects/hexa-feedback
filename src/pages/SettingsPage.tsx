@@ -695,7 +695,7 @@ function AutomationsTab() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg flex items-center gap-2"><Zap className="w-5 h-5" /> Automações</CardTitle>
-            <CardDescription>Configure gatilhos, condições e ações automáticas via OpenClaw.</CardDescription>
+            <CardDescription>Configure gatilhos, condições e ações automáticas.</CardDescription>
           </div>
           <Button onClick={addAutomation} size="sm" className="gap-1">
             <Plus className="w-4 h-4" /> Nova Automação
@@ -915,7 +915,6 @@ function IntegrationsTab() {
   }
 
   const getStatus = (key: string): "ativo" | "pendente" | "erro" => {
-    if (key === "openclaw") return "ativo";
     if (key === "rd_station") {
       if (!rdInfo) return "pendente";
       if (rdInfo.status === "connected") return "ativo";
@@ -946,13 +945,6 @@ function IntegrationsTab() {
       descricao: "Sincronização de agendas de manutenção e visitas técnicas.",
       icon: Calendar,
       config: ["Provedor (Google/Outlook)", "Client ID", "Client Secret"],
-    },
-    {
-      key: "openclaw",
-      nome: "OpenClaw Gateway",
-      descricao: "Gateway de automação e integrações operacionais.",
-      icon: Zap,
-      config: ["URL", "Token", "Ambiente"],
     },
     {
       key: "rd_station",

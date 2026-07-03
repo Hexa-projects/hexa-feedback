@@ -182,8 +182,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Queue a summary job in openclaw_event_queue
-      await admin.from("openclaw_event_queue").insert({
+      // Queue a summary job in event_queue
+      await admin.from("event_queue").insert({
         event_type: "meeting_summary",
         domain: "meetings",
         priority: "high",

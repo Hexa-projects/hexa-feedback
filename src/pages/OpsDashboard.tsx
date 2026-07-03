@@ -89,27 +89,6 @@ export default function OpsDashboard() {
       statuses.push({ name: "LiveKit Cloud", icon: Video, status: "unknown", detail: "Não verificado", lastCheck: now });
     }
 
-    // 4) OpenClaw
-    try {
-      const { data: cfg } = await supabase.from("focus_ai_config").select("openclaw_ativo, openclaw_url").limit(1).single();
-      const { data: syncData } = await supabase
-        .from("openclaw_sync_status")
-        .select("metric_value")
-        .eq("metric_name", "connection")
-        .maybeSingle();
-      const connStatus = (syncData?.metric_value as any)?.status;
-      statuses.push({
-        name: "OpenClaw (IA)",
-        icon: Brain,
-        status: cfg?.openclaw_ativo ? (connStatus === "connected" ? "ok" : connStatus === "error" ? "error" : "warning") : "warning",
-        detail: cfg?.openclaw_ativo
-          ? `${connStatus === "connected" ? "Conectado" : connStatus === "error" ? "Erro de conexão" : "Sincronizando"} · ${cfg.openclaw_url || "sem URL"}`
-          : "Desativado",
-        lastCheck: now,
-      });
-    } catch {
-      statuses.push({ name: "OpenClaw (IA)", icon: Brain, status: "unknown", detail: "Config não encontrada", lastCheck: now });
-    }
 
     // 5) Edge Functions
     try {
@@ -136,7 +115,7 @@ export default function OpsDashboard() {
       const counts: Record<string, number> = {};
       for (const status of ["pending", "processing", "delivered", "failed", "dlq"]) {
         const { count } = await supabase
-          .from("openclaw_event_queue")
+          .from("event_queue")
           .select("id", { count: "exact", head: true })
           .eq("status", status);
         counts[status] = count || 0;
@@ -146,16 +125,7 @@ export default function OpsDashboard() {
       setQueue(null);
     }
 
-    // Sync status
-    try {
-      const { data } = await supabase
-        .from("openclaw_sync_status")
-        .select("metric_name, metric_value, updated_at")
-        .order("updated_at", { ascending: false });
-      setSyncStatus(data || []);
-    } catch {
-      setSyncStatus(null);
-    }
+    setSyncStatus(null);
 
     // Audit trail count (24h)
     try {
@@ -280,7 +250,7 @@ export default function OpsDashboard() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" /> Fila de Eventos (OpenClaw)
+                  <TrendingUp className="w-5 h-5" /> Fila de Eventos
                 </CardTitle>
               </CardHeader>
               <CardContent>

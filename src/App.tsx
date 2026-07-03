@@ -187,7 +187,7 @@ const AppRoutes = () => (
       {/* Removed routes redirect to home */}
       <Route path="/agentes" element={<Navigate to="/home" replace />} />
       <Route path="/ops" element={<Navigate to="/home" replace />} />
-      <Route path="/openclaw/*" element={<Navigate to="/home" replace />} />
+      
       <Route path="/api-docs" element={<Navigate to="/settings" replace />} />
       <Route path="/playbook" element={<Navigate to="/crm" replace />} />
       <Route path="/tools" element={<Navigate to="/coleta" replace />} />

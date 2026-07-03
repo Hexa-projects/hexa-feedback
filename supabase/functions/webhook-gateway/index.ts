@@ -103,8 +103,8 @@ Deno.serve(async (req) => {
       throw insertErr;
     }
 
-    // Also enqueue to openclaw_event_queue for delivery
-    await supabase.from("openclaw_event_queue").insert({
+    // Also enqueue to event_queue for delivery
+    await supabase.from("event_queue").insert({
       event_id: eventId,
       event_type: canonicalEvent.event_type,
       priority: canonicalEvent.priority,

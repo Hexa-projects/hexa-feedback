@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Save } from "lucide-react";
-import { createSalesEvent } from "@/lib/openclaw-events";
+
 
 const STATUSES = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
 
@@ -41,15 +41,6 @@ export default function LeadForm() {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Lead criado com sucesso!" });
-      // Fire-and-forget: enqueue event for OpenClaw
-      createSalesEvent("lead_created", {
-        nome: form.nome,
-        empresa: form.empresa,
-        email: form.email,
-        valor_estimado: parseFloat(form.valor_estimado) || 0,
-        origem: form.origem,
-        status: form.status,
-      }).catch(() => {});
       navigate("/crm");
     }
     setSaving(false);

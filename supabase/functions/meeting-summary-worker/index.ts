@@ -7,7 +7,7 @@ const corsHeaders = {
 
 /**
  * meeting-summary-worker
- * Processes queued meeting_summary events from openclaw_event_queue.
+ * Processes queued meeting_summary events from event_queue.
  * For each: fetches full transcription, generates personalized summary via OpenAI,
  * sends via WhatsApp, and marks the job as delivered.
  *
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   try {
     // Fetch pending meeting_summary jobs (batch of 10)
     const { data: jobs, error: fetchErr } = await admin
-      .from("openclaw_event_queue")
+      .from("event_queue")
       .select("*")
       .eq("event_type", "meeting_summary")
       .eq("status", "pending")
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
       try {
         // Mark as processing
-        await admin.from("openclaw_event_queue")
+        await admin.from("event_queue")
           .update({ status: "processing", attempts: job.attempts + 1 })
           .eq("id", job.id);
 
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
         const transcription = meeting?.transcription || "";
         if (!transcription || transcription.trim().length < 20) {
-          await admin.from("openclaw_event_queue")
+          await admin.from("event_queue")
             .update({ status: "failed", last_error: "No transcription available" })
             .eq("id", job.id);
           results.push({ id: job.id, status: "no_transcription" });
@@ -122,19 +122,19 @@ Se não houver itens específicos para o participante, inclua um resumo geral.`,
         });
 
         if (sendErr) {
-          await admin.from("openclaw_event_queue")
+          await admin.from("event_queue")
             .update({ status: "failed", last_error: `WhatsApp send error: ${sendErr.message}` })
             .eq("id", job.id);
           results.push({ id: job.id, status: "send_failed" });
         } else {
-          await admin.from("openclaw_event_queue")
+          await admin.from("event_queue")
             .update({ status: "delivered", delivered_at: new Date().toISOString() })
             .eq("id", job.id);
           results.push({ id: job.id, status: "delivered", participant: participant_name });
         }
       } catch (jobErr) {
         console.error(`Job ${job.id} error:`, jobErr);
-        await admin.from("openclaw_event_queue")
+        await admin.from("event_queue")
           .update({
             status: job.attempts + 1 >= job.max_attempts ? "failed" : "pending",
             last_error: String(jobErr),

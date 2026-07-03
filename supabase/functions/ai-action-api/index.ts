@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
       case "pipeline_stats": {
         const [webhookRes, queueRes, actionsRes, auditRes] = await Promise.all([
           supabase.from("webhook_events").select("status", { count: "exact" }),
-          supabase.from("openclaw_event_queue").select("status", { count: "exact" }),
+          supabase.from("event_queue").select("status", { count: "exact" }),
           supabase.from("ai_action_requests").select("status", { count: "exact" }),
           supabase.from("ai_audit_trail").select("id", { count: "exact", head: true }),
         ]);

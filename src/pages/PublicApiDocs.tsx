@@ -17,7 +17,7 @@ export default function PublicApiDocs() {
         </div>
         <ApiDocsContent />
         <footer className="mt-12 pt-6 border-t text-center text-xs text-muted-foreground">
-          HexaOS © {new Date().getFullYear()} — Documentação para integrações externas e OpenClaw Gateway
+          HexaOS © {new Date().getFullYear()} — Documentação para integrações externas
         </footer>
       </div>
     </div>
