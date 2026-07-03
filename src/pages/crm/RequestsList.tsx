@@ -55,7 +55,7 @@ const EQUIPMENT_TREE: Record<string, Record<string, string[]>> = {
     "GE": ["Signa Explorer", "Signa Creator", "Signa Voyager", "Signa Artist", "Signa Premier", "Signa Architect", "Signa Pioneer"],
     "Philips": ["Ingenia 1.5T", "Ingenia 3.0T", "Ingenia Elition", "Achieva", "Intera", "Multiva", "Prodiva"],
     "Canon/Toshiba": ["Vantage Elan", "Vantage Orian", "Vantage Titan", "Vantage Galan", "Vantage Fortian"],
-    "Esaote": ["E-scan", "S-scan", "O-scan", "O-scan SMART", "G-scan Brio", "Magnifico Open"],
+    "Esaote": ["S-scan", "O-scan", "O-scan SMART", "G-scan Brio", "Magnifico Open"],
   },
   RX: {
     "DRGEM": ["GXR-40S", "GXR-SD", "Topaz"],
