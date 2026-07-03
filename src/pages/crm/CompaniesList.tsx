@@ -28,6 +28,41 @@ type RdUser = { rd_id: string; name: string | null; email: string | null };
 
 type QuickFilter = "all" | "mine";
 
+type PresetFilter =
+  | null
+  | "sales_recurring"
+  | "sales_recent_30d"
+  | "sales_over_3m"
+  | "with_sales"
+  | "without_sales"
+  | "deals_open"
+  | "deals_recent_contact"
+  | "new_no_deals";
+
+const PRESET_LABELS: Record<Exclude<PresetFilter, null>, string> = {
+  sales_recurring: "Vendas recorrentes (2+)",
+  sales_recent_30d: "Vendas recentes (30 dias)",
+  sales_over_3m: "Vendas há mais de 3 meses",
+  with_sales: "Com vendas",
+  without_sales: "Sem vendas",
+  deals_open: "Negociações em andamento",
+  deals_recent_contact: "Negociação com contato recente",
+  new_no_deals: "Novas empresas sem negociação",
+};
+
+const SALES_PRESETS: Exclude<PresetFilter, null>[] = [
+  "sales_recurring",
+  "sales_recent_30d",
+  "sales_over_3m",
+  "with_sales",
+  "without_sales",
+];
+const DEAL_PRESETS: Exclude<PresetFilter, null>[] = [
+  "deals_open",
+  "deals_recent_contact",
+  "new_no_deals",
+];
+
 function ownerIdOf(org: Org): string | null {
   const p = org.raw_payload || {};
   return (
@@ -37,6 +72,69 @@ function ownerIdOf(org: Org): string | null {
     null
   );
 }
+
+function dealsOf(org: Org): any[] {
+  const p = org.raw_payload || {};
+  const arr = p.deals ?? p.deal_list ?? p.deals_history ?? [];
+  return Array.isArray(arr) ? arr : [];
+}
+
+function toDate(v: any): Date | null {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function orgCreatedAt(org: Org): Date | null {
+  const p = org.raw_payload || {};
+  return toDate(p.created_at) || toDate(org.rd_updated_at);
+}
+
+function matchesPreset(org: Org, preset: Exclude<PresetFilter, null>): boolean {
+  const deals = dealsOf(org);
+  const now = Date.now();
+  const wonDeals = deals.filter(d => d?.win === true || d?.won === true || d?.won_at || d?.stage?.nickname === "won");
+  const openDeals = deals.filter(d => {
+    const closed = d?.win === true || d?.win === false || d?.won_at || d?.lost_at || d?.closed_at;
+    return !closed;
+  });
+  const wonDates = wonDeals
+    .map(d => toDate(d?.won_at || d?.closed_at || d?.updated_at))
+    .filter((d): d is Date => !!d)
+    .sort((a, b) => b.getTime() - a.getTime());
+  const lastWon = wonDates[0] ?? null;
+
+  const DAY = 24 * 60 * 60 * 1000;
+
+  switch (preset) {
+    case "sales_recurring":
+      return wonDeals.length >= 2;
+    case "sales_recent_30d":
+      return !!lastWon && now - lastWon.getTime() <= 30 * DAY;
+    case "sales_over_3m":
+      return !!lastWon && now - lastWon.getTime() > 90 * DAY;
+    case "with_sales":
+      return wonDeals.length >= 1;
+    case "without_sales":
+      return wonDeals.length === 0;
+    case "deals_open":
+      return openDeals.length > 0;
+    case "deals_recent_contact": {
+      if (openDeals.length === 0) return false;
+      const lastTouch = openDeals
+        .map(d => toDate(d?.last_activity_at || d?.updated_at))
+        .filter((d): d is Date => !!d)
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+      return !!lastTouch && now - lastTouch.getTime() <= 7 * DAY;
+    }
+    case "new_no_deals": {
+      const created = orgCreatedAt(org);
+      const isNew = !!created && now - created.getTime() <= 30 * DAY;
+      return isNew && deals.length === 0;
+    }
+  }
+}
+
 
 export default function CompaniesList() {
   const { user } = useAuth();
@@ -55,8 +153,13 @@ export default function CompaniesList() {
   const [draftOwners, setDraftOwners] = useState<string[]>([]);
   const [ownerSearch, setOwnerSearch] = useState("");
 
+  // Preset filter (independent single-select dropdown)
+  const [preset, setPreset] = useState<PresetFilter>(null);
+  const [presetOpen, setPresetOpen] = useState(false);
+
   useEffect(() => {
     (async () => {
+
       const [{ data: orgData }, { data: userData }] = await Promise.all([
         supabase
           .from("rd_organizations")
@@ -93,6 +196,9 @@ export default function CompaniesList() {
         return oid ? set.has(oid) : false;
       });
     }
+    if (preset) {
+      list = list.filter(o => matchesPreset(o, preset));
+    }
     if (tableSearch.trim()) {
       const q = tableSearch.trim().toLowerCase();
       list = list.filter(o =>
@@ -102,7 +208,8 @@ export default function CompaniesList() {
       );
     }
     return list;
-  }, [orgs, quick, selectedOwners, tableSearch, myRdId]);
+  }, [orgs, quick, selectedOwners, tableSearch, myRdId, preset]);
+
 
   const filteredOwners = useMemo(() => {
     if (!ownerSearch.trim()) return users;
@@ -288,6 +395,80 @@ export default function CompaniesList() {
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* Filtros predefinidos (VENDAS / NEGOCIAÇÕES) */}
+          <Popover open={presetOpen} onOpenChange={setPresetOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "gap-2 min-w-[200px] justify-between",
+                  preset && "border-primary text-primary",
+                )}
+              >
+                <span className="truncate">
+                  {preset ? PRESET_LABELS[preset] : "Filtros predefinidos"}
+                </span>
+                <ChevronDown className="w-4 h-4 opacity-60 shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 p-0">
+              <div className="py-1">
+                <div className="px-3 pt-3 pb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Vendas
+                </div>
+                {SALES_PRESETS.map(key => {
+                  const active = preset === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setPreset(active ? null : key);
+                        setPresetOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                        active
+                          ? "text-primary font-medium bg-primary/5"
+                          : "text-foreground",
+                      )}
+                    >
+                      {PRESET_LABELS[key]}
+                    </button>
+                  );
+                })}
+
+                <div className="px-3 pt-3 pb-1 mt-1 border-t text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Negociações
+                </div>
+                {DEAL_PRESETS.map(key => {
+                  const active = preset === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setPreset(active ? null : key);
+                        setPresetOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                        active
+                          ? "text-primary font-medium bg-primary/5"
+                          : "text-foreground",
+                      )}
+                    >
+                      {PRESET_LABELS[key]}
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+
 
           {/* Table search (separate — não faz parte do painel) */}
           <div className="relative flex-1 min-w-[220px] max-w-sm">
