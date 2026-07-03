@@ -488,16 +488,60 @@ export default function CompaniesList() {
 
 
 
-          {/* Table search (separate — não faz parte do painel) */}
-          <div className="relative flex-1 min-w-[220px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar empresa..."
-              className="pl-9"
-              value={tableSearch}
-              onChange={e => setTableSearch(e.target.value)}
-            />
-          </div>
+          {/* Filtros — painel de busca rápida */}
+          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "gap-2 min-w-[200px] justify-between",
+                  tableSearch.trim() && "border-primary text-primary",
+                )}
+              >
+                <span className="truncate">
+                  {tableSearch.trim()
+                    ? `Filtros · ${tableSearch.trim()}`
+                    : "Filtros"}
+                </span>
+                {tableSearch.trim() ? (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                  </span>
+                ) : (
+                  <Filter className="w-4 h-4 opacity-60 shrink-0" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 p-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  ref={searchInputRef}
+                  placeholder="Buscar por nome, CNPJ, segmento..."
+                  className="pl-9 pr-9"
+                  value={tableSearch}
+                  onChange={e => setTableSearch(e.target.value)}
+                />
+                {tableSearch.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTableSearch("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Filtra por nome, CNPJ e segmento em tempo real.
+              </p>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <Card>
