@@ -939,6 +939,53 @@ export default function RequestsList() {
         }).catch((err) => console.warn("[push] notify-ceos-push failed", err));
       }
     } catch (e) { console.warn("[push] dispatch failed", e); }
+
+    // Se for CPF e o contato não estiver cadastrado, sugerir cadastro
+    if (hasCpf) {
+      try {
+        const phoneDigits = String(form.telefone || "").replace(/\D/g, "");
+        const emailNorm = String(form.email_1 || "").trim().toLowerCase();
+        const cpfDigits = String(form.cpf || "").replace(/\D/g, "");
+        let exists = false;
+        if (phoneDigits) {
+          const { data: byPhone } = await (supabase as any)
+            .from("rd_contacts")
+            .select("id")
+            .ilike("phone", `%${phoneDigits}%`)
+            .limit(1);
+          if (byPhone && byPhone.length) exists = true;
+        }
+        if (!exists && emailNorm) {
+          const { data: byEmail } = await (supabase as any)
+            .from("rd_contacts")
+            .select("id")
+            .ilike("email", emailNorm)
+            .limit(1);
+          if (byEmail && byEmail.length) exists = true;
+        }
+        if (!exists && cpfDigits) {
+          const { data: byCpf } = await (supabase as any)
+            .from("commercial_requests")
+            .select("id")
+            .eq("cnpj", cpfDigits)
+            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000")
+            .limit(1);
+          if (byCpf && byCpf.length) exists = true;
+        }
+        if (!exists) {
+          setSuggestData({
+            nome: form.cliente_nome,
+            cpf: form.cpf,
+            telefone: form.telefone,
+            email: form.email_1,
+          });
+          setSuggestOpen(true);
+        }
+      } catch (err) {
+        console.warn("[suggest-contact] check failed", err);
+      }
+    }
+
     setOpen(false);
     setForm({ ...emptyForm });
     load();
