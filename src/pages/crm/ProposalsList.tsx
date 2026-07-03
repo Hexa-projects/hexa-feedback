@@ -102,7 +102,7 @@ export default function ProposalsList() {
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-3">
           <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Total</p><p className="text-lg font-bold">{proposals.length}</p></CardContent></Card>
-          <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Valor Total</p><p className="text-lg font-bold text-primary">R$ {totalValor.toLocaleString("pt-BR")}</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center min-w-0 overflow-hidden"><p className="text-xs text-muted-foreground">Valor Total</p><p className="text-base md:text-lg font-bold text-primary break-words">R$ {totalValor.toLocaleString("pt-BR")}</p></CardContent></Card>
           <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Taxa Conversão</p><p className="text-lg font-bold text-hexa-green">{taxaConversao}%</p></CardContent></Card>
         </div>
 
