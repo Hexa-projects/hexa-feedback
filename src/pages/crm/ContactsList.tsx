@@ -260,6 +260,13 @@ export default function ContactsList() {
     totalPages,
   ]);
 
+  const resetForm = () => {
+    setForm({ nome: "", cargo: "", whatsapp: "", empresa: "" });
+    setPhones([{ tipo: "Celular", numero: "" }]);
+    setEmails([""]);
+    setNomeError(false);
+  };
+
   const handleCreate = () => {
     if (!form.nome.trim()) {
       setNomeError(true);
@@ -267,18 +274,19 @@ export default function ContactsList() {
     }
     setSaving(true);
     setTimeout(() => {
+      const cleanEmails = emails.map(e => e.trim()).filter(Boolean);
+      const cleanPhones = phones.map(p => p.numero.trim()).filter(Boolean);
       const newC: Contact = {
         id: `local-${Date.now()}`,
         nome: form.nome.trim(),
         empresa: form.empresa || "",
-        emails: form.email ? [form.email] : [],
-        telefones: form.telefone ? [form.telefone] : [],
+        emails: cleanEmails,
+        telefones: cleanPhones,
         cargo: form.cargo || "",
         negociacoes: 0,
       };
       setContacts(prev => [newC, ...prev]);
-      setForm({ nome: "", empresa: "", email: "", telefone: "", cargo: "" });
-      setNomeError(false);
+      resetForm();
       setSaving(false);
       setCreateOpen(false);
       toast.success("Contato criado com sucesso");
