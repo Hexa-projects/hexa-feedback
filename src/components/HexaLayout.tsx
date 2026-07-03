@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
-  ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
-  MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
+  ChevronDown, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
+  MessageCircle, Bot, Hash, BookOpen, FileText, Target,
   Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
