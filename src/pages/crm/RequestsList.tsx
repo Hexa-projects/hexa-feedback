@@ -1085,6 +1085,7 @@ export default function RequestsList() {
             onClick={() => setFilterStatus(filterStatus === "reprovada" ? "all" : "reprovada")}
           />
           <Kpi
+            className="col-span-2 md:col-span-1"
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             tone="cyan"
