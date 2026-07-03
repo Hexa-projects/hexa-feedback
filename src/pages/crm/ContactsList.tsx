@@ -299,23 +299,38 @@ export default function ContactsList() {
       });
       const mapped: Contact[] = (cts || []).map((c: any) => {
         const raw = c.raw_payload || {};
-        const emails: string[] = Array.isArray(raw.emails)
+        const rawEmails: string[] = Array.isArray(raw.emails)
           ? raw.emails.map((e: any) => e?.email).filter(Boolean)
           : (c.email ? [c.email] : []);
-        const phonesData: PhoneEntry[] = Array.isArray(raw.phones)
+        const emails = Array.from(
+          new Set(
+            rawEmails
+              .map((e: string) => String(e).trim().toLowerCase())
+              .filter(Boolean),
+          ),
+        );
+        const rawPhones: PhoneEntry[] = Array.isArray(raw.phones)
           ? raw.phones.map((p: any) => ({
               tipo: (p?.type === "cellphone" ? "Celular" : p?.type === "work" ? "Comercial" : p?.type === "home" ? "Residencial" : "Celular") as PhoneEntry["tipo"],
-              numero: p?.phone || "",
+              numero: formatPhoneBR(p?.phone || ""),
             })).filter((p: PhoneEntry) => p.numero)
-          : (c.phone ? [{ tipo: "Celular" as const, numero: c.phone }] : []);
+          : (c.phone ? [{ tipo: "Celular" as const, numero: formatPhoneBR(c.phone) }] : []);
+        // dedup por número
+        const seen = new Set<string>();
+        const phonesData = rawPhones.filter(p => {
+          if (seen.has(p.numero)) return false;
+          seen.add(p.numero);
+          return true;
+        });
+        const nome = normalizeName(c.name) || "(sem nome)";
         return {
           id: c.id,
-          nome: c.name || "(sem nome)",
-          empresa: c.organization_rd_id ? (orgMap.get(c.organization_rd_id) || "") : "",
+          nome,
+          empresa: c.organization_rd_id ? normalizeName(orgMap.get(c.organization_rd_id) || "") : "",
           emails,
           telefones: phonesData.map(p => p.numero),
           phonesData,
-          cargo: raw.title || raw.job_title || raw.position || "",
+          cargo: normalizeName(raw.title || raw.job_title || raw.position || ""),
           negociacoes: dealCount.get(c.rd_id) || 0,
         };
       });
