@@ -61,14 +61,13 @@ const MODULES = [
   { key: "reports", label: "Relatórios" },
   { key: "chat", label: "Chat IA" },
   { key: "channels", label: "Canal Corporativo" },
-  { key: "focus_ai", label: "Focus AI" },
   { key: "settings", label: "Configurações" },
 ];
 
 const DEFAULT_PERMISSIONS: Record<string, Record<string, boolean>> = {
   admin: Object.fromEntries(MODULES.map(m => [m.key, true])),
-  gestor: { home: true, crm: true, projects: true, os: true, lab: true, finance: false, reports: true, chat: true, channels: true, focus_ai: false, settings: false },
-  colaborador: { home: true, crm: true, projects: false, os: true, lab: true, finance: false, reports: true, chat: true, channels: true, focus_ai: false, settings: false },
+  gestor: { home: true, crm: true, projects: true, os: true, lab: true, finance: false, reports: true, chat: true, channels: true, settings: false },
+  colaborador: { home: true, crm: true, projects: false, os: true, lab: true, finance: false, reports: true, chat: true, channels: true, settings: false },
 };
 
 // ── Component ──
