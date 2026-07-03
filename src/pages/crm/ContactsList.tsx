@@ -230,6 +230,12 @@ export default function ContactsList() {
   // filters
   const [filterOpen, setFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [filterEmpresa, setFilterEmpresa] = useState<string>("all"); // "all" | "__none__" | nome empresa
+  const [filterCargo, setFilterCargo] = useState<string>("");
+  const [filterEmail, setFilterEmail] = useState<"any" | "with" | "without">("any");
+  const [filterPhone, setFilterPhone] = useState<"any" | "with" | "without">("any");
+  const [filterPhoneType, setFilterPhoneType] = useState<"any" | "Celular" | "Comercial" | "Residencial">("any");
+  const [filterDeals, setFilterDeals] = useState<"any" | "none" | "with" | "gte3" | "gte5">("any");
 
   // pagination
   const [pageSize, setPageSize] = useState(10);
