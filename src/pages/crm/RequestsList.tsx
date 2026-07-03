@@ -573,13 +573,13 @@ export default function RequestsList() {
     const q = form.cliente_nome.trim();
     if (docType !== "cpf" || q.length < 2) { setContactSugs([]); return; }
     const t = setTimeout(async () => {
-      // CPF path armazena o nome do cliente em "empresa" no commercial_requests
+      // No fluxo CPF, o nome do cliente é armazenado em "empresa" e o CPF em "cnpj"
+      // dentro de commercial_requests. rd_contacts não tem CPF cadastrado.
       const [{ data: reqs }, { data: cts }] = await Promise.all([
         (supabase as any)
           .from("commercial_requests")
           .select("empresa, contato, telefone, email_1, cnpj")
           .ilike("empresa", `%${q}%`)
-          .or("cnpj.is.null,cnpj.eq.")
           .order("created_at", { ascending: false })
           .limit(15),
         (supabase as any)
@@ -592,7 +592,10 @@ export default function RequestsList() {
       (reqs || []).forEach((r: any) => {
         const key = (r.empresa || "").toLowerCase().trim();
         if (!key || map.has(key)) return;
-        map.set(key, { nome: r.empresa, telefone: r.telefone, email: r.email_1 });
+        // Se o valor em "cnpj" tem 11 dígitos, é um CPF armazenado no fluxo pessoa-física
+        const digits = String(r.cnpj || "").replace(/\D/g, "");
+        const cpfVal = digits.length === 11 ? digits : undefined;
+        map.set(key, { nome: r.empresa, cpf: cpfVal, telefone: r.telefone, email: r.email_1 });
       });
       (cts || []).forEach((c: any) => {
         const key = (c.name || "").toLowerCase().trim();
