@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { LayoutDashboard, LineChart } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
