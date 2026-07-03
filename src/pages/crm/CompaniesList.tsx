@@ -598,6 +598,11 @@ export default function CompaniesList() {
           </CardContent>
         </Card>
       </div>
+      <CreateCompanySheet
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={org => setOrgs(prev => [org as Org, ...prev])}
+      />
     </HexaLayout>
   );
 }
