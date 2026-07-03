@@ -1904,10 +1904,15 @@ export default function RequestsList() {
                         </Button>
                       </div>
                     )}
-                    {detail.status === "reprovada" && detail.rejection_reason && (
-                      <p className="text-xs text-red-600 mt-2">
-                        <strong>Motivo:</strong> {detail.rejection_reason}
-                      </p>
+                    {detail.status === "reprovada" && (
+                      <div className="mt-3 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 p-3">
+                        <p className="text-xs font-semibold text-red-800 dark:text-red-300 mb-1">
+                          Motivo da reprovação
+                        </p>
+                        <p className="text-sm text-red-900 dark:text-red-200 whitespace-pre-wrap">
+                          {detail.rejection_reason?.trim() || "— não informado —"}
+                        </p>
+                      </div>
                     )}
                     {!canEditStatus && detail.status === "pendente" && (
                       <p className="text-xs text-muted-foreground">
