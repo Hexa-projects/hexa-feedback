@@ -5,11 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  triggerBusinessSnapshot, triggerCatalogDiscovery,
-  triggerExecutiveSummary, triggerDataQuality, triggerSync,
-} from "@/lib/openclaw-events";
-import {
-  RefreshCw, Database, BarChart3, Shield, Brain, Play,
+  RefreshCw, Database, BarChart3, Shield, Brain,
   CheckCircle2, XCircle, AlertTriangle, Zap, Eye, TrendingUp,
   Clock, Layers, Activity, FileSearch
 } from "lucide-react";
@@ -73,45 +69,24 @@ export default function CoCEODashboard() {
   const [insights, setInsights] = useState<InsightWithPlaybook[]>([]);
   const [syncMetrics, setSyncMetrics] = useState<any>({});
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [catalogRes, rulesRes, insightsRes, metricsRes] = await Promise.all([
+    const [catalogRes, rulesRes, insightsRes] = await Promise.all([
       supabase.from("data_catalog" as any).select("*").order("table_name"),
       supabase.from("autonomy_rules" as any).select("*").order("nivel").order("acao"),
       supabase.from("focus_ai_insights").select("*").order("created_at", { ascending: false }).limit(20),
-      supabase.from("openclaw_sync_status" as any).select("*"),
     ]);
     setCatalog((catalogRes.data || []) as any);
     setRules((rulesRes.data || []) as any);
     setInsights((insightsRes.data || []) as any);
-
-    const metricsMap: Record<string, any> = {};
-    ((metricsRes.data || []) as any[]).forEach((m: any) => {
-      metricsMap[m.metric_name] = m.metric_value;
-    });
-    setSyncMetrics(metricsMap);
+    setSyncMetrics({});
     setLoading(false);
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  const runAction = async (key: string, fn: () => Promise<any>, successMsg: string) => {
-    setActionLoading(key);
-    try {
-      const result = await fn();
-      if (result?.success !== false) {
-        toast.success(successMsg);
-      } else {
-        toast.error(result?.message || "Falha na operação");
-      }
-    } catch {
-      toast.error("Erro na operação");
-    }
-    await loadAll();
-    setActionLoading(null);
-  };
 
   const toggleRule = async (rule: AutonomyRule) => {
     await supabase.from("autonomy_rules" as any).update({
@@ -211,65 +186,19 @@ export default function CoCEODashboard() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Zap className="w-5 h-5" /> Ações de Coleta & Análise
+            <Zap className="w-5 h-5" /> Ações
           </CardTitle>
-          <CardDescription>Dispare coletas manuais de dados para o OpenClaw.</CardDescription>
+          <CardDescription>Atualizar dados exibidos no dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="gap-1"
-              disabled={actionLoading === "catalog"}
-              onClick={() => runAction("catalog", triggerCatalogDiscovery, "Catálogo de dados atualizado!")}
-            >
-              {actionLoading === "catalog" ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
-              Descobrir Catálogo
-            </Button>
-            <Button
-              size="sm"
-              className="gap-1"
-              disabled={actionLoading === "snapshot"}
-              onClick={() => runAction("snapshot", triggerBusinessSnapshot, "Snapshot de negócio gerado!")}
-            >
-              {actionLoading === "snapshot" ? <RefreshCw className="w-3 h-3 animate-spin" /> : <BarChart3 className="w-3 h-3" />}
-              Snapshot de Negócio
-            </Button>
-            <Button
-              size="sm"
-              className="gap-1"
-              disabled={actionLoading === "summary"}
-              onClick={() => runAction("summary", triggerExecutiveSummary, "Resumo executivo gerado!")}
-            >
-              {actionLoading === "summary" ? <RefreshCw className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
-              Resumo Executivo
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              disabled={actionLoading === "quality"}
-              onClick={() => runAction("quality", triggerDataQuality, "Qualidade de dados verificada!")}
-            >
-              {actionLoading === "quality" ? <RefreshCw className="w-3 h-3 animate-spin" /> : <FileSearch className="w-3 h-3" />}
-              Qualidade dos Dados
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              disabled={actionLoading === "sync"}
-              onClick={() => runAction("sync", triggerSync, "Fila processada com sucesso!")}
-            >
-              {actionLoading === "sync" ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-              Processar Fila
-            </Button>
             <Button size="sm" variant="ghost" className="gap-1" onClick={loadAll} disabled={loading}>
               <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} /> Atualizar
             </Button>
           </div>
         </CardContent>
       </Card>
+
 
       {/* Data Catalog */}
       <Card>

@@ -123,7 +123,7 @@ export default function WorkOrderDetail() {
         } catch (stockErr) {
           console.error("Stock automation error:", stockErr);
           // Queue for retry
-          await supabase.from("openclaw_event_queue").insert({
+          await supabase.from("event_queue").insert({
             event_type: "stock_deduction_retry",
             data: { work_order_id: os.id, pecas_utilizadas: pecas },
             status: "pending",

@@ -80,7 +80,7 @@ serve(async (req) => {
 
         // Check if below minimum → create alert
         if (newQty <= invItem.min_quantity) {
-          await db.from("openclaw_event_queue").insert({
+          await db.from("event_queue").insert({
             event_type: "low_stock_alert",
             data: {
               inventory_id: invItem.id,
@@ -140,7 +140,7 @@ serve(async (req) => {
       const lowStock = (items || []).filter((i: any) => i.current_quantity <= i.min_quantity);
 
       for (const item of lowStock) {
-        await db.from("openclaw_event_queue").insert({
+        await db.from("event_queue").insert({
           event_type: "low_stock_alert",
           data: {
             inventory_id: item.id,

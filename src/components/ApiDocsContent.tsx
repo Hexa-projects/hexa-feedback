@@ -104,7 +104,7 @@ export default function ApiDocsContent() {
           <BookOpen className="w-6 h-6 text-primary" /> HexaOS — Documentação API & Webhooks
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Guia completo para integração do OpenClaw e sistemas externos com o HexaOS.
+          Guia completo para integração de sistemas externos com o HexaOS.
         </p>
       </div>
 
@@ -142,78 +142,14 @@ export default function ApiDocsContent() {
         </Card>
       </div>
 
-      <Tabs defaultValue="data-api" className="space-y-4">
-        <TabsList className="grid grid-cols-2 lg:grid-cols-5 h-auto">
-          <TabsTrigger value="data-api" className="text-xs gap-1"><Database className="w-3 h-3" />Data API</TabsTrigger>
+      <Tabs defaultValue="webhooks" className="space-y-4">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-4 h-auto">
           <TabsTrigger value="webhooks" className="text-xs gap-1"><Zap className="w-3 h-3" />Webhooks</TabsTrigger>
           <TabsTrigger value="actions" className="text-xs gap-1"><Code2 className="w-3 h-3" />Action API</TabsTrigger>
           <TabsTrigger value="auth" className="text-xs gap-1"><Key className="w-3 h-3" />Autenticação</TabsTrigger>
           <TabsTrigger value="errors" className="text-xs gap-1"><AlertTriangle className="w-3 h-3" />Erros & Limites</TabsTrigger>
         </TabsList>
 
-        {/* ═══ DATA API ═══ */}
-        <TabsContent value="data-api" className="space-y-6">
-          <SectionTitle icon={Database} title="OpenClaw Data API" subtitle="Permite ao OpenClaw puxar todos os dados da plataforma de forma autônoma e segura." />
-          <Card>
-            <CardHeader><CardTitle className="text-base">URL Base</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <code className="bg-muted px-3 py-1.5 rounded text-sm font-mono">{FUNCTION_BASE}/openclaw-data-api</code>
-                <CopyButton text={`${FUNCTION_BASE}/openclaw-data-api`} />
-              </div>
-            </CardContent>
-          </Card>
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Endpoints</h3>
-            <Endpoint method="POST" path="/" description="Descobrir endpoints disponíveis" auth="X-OpenClaw-Token ou Authorization: Bearer <token>"
-              example={`curl -X POST ${FUNCTION_BASE}/openclaw-data-api \\\n  -H "Content-Type: application/json" \\\n  -H "X-OpenClaw-Token: SEU_TOKEN"`}
-              response={`{\n  "success": true,\n  "source": "hexaos",\n  "api": "OpenClaw Data API",\n  "version": "1.0",\n  "endpoints": { ... },\n  "tables_available": ["leads", "work_orders", ...]\n}`} />
-            <Endpoint method="POST" path="/catalog" description="Lista todas as tabelas com colunas, contagens e amostras" auth="X-OpenClaw-Token"
-              body={`{ "action": "catalog" }`}
-              response={`{\n  "success": true,\n  "tables": [\n    {\n      "table": "leads",\n      "domain": "sales",\n      "description": "Pipeline de vendas",\n      "row_count": 42,\n      "columns": ["id", "nome", "empresa", ...],\n      "sample": { "id": "uuid", "nome": "...", ... }\n    }\n  ]\n}`}
-              example={`curl -X POST ${FUNCTION_BASE}/openclaw-data-api \\\n  -H "Content-Type: application/json" \\\n  -H "X-OpenClaw-Token: SEU_TOKEN" \\\n  -d '{"action": "catalog"}'`}
-              notes="PII é mascarado automaticamente nas amostras (email, telefone, chaves). Toda consulta é auditada em ai_audit_trail." />
-            <Endpoint method="POST" path="/table/{nome}" description="Puxa dados de uma tabela específica com filtros e paginação" auth="X-OpenClaw-Token"
-              body={`{\n  "action": "pull_table",\n  "table": "leads",\n  "limit": 100,\n  "offset": 0,\n  "order_by": "created_at",\n  "ascending": false,\n  "since": "2026-03-01T00:00:00Z",\n  "filters": { "status": "Qualificação" }\n}`}
-              response={`{\n  "success": true,\n  "table": "leads",\n  "domain": "sales",\n  "total_rows": 42,\n  "returned": 42,\n  "has_more": false,\n  "data": [ { ... }, { ... } ]\n}`}
-              example={`curl -X POST ${FUNCTION_BASE}/openclaw-data-api \\\n  -H "Content-Type: application/json" \\\n  -H "X-OpenClaw-Token: SEU_TOKEN" \\\n  -d '{"action":"pull_table","table":"leads","limit":50}'`} />
-            <Endpoint method="POST" path="/snapshot" description="Snapshot completo de KPIs, funil de vendas, riscos e SLA" auth="X-OpenClaw-Token"
-              body={`{ "action": "snapshot" }`}
-              response={`{\n  "success": true,\n  "source": "hexaos",\n  "summary": {\n    "total_leads": 42,\n    "leads_this_month": 8,\n    "lead_funnel": { "Qualificação": 15, "Proposta": 10, ... },\n    "pipeline_value": 250000,\n    "open_work_orders": 12,\n    "critical_work_orders": 3\n  },\n  "risks": {\n    "stale_leads": [ ... ],\n    "sla_at_risk": [ ... ]\n  }\n}`} />
-            <Endpoint method="POST" path="/search" description="Busca textual em múltiplas tabelas (iLIKE)" auth="X-OpenClaw-Token"
-              body={`{\n  "action": "search",\n  "query": "Hospital São Paulo",\n  "tables": ["leads", "work_orders", "proposals"],\n  "limit": 10\n}`}
-              response={`{\n  "success": true,\n  "query": "Hospital São Paulo",\n  "results": {\n    "leads": [ { ... } ],\n    "work_orders": [ { ... } ]\n  }\n}`} />
-            <Endpoint method="POST" path="/changes" description="Sync incremental — mudanças desde uma data (delta)" auth="X-OpenClaw-Token"
-              body={`{\n  "action": "changes",\n  "since": "2026-03-23T00:00:00Z",\n  "tables": ["leads", "work_orders"]\n}`}
-              response={`{\n  "success": true,\n  "since": "2026-03-23T00:00:00Z",\n  "changes": {\n    "leads": { "count": 3, "data": [ ... ] },\n    "work_orders": { "count": 1, "data": [ ... ] }\n  }\n}`}
-              notes="Se 'since' não for informado, retorna mudanças das últimas 24 horas." />
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Database className="w-4 h-4" /> Tabelas Disponíveis</CardTitle>
-              <CardDescription>27 tabelas acessíveis via Data API, organizadas por domínio.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { domain: "Vendas (sales)", tables: ["leads", "lead_interactions", "proposals"] },
-                  { domain: "Operações (ops)", tables: ["work_orders", "work_order_activities", "lab_parts", "daily_forms", "bottlenecks", "repetitive_processes", "suggestions", "tool_mappings"] },
-                  { domain: "Pessoas (people)", tables: ["profiles"] },
-                  { domain: "Comunicação (comms)", tables: ["corporate_channels", "channel_messages"] },
-                  { domain: "IA (ai)", tables: ["focus_ai_insights", "focus_ai_logs", "ai_action_requests", "ai_audit_trail", "ai_learning_feedback", "ai_agents", "autonomy_rules"] },
-                  { domain: "Meta", tables: ["data_catalog", "openclaw_event_queue", "openclaw_sync_status", "webhook_events", "webhook_sources"] },
-                ].map(group => (
-                  <div key={group.domain} className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">{group.domain}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {group.tables.map(t => (<Badge key={t} variant="outline" className="font-mono text-xs">{t}</Badge>))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* ═══ WEBHOOKS ═══ */}
         <TabsContent value="webhooks" className="space-y-6">
@@ -339,11 +275,11 @@ export default function ApiDocsContent() {
               <div className="space-y-3">
                 <div className="p-4 border rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-primary/10 text-primary">Data API</Badge>
-                    <span className="text-sm font-medium">Token OpenClaw</span>
+                    <Badge className="bg-green-500/10 text-green-600">Webhook Gateway</Badge>
+                    <span className="text-sm font-medium">Supabase Anon Key</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Usado pela Data API para autenticar chamadas do OpenClaw. O token é o mesmo configurado em Configurações → OpenClaw.</p>
-                  <CodeBlock code={`# Via header X-OpenClaw-Token\ncurl -H "X-OpenClaw-Token: seu-token-aqui" ...\n\n# Ou via Authorization Bearer\ncurl -H "Authorization: Bearer seu-token-aqui" ...`} />
+                  <p className="text-xs text-muted-foreground">O Webhook Gateway aceita a chave anon do Supabase para autenticação via API externa.</p>
+                  <CodeBlock code={`curl -H "Authorization: Bearer <SUPABASE_ANON_KEY>" \\\n     -H "Content-Type: application/json" ...`} />
                 </div>
                 <div className="p-4 border rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
@@ -368,11 +304,11 @@ export default function ApiDocsContent() {
             <CardContent>
               <div className="space-y-3 text-sm">
                 {[
-                  { title: "Mascaramento de PII", desc: "Campos sensíveis (email, telefone, chaves) são mascarados automaticamente antes de retornar ao OpenClaw." },
+                  { title: "Mascaramento de PII", desc: "Campos sensíveis (email, telefone, chaves) são mascarados automaticamente antes de retornar nas respostas." },
                   { title: "Auditoria Completa", desc: "Toda consulta à Data API é registrada na tabela ai_audit_trail com tipo, tabela, número de registros e timestamp." },
                   { title: "Tokens Mascarados em Logs", desc: "Tokens nunca são logados por completo. Formato: abc...xyz." },
                   { title: "HTTPS Obrigatório", desc: "Todas as Edge Functions são acessadas via HTTPS por padrão (Supabase)." },
-                  { title: "RLS Ativo", desc: "Row-Level Security está ativo em todas as tabelas. A Data API usa service_role para acesso completo (somente para OpenClaw autenticado)." },
+                  { title: "RLS Ativo", desc: "Row-Level Security está ativo em todas as tabelas. A Data API usa service_role para acesso completo (uso interno controlado)." },
                   { title: "Rate Limiting", desc: "Limite de requisições por minuto configurável por fonte no webhook_sources." },
                 ].map(item => (
                   <div key={item.title} className="flex items-start gap-2">
@@ -452,7 +388,7 @@ export default function ApiDocsContent() {
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Retry & Resiliência</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <p className="text-muted-foreground">
-                O sistema de fila (<code className="text-xs bg-muted px-1 rounded">openclaw_event_queue</code>) implementa retry automático:
+                O sistema de fila (<code className="text-xs bg-muted px-1 rounded">event_queue</code>) implementa retry automático:
               </p>
               <div className="space-y-2">
                 {[
