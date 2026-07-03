@@ -97,19 +97,20 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
 
   const isDirty = useMemo(
     () =>
-      !!(name || segment || url || summary || address || cnpj || cnpjAddress),
-    [name, segment, url, summary, address, cnpj, cnpjAddress],
+      !!(name || tipo || segment || url || summary || address || cnpj),
+    [name, tipo, segment, url, summary, address, cnpj],
   );
 
   const reset = () => {
     setName("");
+    setTipo("");
     setSegment("");
     setUrl("");
     setSummary("");
     setAddress("");
     setCnpj("");
-    setCnpjAddress("");
     setNameError(false);
+    setTipoError(false);
   };
 
   const requestClose = () => {
