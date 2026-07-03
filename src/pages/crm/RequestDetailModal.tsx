@@ -20,6 +20,8 @@ type Props = {
   onClose: () => void;
   canEdit: boolean;
   onDelete?: (leadId: string) => void;
+  footerExtras?: React.ReactNode;
+  extraContent?: React.ReactNode;
 };
 
 // Parse "CATEGORIA - MARCA - MODELO" back into parts.
@@ -41,7 +43,7 @@ function splitEndereco(end: string | null | undefined) {
   return { raw, cep };
 }
 
-export default function RequestDetailModal({ requestId, leadId, open, onClose, canEdit, onDelete }: Props) {
+export default function RequestDetailModal({ requestId, leadId, open, onClose, canEdit, onDelete, footerExtras, extraContent }: Props) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -284,7 +286,10 @@ export default function RequestDetailModal({ requestId, leadId, open, onClose, c
           </div>
         )}
 
-        <DialogFooter className="gap-2">
+        {extraContent}
+
+        <DialogFooter className="gap-2 flex-wrap">
+          {footerExtras}
           {editMode ? (
             <>
               <Button variant="outline" onClick={() => { setEditMode(false); setForm(data || {}); }} disabled={saving || deleting}>
