@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import HexaLayout from "@/components/HexaLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RefreshCw, PlugZap, DownloadCloud, Webhook, AlertTriangle, CheckCircle2, Clock, KeyRound, Save, Copy, Eye, EyeOff } from "lucide-react";
+import { RefreshCw, PlugZap, DownloadCloud, AlertTriangle, CheckCircle2, Clock, KeyRound, Save, Eye, EyeOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,7 +26,6 @@ async function getFunctionErrorMessage(err: any) {
   const fallback = err?.message ?? String(err);
   const context = err?.context;
   if (!context || typeof context.clone !== "function") return fallback;
-
   try {
     const body = await context.clone().json();
     return body?.detail || body?.error || body?.message || fallback;
@@ -46,13 +44,10 @@ export default function RdStationIntegration() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [errors, setErrors] = useState<LogRow[]>([]);
-  const [webhooks, setWebhooks] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [params, setParams] = useSearchParams();
-  const [creds, setCreds] = useState({ client_id: "", client_secret: "", redirect_uri: "" });
-  const [defaultRedirect, setDefaultRedirect] = useState("");
-  const [hasSecret, setHasSecret] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
+  const [privateToken, setPrivateToken] = useState("");
+  const [hasToken, setHasToken] = useState(false);
+  const [showToken, setShowToken] = useState(false);
 
   async function load() {
     const [i, c, j, l] = await Promise.all([
@@ -71,27 +66,26 @@ export default function RdStationIntegration() {
     try {
       const { data, error } = await supabase.functions.invoke("rd-save-credentials", { method: "GET" as any });
       if (error) throw error;
-      setCreds((c) => ({ ...c, client_id: data?.client_id ?? "", redirect_uri: data?.redirect_uri ?? "" }));
-      setDefaultRedirect(data?.default_redirect_uri ?? "");
-      setHasSecret(!!data?.has_client_secret);
+      setHasToken(!!data?.has_private_token);
     } catch (_) { /* silencioso */ }
   }
 
-  async function saveCreds() {
-    setBusy("save-creds");
+  async function saveToken() {
+    if (!privateToken.trim()) {
+      toast.error("Cole o Private Token antes de salvar");
+      return;
+    }
+    setBusy("save-token");
     try {
-      const { error } = await supabase.functions.invoke("rd-save-credentials", {
+      const { data, error } = await supabase.functions.invoke("rd-save-credentials", {
         method: "POST",
-        body: {
-          client_id: creds.client_id.trim(),
-          client_secret: creds.client_secret.trim(),
-          redirect_uri: creds.redirect_uri.trim() || null,
-        },
+        body: { private_token: privateToken.trim() },
       });
       if (error) throw error;
-      toast.success("Credenciais salvas com segurança");
-      setCreds((c) => ({ ...c, client_secret: "" }));
-      await loadCreds();
+      if (data?.ok === false) throw new Error(data?.detail || data?.error || "Token inválido");
+      toast.success("Private Token salvo e validado com sucesso");
+      setPrivateToken("");
+      await Promise.all([loadCreds(), load()]);
     } catch (err: any) {
       toast.error("Falha ao salvar: " + await getFunctionErrorMessage(err));
     } finally { setBusy(null); }
@@ -104,28 +98,6 @@ export default function RdStationIntegration() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (params.get("connected") === "1") {
-      toast.success("RD Station conectado!");
-      setParams({}, { replace: true });
-    } else if (params.get("connected") === "0") {
-      toast.error("Falha na conexão com RD Station: " + (params.get("error") ?? "erro desconhecido"));
-      setParams({}, { replace: true });
-    }
-  }, [params, setParams]);
-
-  async function connect() {
-    setBusy("connect");
-    try {
-      const { data, error } = await supabase.functions.invoke("rd-oauth-start");
-      if (error) throw error;
-      if (!data?.url) throw new Error("URL de autorização não retornada");
-      window.location.href = data.url;
-    } catch (err: any) {
-      toast.error("Erro ao iniciar OAuth: " + await getFunctionErrorMessage(err));
-    } finally { setBusy(null); }
-  }
-
   async function trigger(fn: "rd-sync-full" | "rd-sync-delta") {
     setBusy(fn);
     try {
@@ -134,33 +106,12 @@ export default function RdStationIntegration() {
       toast.success(fn === "rd-sync-full" ? "Sincronização completa iniciada" : "Sincronização delta iniciada");
       setTimeout(load, 1500);
     } catch (err: any) {
-      toast.error("Falha: " + (err.message ?? String(err)));
+      toast.error("Falha: " + await getFunctionErrorMessage(err));
     } finally { setBusy(null); }
-  }
-
-  async function registerWebhooks() {
-    setBusy("webhooks");
-    try {
-      const { data, error } = await supabase.functions.invoke("rd-create-webhooks", { method: "POST" });
-      if (error) throw error;
-      toast.success("Webhooks processados");
-      setWebhooks(data?.results ?? []);
-    } catch (err: any) {
-      toast.error("Falha ao registrar webhooks: " + (err.message ?? String(err)));
-    } finally { setBusy(null); }
-  }
-
-  async function listWebhooks() {
-    try {
-      const { data, error } = await supabase.functions.invoke("rd-create-webhooks", { method: "GET" as any });
-      if (error) throw error;
-      setWebhooks(data?.existing ?? []);
-    } catch (err: any) {
-      toast.error("Falha ao listar webhooks: " + (err.message ?? String(err)));
-    }
   }
 
   const connected = integ?.status === "connected";
+  const canSync = connected || hasToken;
   const lastSync = integ?.last_delta_sync_at ?? integ?.last_full_sync_at ?? null;
 
   return (
@@ -171,7 +122,7 @@ export default function RdStationIntegration() {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <PlugZap className="w-6 h-6 text-primary" /> Integração RD Station CRM
             </h1>
-            <p className="text-sm text-muted-foreground">Sincronize funis, contatos, empresas, negociações e tarefas do RD Station.</p>
+            <p className="text-sm text-muted-foreground">Autenticação via <strong>Private Token</strong> (Token de Instância) do RD Station CRM.</p>
           </div>
           <Badge variant={connected ? "default" : "outline"} className="gap-1.5">
             {connected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
@@ -182,94 +133,50 @@ export default function RdStationIntegration() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-primary" /> Credenciais OAuth
+              <KeyRound className="w-4 h-4 text-primary" /> Private Token
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Cole o <strong>Client ID</strong> e <strong>Client Secret</strong> do seu app no RD Station App Store.
-              O secret é armazenado criptografado e nunca é devolvido para o navegador.
+              Gere o token em <strong>RD Station CRM → Configurações → Integrações → API do RD Station CRM</strong> e cole aqui.
+              O valor é criptografado no banco e nunca é devolvido para o navegador.
             </p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="rd-client-id">Client ID</Label>
-                <Input
-                  id="rd-client-id"
-                  autoComplete="off"
-                  value={creds.client_id}
-                  onChange={(e) => setCreds({ ...creds, client_id: e.target.value })}
-                  placeholder="ex.: 1a2b3c4d-..."
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="rd-client-secret">
-                  Client Secret {hasSecret && <span className="text-emerald-600 text-xs">• salvo</span>}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="rd-client-secret"
-                    type={showSecret ? "text" : "password"}
-                    autoComplete="new-password"
-                    value={creds.client_secret}
-                    onChange={(e) => setCreds({ ...creds, client_secret: e.target.value })}
-                    placeholder={hasSecret ? "••••••••  (deixe em branco para manter)" : "cole o secret"}
-                  />
-                  <Button type="button" variant="outline" size="icon" onClick={() => setShowSecret((s) => !s)}>
-                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
-                </div>
-              </div>
-            </div>
             <div className="space-y-1.5">
-              <Label htmlFor="rd-redirect">Redirect URI (Callback URL)</Label>
+              <Label htmlFor="rd-private-token">
+                Private Token {hasToken && <span className="text-emerald-600 text-xs">• salvo</span>}
+              </Label>
               <div className="flex gap-2">
                 <Input
-                  id="rd-redirect"
-                  value={creds.redirect_uri || defaultRedirect}
-                  onChange={(e) => setCreds({ ...creds, redirect_uri: e.target.value })}
-                  placeholder={defaultRedirect}
+                  id="rd-private-token"
+                  type={showToken ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={privateToken}
+                  onChange={(e) => setPrivateToken(e.target.value)}
+                  placeholder={hasToken ? "••••••••  (deixe em branco para manter o atual)" : "cole seu Private Token"}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    navigator.clipboard.writeText(creds.redirect_uri || defaultRedirect);
-                    toast.success("Redirect URI copiada");
-                  }}
-                >
-                  <Copy className="w-4 h-4" />
+                <Button type="button" variant="outline" size="icon" onClick={() => setShowToken((s) => !s)}>
+                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Cadastre exatamente esta URL como <em>Callback URL</em> no app do RD Station.
-              </p>
             </div>
             <div className="flex justify-end">
-              <Button onClick={saveCreds} disabled={busy === "save-creds" || !creds.client_id.trim()}>
-                <Save className="w-4 h-4 mr-1.5" /> Salvar credenciais
+              <Button onClick={saveToken} disabled={busy === "save-token" || !privateToken.trim()}>
+                <Save className="w-4 h-4 mr-1.5" /> Salvar e validar
               </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Conexão</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Sincronização</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={connect} disabled={busy === "connect"} variant={connected ? "outline" : "default"}>
-                <PlugZap className="w-4 h-4 mr-1.5" /> {connected ? "Reconectar" : "Conectar RD Station"}
-              </Button>
-              <Button onClick={() => trigger("rd-sync-full")} disabled={!connected || !!busy} variant="outline">
+              <Button onClick={() => trigger("rd-sync-full")} disabled={!canSync || !!busy}>
                 <DownloadCloud className="w-4 h-4 mr-1.5" /> Sincronização completa
               </Button>
-              <Button onClick={() => trigger("rd-sync-delta")} disabled={!connected || !!busy} variant="outline">
+              <Button onClick={() => trigger("rd-sync-delta")} disabled={!canSync || !!busy} variant="outline">
                 <RefreshCw className={"w-4 h-4 mr-1.5" + (busy === "rd-sync-delta" ? " animate-spin" : "")} /> Sincronizar alterações
               </Button>
-              <Button onClick={registerWebhooks} disabled={!connected || !!busy} variant="outline">
-                <Webhook className="w-4 h-4 mr-1.5" /> Registrar webhooks
-              </Button>
-              <Button onClick={listWebhooks} disabled={!connected} variant="ghost" size="sm">Ver webhooks</Button>
             </div>
             <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Última sincronização: {lastSync ? formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: ptBR }) : "—"}</span>
@@ -336,15 +243,6 @@ export default function RdStationIntegration() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {webhooks.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-base">Webhooks</CardTitle></CardHeader>
-            <CardContent>
-              <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-80">{JSON.stringify(webhooks, null, 2)}</pre>
             </CardContent>
           </Card>
         )}
