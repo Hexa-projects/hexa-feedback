@@ -10,9 +10,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Building2, ChevronDown, Filter, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
+
+const PAGE_SIZES = [10, 25, 50, 100];
 
 type Org = {
   id: string;
