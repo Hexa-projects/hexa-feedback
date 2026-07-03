@@ -28,6 +28,41 @@ type RdUser = { rd_id: string; name: string | null; email: string | null };
 
 type QuickFilter = "all" | "mine";
 
+type PresetFilter =
+  | null
+  | "sales_recurring"
+  | "sales_recent_30d"
+  | "sales_over_3m"
+  | "with_sales"
+  | "without_sales"
+  | "deals_open"
+  | "deals_recent_contact"
+  | "new_no_deals";
+
+const PRESET_LABELS: Record<Exclude<PresetFilter, null>, string> = {
+  sales_recurring: "Vendas recorrentes (2+)",
+  sales_recent_30d: "Vendas recentes (30 dias)",
+  sales_over_3m: "Vendas há mais de 3 meses",
+  with_sales: "Com vendas",
+  without_sales: "Sem vendas",
+  deals_open: "Negociações em andamento",
+  deals_recent_contact: "Negociação com contato recente",
+  new_no_deals: "Novas empresas sem negociação",
+};
+
+const SALES_PRESETS: Exclude<PresetFilter, null>[] = [
+  "sales_recurring",
+  "sales_recent_30d",
+  "sales_over_3m",
+  "with_sales",
+  "without_sales",
+];
+const DEAL_PRESETS: Exclude<PresetFilter, null>[] = [
+  "deals_open",
+  "deals_recent_contact",
+  "new_no_deals",
+];
+
 function ownerIdOf(org: Org): string | null {
   const p = org.raw_payload || {};
   return (
@@ -37,6 +72,69 @@ function ownerIdOf(org: Org): string | null {
     null
   );
 }
+
+function dealsOf(org: Org): any[] {
+  const p = org.raw_payload || {};
+  const arr = p.deals ?? p.deal_list ?? p.deals_history ?? [];
+  return Array.isArray(arr) ? arr : [];
+}
+
+function toDate(v: any): Date | null {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function orgCreatedAt(org: Org): Date | null {
+  const p = org.raw_payload || {};
+  return toDate(p.created_at) || toDate(org.rd_updated_at);
+}
+
+function matchesPreset(org: Org, preset: Exclude<PresetFilter, null>): boolean {
+  const deals = dealsOf(org);
+  const now = Date.now();
+  const wonDeals = deals.filter(d => d?.win === true || d?.won === true || d?.won_at || d?.stage?.nickname === "won");
+  const openDeals = deals.filter(d => {
+    const closed = d?.win === true || d?.win === false || d?.won_at || d?.lost_at || d?.closed_at;
+    return !closed;
+  });
+  const wonDates = wonDeals
+    .map(d => toDate(d?.won_at || d?.closed_at || d?.updated_at))
+    .filter((d): d is Date => !!d)
+    .sort((a, b) => b.getTime() - a.getTime());
+  const lastWon = wonDates[0] ?? null;
+
+  const DAY = 24 * 60 * 60 * 1000;
+
+  switch (preset) {
+    case "sales_recurring":
+      return wonDeals.length >= 2;
+    case "sales_recent_30d":
+      return !!lastWon && now - lastWon.getTime() <= 30 * DAY;
+    case "sales_over_3m":
+      return !!lastWon && now - lastWon.getTime() > 90 * DAY;
+    case "with_sales":
+      return wonDeals.length >= 1;
+    case "without_sales":
+      return wonDeals.length === 0;
+    case "deals_open":
+      return openDeals.length > 0;
+    case "deals_recent_contact": {
+      if (openDeals.length === 0) return false;
+      const lastTouch = openDeals
+        .map(d => toDate(d?.last_activity_at || d?.updated_at))
+        .filter((d): d is Date => !!d)
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+      return !!lastTouch && now - lastTouch.getTime() <= 7 * DAY;
+    }
+    case "new_no_deals": {
+      const created = orgCreatedAt(org);
+      const isNew = !!created && now - created.getTime() <= 30 * DAY;
+      return isNew && deals.length === 0;
+    }
+  }
+}
+
 
 export default function CompaniesList() {
   const { user } = useAuth();
