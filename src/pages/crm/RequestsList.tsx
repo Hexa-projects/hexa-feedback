@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
 
 // Taxonomia de Equipamentos (Categoria → Marca → Modelos)
 const EQUIPMENT_CATEGORIES: { sigla: string; nome: string }[] = [
@@ -256,10 +257,13 @@ export default function RequestsList() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<any | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
-  const [suggestData, setSuggestData] = useState<{ nome: string; cpf: string; telefone: string; email: string } | null>(null);
+  const [suggestKind, setSuggestKind] = useState<"contato" | "empresa">("contato");
+  const [suggestData, setSuggestData] = useState<{ nome: string; doc: string; telefone: string; email: string; endereco?: string } | null>(null);
   const [createContactOpen, setCreateContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ nome: "", cpf: "", telefone: "", email: "" });
   const [savingContact, setSavingContact] = useState(false);
+  const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
+  const [companyInitial, setCompanyInitial] = useState<any>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -940,7 +944,7 @@ export default function RequestsList() {
       }
     } catch (e) { console.warn("[push] dispatch failed", e); }
 
-    // Se for CPF e o contato não estiver cadastrado, sugerir cadastro
+    // Sugestão pós-cadastro: contato (CPF) ou empresa (CNPJ) inexistentes
     if (hasCpf) {
       try {
         const phoneDigits = String(form.telefone || "").replace(/\D/g, "");
@@ -949,33 +953,25 @@ export default function RequestsList() {
         let exists = false;
         if (phoneDigits) {
           const { data: byPhone } = await (supabase as any)
-            .from("rd_contacts")
-            .select("id")
-            .ilike("phone", `%${phoneDigits}%`)
-            .limit(1);
+            .from("rd_contacts").select("id").ilike("phone", `%${phoneDigits}%`).limit(1);
           if (byPhone && byPhone.length) exists = true;
         }
         if (!exists && emailNorm) {
           const { data: byEmail } = await (supabase as any)
-            .from("rd_contacts")
-            .select("id")
-            .ilike("email", emailNorm)
-            .limit(1);
+            .from("rd_contacts").select("id").ilike("email", emailNorm).limit(1);
           if (byEmail && byEmail.length) exists = true;
         }
         if (!exists && cpfDigits) {
           const { data: byCpf } = await (supabase as any)
-            .from("commercial_requests")
-            .select("id")
-            .eq("cnpj", cpfDigits)
-            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000")
-            .limit(1);
+            .from("commercial_requests").select("id").eq("cnpj", cpfDigits)
+            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000").limit(1);
           if (byCpf && byCpf.length) exists = true;
         }
         if (!exists) {
+          setSuggestKind("contato");
           setSuggestData({
             nome: form.cliente_nome,
-            cpf: form.cpf,
+            doc: form.cpf,
             telefone: form.telefone,
             email: form.email_1,
           });
@@ -984,7 +980,40 @@ export default function RequestsList() {
       } catch (err) {
         console.warn("[suggest-contact] check failed", err);
       }
+    } else if (hasCnpj) {
+      try {
+        const cnpjDigits = String(form.cnpj || "").replace(/\D/g, "");
+        const nameNorm = String(form.empresa || "").trim();
+        let exists = false;
+        if (cnpjDigits) {
+          // rd_organizations.cnpj pode estar formatado ou só dígitos — checa ambos
+          const { data: byCnpj } = await (supabase as any)
+            .from("rd_organizations").select("id")
+            .or(`cnpj.eq.${form.cnpj},cnpj.eq.${cnpjDigits}`)
+            .limit(1);
+          if (byCnpj && byCnpj.length) exists = true;
+        }
+        if (!exists && nameNorm) {
+          const { data: byName } = await (supabase as any)
+            .from("rd_organizations").select("id").ilike("name", nameNorm).limit(1);
+          if (byName && byName.length) exists = true;
+        }
+        if (!exists) {
+          setSuggestKind("empresa");
+          setSuggestData({
+            nome: form.empresa,
+            doc: form.cnpj,
+            telefone: form.telefone,
+            email: form.email_1,
+            endereco: enderecoAtendimento,
+          });
+          setSuggestOpen(true);
+        }
+      } catch (err) {
+        console.warn("[suggest-company] check failed", err);
+      }
     }
+
 
     setOpen(false);
     setForm({ ...emptyForm });
@@ -2083,22 +2112,29 @@ export default function RequestsList() {
         </DialogContent>
       </Dialog>
 
-      {/* Sugerir cadastro de contato (CPF não encontrado) */}
+      {/* Sugerir cadastro (CPF → contato / CNPJ → empresa) */}
       <Dialog open={suggestOpen} onOpenChange={setSuggestOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cadastrar novo contato</DialogTitle>
+            <DialogTitle>
+              {suggestKind === "empresa" ? "Cadastrar nova empresa" : "Cadastrar novo contato"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <p className="text-muted-foreground">
-              O CPF informado não está cadastrado no sistema. Deseja adicionar este cliente à sua lista de contatos?
+              {suggestKind === "empresa"
+                ? "O CNPJ informado não está cadastrado no sistema. Deseja adicionar esta empresa à sua lista de empresas?"
+                : "O CPF informado não está cadastrado no sistema. Deseja adicionar este cliente à sua lista de contatos?"}
             </p>
             {suggestData && (
               <div className="rounded-md border bg-muted/40 p-3 space-y-1">
-                <div><span className="text-muted-foreground">Nome:</span> <strong>{suggestData.nome || "—"}</strong></div>
-                <div><span className="text-muted-foreground">CPF:</span> <strong>{suggestData.cpf || "—"}</strong></div>
+                <div><span className="text-muted-foreground">{suggestKind === "empresa" ? "Empresa" : "Nome"}:</span> <strong>{suggestData.nome || "—"}</strong></div>
+                <div><span className="text-muted-foreground">{suggestKind === "empresa" ? "CNPJ" : "CPF"}:</span> <strong>{suggestData.doc || "—"}</strong></div>
                 <div><span className="text-muted-foreground">Telefone:</span> <strong>{suggestData.telefone || "—"}</strong></div>
                 <div><span className="text-muted-foreground">E-mail:</span> <strong>{suggestData.email || "—"}</strong></div>
+                {suggestKind === "empresa" && suggestData.endereco && (
+                  <div><span className="text-muted-foreground">Endereço:</span> <strong>{suggestData.endereco}</strong></div>
+                )}
               </div>
             )}
           </div>
@@ -2108,23 +2144,45 @@ export default function RequestsList() {
             </Button>
             <Button
               onClick={() => {
-                if (suggestData) {
+                if (!suggestData) return;
+                if (suggestKind === "empresa") {
+                  setCompanyInitial({
+                    name: suggestData.nome || "",
+                    cnpj: suggestData.doc || "",
+                    address: suggestData.endereco || "",
+                    tipo: "",
+                    segment: "",
+                    url: "",
+                    summary: "",
+                  });
+                  setSuggestOpen(false);
+                  setCreateCompanyOpen(true);
+                } else {
                   setContactForm({
                     nome: suggestData.nome || "",
-                    cpf: suggestData.cpf || "",
+                    cpf: suggestData.doc || "",
                     telefone: suggestData.telefone || "",
                     email: suggestData.email || "",
                   });
+                  setSuggestOpen(false);
+                  setCreateContactOpen(true);
                 }
-                setSuggestOpen(false);
-                setCreateContactOpen(true);
               }}
             >
-              Cadastrar contato
+              {suggestKind === "empresa" ? "Cadastrar empresa" : "Cadastrar contato"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateCompanySheet
+        open={createCompanyOpen}
+        onOpenChange={setCreateCompanyOpen}
+        mode="create"
+        initial={companyInitial || undefined}
+        onCreated={() => setCompanyInitial(null)}
+      />
+
 
       {/* Criar Contato pré-preenchido */}
       <Dialog open={createContactOpen} onOpenChange={setCreateContactOpen}>
