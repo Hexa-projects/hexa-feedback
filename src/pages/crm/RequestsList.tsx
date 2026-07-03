@@ -1085,6 +1085,7 @@ export default function RequestsList() {
             onClick={() => setFilterStatus(filterStatus === "reprovada" ? "all" : "reprovada")}
           />
           <Kpi
+            className="col-span-2 md:col-span-1"
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             tone="cyan"
@@ -2348,12 +2349,14 @@ function Kpi({
   tone = "default",
   active = false,
   onClick,
+  className,
 }: {
   label: string;
   value: any;
   tone?: string;
   active?: boolean;
   onClick?: () => void;
+  className?: string;
 }) {
   const tones: Record<string, string> = {
     default: "text-foreground",
@@ -2379,11 +2382,12 @@ function Kpi({
         "transition-all",
         clickable && "cursor-pointer hover:border-primary/50",
         active && "border-primary ring-2 ring-primary/40 bg-primary/5",
+        className,
       )}
     >
       <CardContent className="p-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className={cn("text-2xl font-bold mt-1", tones[tone] || tones.default)}>{value}</div>
+        <div className={cn("text-xl md:text-2xl font-bold mt-1 break-words", tones[tone] || tones.default)}>{value}</div>
       </CardContent>
     </Card>
   );
