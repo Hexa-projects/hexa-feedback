@@ -527,12 +527,55 @@ export default function RequestsList() {
   };
 
   // Sugestões locais para empresas (nome) e contatos (nome)
-  type CompanySug = { empresa: string; cnpj?: string; telefone?: string; email_1?: string; contato?: string };
-  type ContactSug = { nome: string; cpf?: string; telefone?: string; email?: string };
+  type CompanySug = {
+    empresa: string;
+    cnpj?: string;
+    telefone?: string;
+    email_1?: string;
+    contato?: string;
+    cep?: string;
+    rua?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+  };
+  type ContactSug = { nome: string; empresa?: string; cpf?: string; telefone?: string; email?: string };
   const [companySugs, setCompanySugs] = useState<CompanySug[]>([]);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [contactSugs, setContactSugs] = useState<ContactSug[]>([]);
   const [contactOpen, setContactOpen] = useState(false);
+
+  // Heurística para separar um endereço em partes (CEP, Rua, Bairro, Cidade, UF).
+  // Aceita formatos livres tipo "RUA X, 123, BAIRRO, CIDADE, SP, 18910-102".
+  const parseAddress = (raw: any): { cep?: string; rua?: string; bairro?: string; cidade?: string; uf?: string } => {
+    if (!raw) return {};
+    const str = typeof raw === "string" ? raw : (raw?.address || raw?.endereco || "");
+    if (!str || typeof str !== "string") return {};
+    const parts = str.split(/[,;|]/).map((p) => p.trim()).filter(Boolean);
+    let cep: string | undefined;
+    let uf: string | undefined;
+    const rest: string[] = [];
+    for (const p of parts) {
+      const digits = p.replace(/\D/g, "");
+      if (!cep && digits.length === 8) { cep = digits; continue; }
+      if (!uf && /^[A-Z]{2}$/i.test(p)) { uf = p.toUpperCase(); continue; }
+      rest.push(p);
+    }
+    // rest: [rua, bairro, cidade] em ordem provável
+    let rua: string | undefined;
+    let bairro: string | undefined;
+    let cidade: string | undefined;
+    if (rest.length === 1) {
+      rua = rest[0];
+    } else if (rest.length === 2) {
+      bairro = rest[0]; cidade = rest[1];
+    } else if (rest.length >= 3) {
+      cidade = rest[rest.length - 1];
+      bairro = rest[rest.length - 2];
+      rua = rest.slice(0, rest.length - 2).join(", ");
+    }
+    return { cep, rua, bairro, cidade, uf };
+  };
 
   useEffect(() => {
     const q = form.empresa.trim();
@@ -541,7 +584,7 @@ export default function RequestsList() {
       const [{ data: reqs }, { data: orgs }] = await Promise.all([
         (supabase as any)
           .from("commercial_requests")
-          .select("empresa, cnpj, contato, telefone, email_1")
+          .select("empresa, cnpj, contato, telefone, email_1, endereco")
           .ilike("empresa", `%${q}%`)
           .not("cnpj", "is", null)
           .neq("cnpj", "")
@@ -549,7 +592,7 @@ export default function RequestsList() {
           .limit(15),
         (supabase as any)
           .from("rd_organizations")
-          .select("name, cnpj, phone, email")
+          .select("name, cnpj, phone, email, raw_payload")
           .ilike("name", `%${q}%`)
           .limit(15),
       ]);
@@ -557,12 +600,27 @@ export default function RequestsList() {
       (reqs || []).forEach((r: any) => {
         const key = (r.empresa || "").toLowerCase().trim();
         if (!key || map.has(key)) return;
-        map.set(key, { empresa: r.empresa, cnpj: r.cnpj, telefone: r.telefone, email_1: r.email_1, contato: r.contato });
+        const addr = parseAddress(r.endereco);
+        map.set(key, {
+          empresa: r.empresa,
+          cnpj: r.cnpj,
+          telefone: r.telefone,
+          email_1: r.email_1,
+          contato: r.contato,
+          ...addr,
+        });
       });
       (orgs || []).forEach((o: any) => {
         const key = (o.name || "").toLowerCase().trim();
         if (!key || map.has(key)) return;
-        map.set(key, { empresa: o.name, cnpj: o.cnpj, telefone: o.phone ? maskPhone(o.phone) : "", email_1: o.email });
+        const addr = parseAddress(o.raw_payload);
+        map.set(key, {
+          empresa: o.name,
+          cnpj: o.cnpj,
+          telefone: o.phone ? maskPhone(o.phone) : "",
+          email_1: o.email,
+          ...addr,
+        });
       });
       setCompanySugs(Array.from(map.values()).slice(0, 8));
     }, 250);
@@ -584,23 +642,45 @@ export default function RequestsList() {
           .limit(15),
         (supabase as any)
           .from("rd_contacts")
-          .select("name, phone, email")
+          .select("name, phone, email, organization_rd_id")
           .ilike("name", `%${q}%`)
           .limit(15),
       ]);
+      // Buscar nomes das organizações vinculadas aos contatos RD
+      const orgIds = Array.from(
+        new Set((cts || []).map((c: any) => c.organization_rd_id).filter(Boolean))
+      );
+      let orgMap = new Map<string, string>();
+      if (orgIds.length) {
+        const { data: orgs } = await (supabase as any)
+          .from("rd_organizations")
+          .select("rd_id, name")
+          .in("rd_id", orgIds);
+        (orgs || []).forEach((o: any) => orgMap.set(o.rd_id, o.name));
+      }
       const map = new Map<string, ContactSug>();
       (reqs || []).forEach((r: any) => {
-        const key = (r.empresa || "").toLowerCase().trim();
+        const key = (r.contato || r.empresa || "").toLowerCase().trim();
         if (!key || map.has(key)) return;
-        // Se o valor em "cnpj" tem 11 dígitos, é um CPF armazenado no fluxo pessoa-física
         const digits = String(r.cnpj || "").replace(/\D/g, "");
         const cpfVal = digits.length === 11 ? digits : undefined;
-        map.set(key, { nome: r.empresa, cpf: cpfVal, telefone: r.telefone, email: r.email_1 });
+        map.set(key, {
+          nome: r.contato || r.empresa,
+          empresa: r.contato ? r.empresa : undefined,
+          cpf: cpfVal,
+          telefone: r.telefone,
+          email: r.email_1,
+        });
       });
       (cts || []).forEach((c: any) => {
         const key = (c.name || "").toLowerCase().trim();
         if (!key || map.has(key)) return;
-        map.set(key, { nome: c.name, telefone: c.phone ? maskPhone(c.phone) : "", email: c.email });
+        map.set(key, {
+          nome: c.name,
+          empresa: c.organization_rd_id ? orgMap.get(c.organization_rd_id) : undefined,
+          telefone: c.phone ? maskPhone(c.phone) : "",
+          email: c.email,
+        });
       });
       setContactSugs(Array.from(map.values()).slice(0, 8));
     }, 250);
