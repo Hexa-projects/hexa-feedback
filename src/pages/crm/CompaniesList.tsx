@@ -187,25 +187,6 @@ export default function CompaniesList() {
   // Create company sheet
   const [createOpen, setCreateOpen] = useState(false);
 
-  // pagination
-  const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
-
-  const total = filteredOrgs.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const start = (currentPage - 1) * pageSize;
-  const pageRows = filteredOrgs.slice(start, start + pageSize);
-
-  useEffect(() => {
-    setPage(1);
-  }, [quick, selectedOwners, preset, tableSearch]);
-
-  const pageNumbers = useMemo(() => buildPages(currentPage, totalPages), [
-    currentPage,
-    totalPages,
-  ]);
-
   useEffect(() => {
     (async () => {
 
