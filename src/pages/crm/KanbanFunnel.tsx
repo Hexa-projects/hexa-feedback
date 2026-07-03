@@ -121,6 +121,7 @@ export default function KanbanFunnel() {
   const { user, role } = useAuth();
   const canEditRequest = role === "admin" || role === "gestor";
   const [leads, setLeads] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<OwnerOption[]>([]);
   const [requestsById, setRequestsById] = useState<Record<string, any>>({});
   const [activeRequest, setActiveRequest] = useState<{ requestId: string; leadId: string } | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -141,7 +142,8 @@ export default function KanbanFunnel() {
   });
   const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
   const [configOpen, setConfigOpen] = useState(false);
-  const [filterDeal, setFilterDeal] = useState<string>("todas");
+  const [ownerQuick, setOwnerQuick] = useState<OwnerQuick>("all");
+  const [selectedOwners, setSelectedOwners] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("em_andamento");
   const [filterSort, setFilterSort] = useState<string>("recentes");
 
