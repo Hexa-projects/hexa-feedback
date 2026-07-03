@@ -1070,7 +1070,12 @@ export default function RequestsList() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Kpi label="Total" value={kpis.total} />
+          <Kpi
+            label="Total"
+            value={kpis.total}
+            active={filterStatus === "all"}
+            onClick={() => setFilterStatus("all")}
+          />
           <Kpi
             label="Pendentes"
             value={kpis.pendentes}
