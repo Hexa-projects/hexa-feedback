@@ -2253,7 +2253,16 @@ export default function RequestsList() {
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setSuggestOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (suggestData?.doc) {
+                  const d = suggestData.doc.replace(/\D/g, "");
+                  if (d) setDismissedDocs((prev) => new Set(prev).add(d));
+                }
+                setSuggestOpen(false);
+              }}
+            >
               Agora não
             </Button>
             <Button
