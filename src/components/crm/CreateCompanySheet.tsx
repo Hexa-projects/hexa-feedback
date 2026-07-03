@@ -140,9 +140,8 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
           ]
             .filter(Boolean)
             .join(", ");
-          if (addr) {
-            setCnpjAddress(addr);
-            if (!address) setAddress(addr);
+          if (addr && !address) {
+            setAddress(addr);
           }
           toast.success("Dados do CNPJ preenchidos automaticamente");
         }
