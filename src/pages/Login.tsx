@@ -132,7 +132,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-white/30">
-          Powered by <strong className="text-white/50">Focus AI</strong>
+          Powered by <strong className="text-white/50">HexaOS</strong>
         </p>
       </div>
     </div>
