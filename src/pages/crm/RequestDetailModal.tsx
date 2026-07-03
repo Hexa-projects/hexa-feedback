@@ -20,6 +20,8 @@ type Props = {
   onClose: () => void;
   canEdit: boolean;
   onDelete?: (leadId: string) => void;
+  footerExtras?: React.ReactNode;
+  extraContent?: React.ReactNode;
 };
 
 // Parse "CATEGORIA - MARCA - MODELO" back into parts.
