@@ -71,12 +71,13 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "operacoes",
-    label: "Operações",
+    label: "Área Técnica",
     icon: Wrench,
     children: [
       { to: "/os", label: "Ordens de Serviço", icon: ClipboardList },
       { to: "/calendar", label: "Calendário", icon: Calendar },
       { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
+      { to: "/lab/knowledge", label: "Base de Conhecimento", icon: BookOpen, roles: ["admin", "gestor"], setores: ["Técnico", "Laboratório"] },
     ],
   },
   {
