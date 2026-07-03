@@ -170,6 +170,10 @@ export default function CompaniesList() {
   const [preset, setPreset] = useState<PresetFilter>(null);
   const [presetOpen, setPresetOpen] = useState(false);
 
+  // Quick search popover
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     (async () => {
 
