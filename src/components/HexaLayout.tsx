@@ -147,7 +147,7 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria", "settings"],
   gestor: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
   colaborador: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "auditoria"],
 };
