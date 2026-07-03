@@ -10,8 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Building2, ChevronDown, Filter, Search, X } from "lucide-react";
+import { Building2, ChevronDown, Filter, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
 
 type Org = {
   id: string;
