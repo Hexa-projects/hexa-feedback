@@ -1301,6 +1301,7 @@ export default function RequestsList() {
                                         setForm((f) => ({
                                           ...f,
                                           cliente_nome: s.nome,
+                                          contato: s.nome || f.contato,
                                           cpf: s.cpf ? maskCPF(s.cpf) : f.cpf,
                                           telefone: s.telefone || f.telefone,
                                           email_1: s.email || f.email_1,
