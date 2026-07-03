@@ -54,7 +54,7 @@ const SEGMENTOS_POR_TIPO: Record<string, string[]> = {
   Humana: [
     "Clínica",
     "Hospital",
-    "Laboratório",
+    "Empresa parceira",
     "Centro de Diagnóstico",
     "UPA/Pronto-Socorro",
     "Outros",
