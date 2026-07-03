@@ -9,5 +9,17 @@ verify_jwt = false
 [functions.rd-oauth-callback]
 verify_jwt = false
 
+[functions.rd-oauth-start]
+verify_jwt = false
+
+[functions.rd-sync-full]
+verify_jwt = false
+
+[functions.rd-sync-delta]
+verify_jwt = false
+
+[functions.rd-create-webhooks]
+verify_jwt = false
+
 [functions.rd-webhook]
 verify_jwt = false

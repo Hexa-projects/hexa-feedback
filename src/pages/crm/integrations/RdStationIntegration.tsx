@@ -21,6 +21,24 @@ type Counts = Record<string, number>;
 type Job = { id: string; type: string; status: string; started_at: string; finished_at: string | null; stats: any; error: string | null };
 type LogRow = { id: string; entity: string | null; level: string; message: string; created_at: string; context: any };
 
+async function getFunctionErrorMessage(err: any) {
+  const fallback = err?.message ?? String(err);
+  const context = err?.context;
+  if (!context || typeof context.clone !== "function") return fallback;
+
+  try {
+    const body = await context.clone().json();
+    return body?.detail || body?.error || body?.message || fallback;
+  } catch (_) {
+    try {
+      const text = await context.clone().text();
+      return text || fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+}
+
 export default function RdStationIntegration() {
   const [integ, setInteg] = useState<Integ | null>(null);
   const [counts, setCounts] = useState<Counts | null>(null);
@@ -64,9 +82,10 @@ export default function RdStationIntegration() {
     try {
       const { data, error } = await supabase.functions.invoke("rd-oauth-start");
       if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+      if (!data?.url) throw new Error("URL de autorização não retornada");
+      window.location.href = data.url;
     } catch (err: any) {
-      toast.error("Erro ao iniciar OAuth: " + (err.message ?? String(err)));
+      toast.error("Erro ao iniciar OAuth: " + await getFunctionErrorMessage(err));
     } finally { setBusy(null); }
   }
 

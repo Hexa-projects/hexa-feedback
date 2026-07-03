@@ -15,6 +15,14 @@ export const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+function requiredEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = Deno.env.get(name);
+    if (value) return value;
+  }
+  throw new Error(`${names[0]} not configured`);
+}
+
 export function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -24,8 +32,8 @@ export function jsonResponse(body: unknown, status = 200) {
 
 export function serviceRoleClient(): SupabaseClient {
   return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    requiredEnv("SUPABASE_URL"),
+    requiredEnv("SUPABASE_SERVICE_ROLE_KEY", "SERVICE_ROLE_KEY"),
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 }
@@ -33,7 +41,7 @@ export function serviceRoleClient(): SupabaseClient {
 export async function requireAdmin(req: Request): Promise<{ userId: string } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return jsonResponse({ error: "unauthorized" }, 401);
-  const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+  const anon = createClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_ANON_KEY"), {
     global: { headers: { Authorization: authHeader } },
   });
   const token = authHeader.replace("Bearer ", "");
@@ -41,8 +49,20 @@ export async function requireAdmin(req: Request): Promise<{ userId: string } | R
   if (error || !data?.claims?.sub) return jsonResponse({ error: "unauthorized" }, 401);
   const userId = data.claims.sub as string;
   const svc = serviceRoleClient();
-  const { data: role } = await svc.rpc("is_rd_admin", { _user: userId });
-  if (!role) return jsonResponse({ error: "forbidden" }, 403);
+  const { data: role, error: roleError } = await svc.rpc("is_rd_admin", { _user: userId });
+  if (!role && roleError) console.warn("is_rd_admin RPC failed; using user_roles fallback", roleError.message);
+  if (!role) {
+    const { data: roles, error: rolesError } = await svc
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (rolesError) {
+      console.error("RD admin role fallback failed", rolesError.message);
+      return jsonResponse({ error: "role_check_failed" }, 500);
+    }
+    const allowed = (roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "gestor");
+    if (!allowed) return jsonResponse({ error: "forbidden" }, 403);
+  }
   return { userId };
 }
 
@@ -79,7 +99,7 @@ export async function decryptSecret(payload: string): Promise<string> {
 // ---------------- OAuth ----------------
 
 export function redirectUri(): string {
-  return `${Deno.env.get("SUPABASE_URL")}/functions/v1/rd-oauth-callback`;
+  return `${requiredEnv("SUPABASE_URL")}/functions/v1/rd-oauth-callback`;
 }
 
 export async function exchangeCode(code: string) {
