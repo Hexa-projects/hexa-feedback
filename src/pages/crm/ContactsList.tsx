@@ -593,13 +593,20 @@ export default function ContactsList() {
 
   // Delete confirm
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const handleDeleteSelected = () => {
-    const ids = new Set(selected);
-    setContacts(prev => prev.filter(c => !ids.has(c.id)));
-    const n = ids.size;
+  const handleDeleteSelected = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const { error } = await supabase.from("rd_contacts").delete().in("id", ids);
+    if (error) {
+      toast.error(`Falha ao excluir: ${error.message}`);
+      return;
+    }
+    const idSet = new Set(ids);
+    setContacts(prev => prev.filter(c => !idSet.has(c.id)));
+    const n = ids.length;
     setSelected(new Set());
     setDeleteConfirmOpen(false);
-    toast.success(`${n} contato${n > 1 ? "s" : ""} excluído${n > 1 ? "s" : ""}`);
+    toast.success(`${n} contato${n > 1 ? "s" : ""} excluído${n > 1 ? "s" : ""} definitivamente`);
   };
 
   return (
