@@ -1,3 +1,4 @@
+// rd-oauth-start: initiates OAuth flow for RD Station CRM
 import { corsHeaders, jsonResponse, requireAdmin, serviceRoleClient, redirectUri, RD_AUTH_DIALOG_URL } from "../_shared/rd-client.ts";
 
 Deno.serve(async (req) => {
