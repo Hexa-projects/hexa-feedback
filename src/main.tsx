@@ -8,11 +8,11 @@ import { AppErrorBoundary, armChunkRecovery } from "./components/AppErrorBoundar
 armChunkRecovery();
 
 createRoot(document.getElementById("root")!).render(
-  <AppErrorBoundary>
-    <OfflineBanner />
-    <BrowserRouter>
+  <BrowserRouter>
+    <AppErrorBoundary>
+      <OfflineBanner />
       <App />
-    </BrowserRouter>
-  </AppErrorBoundary>,
+    </AppErrorBoundary>
+  </BrowserRouter>,
 );
 
