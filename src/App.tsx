@@ -25,6 +25,7 @@ const ContractsList = lazy(() => import("./pages/crm/ContractsList"));
 const RequestsList = lazy(() => import("./pages/crm/RequestsList"));
 const RequestDetailPage = lazy(() => import("./pages/crm/RequestDetailPage"));
 const RequestsTrash = lazy(() => import("./pages/crm/RequestsTrash"));
+const CrmTrash = lazy(() => import("./pages/crm/CrmTrash"));
 const RdStationIntegration = lazy(() => import("./pages/crm/integrations/RdStationIntegration"));
 const CompaniesList = lazy(() => import("./pages/crm/CompaniesList"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
