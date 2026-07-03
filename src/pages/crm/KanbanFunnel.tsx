@@ -320,13 +320,17 @@ export default function KanbanFunnel() {
         {selectedFunnel === "prospeccao" && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Select value={filterDeal} onValueChange={setFilterDeal}>
-                <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as negociações</SelectItem>
-                  <SelectItem value="minhas">Minhas negociações</SelectItem>
-                </SelectContent>
-              </Select>
+              <OwnerFilterPopover
+                owners={profiles}
+                quick={ownerQuick}
+                selectedOwners={selectedOwners}
+                onChange={(q, ids) => {
+                  setOwnerQuick(q);
+                  setSelectedOwners(ids);
+                }}
+                allLabel="Todas as negociações"
+                mineLabel="Minhas negociações"
+              />
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
