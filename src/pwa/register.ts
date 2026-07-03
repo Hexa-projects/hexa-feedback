@@ -131,6 +131,8 @@ export async function registerPwa(): Promise<void> {
 
   try {
     const { registerSW } = await import("virtual:pwa-register");
+    let swRegistration: ServiceWorkerRegistration | undefined;
+
     updateSW = registerSW({
       immediate: true,
       onNeedRefresh() {
@@ -142,11 +144,40 @@ export async function registerPwa(): Promise<void> {
         state.offlineReady = true;
         emit();
       },
+      onRegisteredSW(_swUrl, registration) {
+        swRegistration = registration;
+        if (!registration) return;
+
+        // Periodic update check (every 60s) — cheap HEAD to /sw.js.
+        const INTERVAL_MS = 60 * 1000;
+        const tick = () => {
+          if (!navigator.onLine) return;
+          registration.update().catch(() => {});
+        };
+        setInterval(tick, INTERVAL_MS);
+
+        // Re-check when tab gains focus / becomes visible again.
+        window.addEventListener("focus", tick);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") tick();
+        });
+
+        // Kick a check right after registration so freshly-published
+        // versions are picked up on the current session.
+        setTimeout(tick, 3000);
+      },
       onRegisterError(err) {
         console.warn("[pwa] registration error", err);
       },
     });
+
+    // Expose for debugging in prod console (safe, no secrets)
+    (window as any).__hexaosPwa = {
+      getRegistration: () => swRegistration,
+      checkForUpdate: () => swRegistration?.update(),
+    };
   } catch (err) {
     console.warn("[pwa] registration failed", err);
   }
+
 }
