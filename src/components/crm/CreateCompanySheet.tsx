@@ -126,7 +126,28 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode
     setTipoError(false);
   };
 
+  useEffect(() => {
+    if (open && mode === "edit" && initial) {
+      setName(initial.name || "");
+      setTipo(initial.tipo || "");
+      setSegment(initial.segment || "");
+      setUrl(initial.url || "");
+      setSummary(initial.summary || "");
+      setAddress(initial.address || "");
+      setCnpj(initial.cnpj || "");
+      setNameError(false);
+      setTipoError(false);
+    }
+    if (!open && mode === "create") {
+      // keep create behavior as-is
+    }
+  }, [open, mode, initial]);
+
   const requestClose = () => {
+    if (mode === "edit") {
+      onOpenChange(false);
+      return;
+    }
     if (isDirty) setConfirmClose(true);
     else onOpenChange(false);
   };
