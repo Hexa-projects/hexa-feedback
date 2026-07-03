@@ -623,6 +623,73 @@ export default function CompaniesList() {
                 </TableBody>
               </Table>
             )}
+
+            {/* Rodapé de paginação */}
+            {!loading && filteredOrgs.length > 0 && (
+              <div className="flex items-center justify-between gap-3 p-3 border-t flex-wrap">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Exibindo</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={v => setPageSize(Number(v))}
+                  >
+                    <SelectTrigger className="h-8 w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZES.map(s => (
+                        <SelectItem key={s} value={String(s)}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span>de {total} Empresas</span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  {pageNumbers.map((n, i) =>
+                    n === "..." ? (
+                      <span
+                        key={`e-${i}`}
+                        className="px-2 text-muted-foreground text-sm"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={n}
+                        size="sm"
+                        variant={n === currentPage ? "default" : "outline"}
+                        className={cn(
+                          "min-w-[36px]",
+                          n === currentPage && "bg-primary text-primary-foreground",
+                        )}
+                        onClick={() => setPage(n as number)}
+                      >
+                        {n}
+                      </Button>
+                    ),
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
