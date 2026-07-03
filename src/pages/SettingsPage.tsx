@@ -18,6 +18,12 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ── Types ──
 
@@ -230,6 +236,57 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
   const [editSetor, setEditSetor] = useState("");
   const [search, setSearch] = useState("");
 
+  // Full-edit modal state
+  const [modalUser, setModalUser] = useState<UserWithRole | null>(null);
+  const [form, setForm] = useState({ nome: "", email: "", setor: "", funcao: "", role: "colaborador" as "admin" | "gestor" | "colaborador" });
+  const [initialForm, setInitialForm] = useState(form);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const [savingModal, setSavingModal] = useState(false);
+
+  const openUserModal = (u: UserWithRole) => {
+    const f = { nome: u.nome || "", email: u.email || "", setor: u.setor || "", funcao: u.funcao || "", role: u.role };
+    setForm(f);
+    setInitialForm(f);
+    setModalUser(u);
+  };
+
+  const isDirty = () => JSON.stringify(form) !== JSON.stringify(initialForm);
+
+  const attemptClose = () => {
+    if (isDirty()) setConfirmDiscardOpen(true);
+    else setModalUser(null);
+  };
+
+  const saveModal = async () => {
+    if (!modalUser) return;
+    if (!form.nome.trim() || !form.email.trim()) {
+      toast.error("Nome e e-mail são obrigatórios");
+      return;
+    }
+    setSavingModal(true);
+    const { error: pErr } = await supabase
+      .from("profiles")
+      .update({ nome: form.nome.trim(), setor: form.setor, funcao: form.funcao })
+      .eq("id", modalUser.id);
+    if (pErr) {
+      setSavingModal(false);
+      toast.error("Falha ao atualizar perfil");
+      return;
+    }
+    if (form.role !== modalUser.role) {
+      const existing = await supabase.from("user_roles").select("id").eq("user_id", modalUser.id).maybeSingle();
+      if (existing.data) {
+        await supabase.from("user_roles").update({ role: form.role }).eq("user_id", modalUser.id);
+      } else {
+        await supabase.from("user_roles").insert({ user_id: modalUser.id, role: form.role });
+      }
+    }
+    setUsers(prev => prev.map(x => x.id === modalUser.id ? { ...x, nome: form.nome.trim(), setor: form.setor, funcao: form.funcao, role: form.role } : x));
+    setSavingModal(false);
+    setModalUser(null);
+    toast.success("Usuário atualizado com sucesso");
+  };
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -327,7 +384,11 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
               </thead>
               <tbody>
                 {filtered.map(u => (
-                  <tr key={u.id} className="border-t hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={u.id}
+                    onDoubleClick={() => openUserModal(u)}
+                    className="border-t hover:bg-muted/30 transition-colors cursor-pointer select-none"
+                  >
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
@@ -425,6 +486,81 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!modalUser} onOpenChange={(open) => { if (!open) attemptClose(); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar usuário</DialogTitle>
+            <DialogDescription>Atualize os dados do usuário. Campos com * são obrigatórios.</DialogDescription>
+          </DialogHeader>
+          {modalUser && (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary">
+                  {(form.nome || modalUser.nome).charAt(0).toUpperCase()}
+                </div>
+                <div className="text-xs text-muted-foreground">Avatar gerado a partir da inicial do nome</div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-nome">Nome *</Label>
+                <Input id="edit-nome" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">E-mail *</Label>
+                <Input id="edit-email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} disabled />
+                <p className="text-xs text-muted-foreground">O e-mail é gerenciado pela autenticação e não pode ser alterado aqui.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Setor</Label>
+                  <Select value={form.setor} onValueChange={v => setForm(f => ({ ...f, setor: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-funcao">Função</Label>
+                  <Input id="edit-funcao" value={form.funcao} onChange={e => setForm(f => ({ ...f, funcao: e.target.value }))} placeholder="Ex: CEO, Técnico de Campo" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Perfil</Label>
+                <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v as any }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={attemptClose} disabled={savingModal}>Cancelar</Button>
+            <Button onClick={saveModal} disabled={savingModal}>Salvar alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmDiscardOpen} onOpenChange={setConfirmDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+            <AlertDialogDescription>Você tem alterações não salvas. Deseja descartar?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmDiscardOpen(false); setModalUser(null); }}>
+              Descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
