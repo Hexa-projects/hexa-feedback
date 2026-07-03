@@ -30,10 +30,23 @@ import {
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+type CompanyFields = {
+  name: string;
+  tipo: string;
+  segment: string;
+  url: string;
+  summary: string;
+  address: string;
+  cnpj: string;
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated?: (org: any) => void;
+  mode?: "create" | "edit";
+  initial?: Partial<CompanyFields>;
+  onSaved?: (data: CompanyFields) => void;
 };
 
 const SEGMENTOS_POR_TIPO: Record<string, string[]> = {
