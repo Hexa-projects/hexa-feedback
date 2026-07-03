@@ -368,6 +368,23 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                         </Badge>
                       )}
                     </td>
+                    <td className="p-3 hidden md:table-cell text-center">
+                      <Switch
+                        checked={!!u.aprovador_base_conhecimento}
+                        onCheckedChange={async (v) => {
+                          const { error } = await supabase
+                            .from("profiles")
+                            .update({ aprovador_base_conhecimento: v })
+                            .eq("id", u.id);
+                          if (error) {
+                            toast.error("Falha ao atualizar aprovador");
+                            return;
+                          }
+                          setUsers(prev => prev.map(x => x.id === u.id ? { ...x, aprovador_base_conhecimento: v } : x));
+                          toast.success(v ? "Definido como aprovador" : "Removido como aprovador");
+                        }}
+                      />
+                    </td>
                     <td className="p-3 hidden md:table-cell">
                       {u.onboarding_completo ? (
                         <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600">
