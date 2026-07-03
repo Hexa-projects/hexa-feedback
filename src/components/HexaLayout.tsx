@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import NotificationDropdown from "@/components/NotificationDropdown";
 import { useAuth } from "@/contexts/AuthContext";
+import { getCurrentPathname, navigateInApp, shouldHandleInAppNavigation } from "@/lib/navigation";
 import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen, FileText, Target,
-  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2, Trash2, PlugZap, Building2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,8 @@ interface NavChild {
   label: string;
   icon: any;
   wip?: boolean;
+  roles?: string[];
+  setores?: string[];
 }
 
 interface NavGroup {
@@ -59,20 +61,23 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["admin", "gestor", "colaborador"],
     children: [
       { to: "/crm/requests", label: "Solicitações", icon: FileText },
-      { to: "/crm", label: "Leads", icon: Users },
+      { to: "/crm", label: "Contatos", icon: Users },
+      { to: "/crm/empresas", label: "Empresas", icon: Building2 },
       { to: "/crm/kanban", label: "Negociações", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
+      { to: "/crm/lixeira", label: "Lixeira", icon: Trash2, roles: ["admin", "gestor"] },
     ],
   },
   {
     id: "operacoes",
-    label: "Operações",
+    label: "Área Técnica",
     icon: Wrench,
     children: [
       { to: "/os", label: "Ordens de Serviço", icon: ClipboardList },
       { to: "/calendar", label: "Calendário", icon: Calendar },
       { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
+      { to: "/lab/knowledge", label: "Base de Conhecimento", icon: BookOpen, roles: ["admin", "gestor"], setores: ["Técnico", "Laboratório"] },
     ],
   },
   {
@@ -94,7 +99,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: FlaskConical,
     children: [
       { to: "/lab", label: "Peças em Reparo", icon: Wrench },
-      { to: "/lab/knowledge", label: "Base de Conhecimento", icon: BookOpen },
       { to: "/lab/new", label: "Registrar Peça", icon: FlaskConical },
       { to: "/lab/import", label: "Importar Dados (ETL)", icon: ArrowDownToLine },
     ],
@@ -162,21 +166,27 @@ const SETOR_GROUPS: Record<string, string[]> = {
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const [pathname, setPathname] = useState(() => getCurrentPathname());
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     // Auto-open the group that contains the current route
+    const currentPath = getCurrentPathname();
     const initial: Record<string, boolean> = {};
     for (const item of NAV_ITEMS) {
-      if (isGroup(item) && item.children.some(c => location.pathname.startsWith(c.to))) {
+      if (isGroup(item) && item.children.some(c => currentPath.startsWith(c.to))) {
         initial[item.id] = true;
       }
     }
     return initial;
   });
+
+  useEffect(() => {
+    const updatePathname = () => setPathname(getCurrentPathname());
+    window.addEventListener("popstate", updatePathname);
+    return () => window.removeEventListener("popstate", updatePathname);
+  }, []);
 
   const toggleGroup = (id: string) =>
     setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
@@ -198,23 +208,29 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    navigateInApp("/", { replace: true });
   };
 
   const isChildActive = (to: string) => {
-    if (to === "/home") return location.pathname === "/home";
-    return location.pathname.startsWith(to);
+    if (to === "/home") return pathname === "/home";
+    return pathname.startsWith(to);
   };
 
   const renderNavItem = (item: NavItem) => {
     if (!isGroup(item)) {
       // Single item (e.g. Settings)
-      const active = location.pathname.startsWith(item.to);
+      const active = pathname.startsWith(item.to);
       return (
-        <Link
+        <a
           key={item.id}
-          to={item.to}
-          onClick={() => setSidebarOpen(false)}
+          href={item.to}
+          onClick={(event) => {
+            if (shouldHandleInAppNavigation(event)) {
+              event.preventDefault();
+              navigateInApp(item.to);
+            }
+            setSidebarOpen(false);
+          }}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
             active
               ? "bg-sidebar-accent text-sidebar-primary font-semibold"
@@ -223,13 +239,28 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
         >
           <item.icon className="w-4 h-4 shrink-0" />
           <span>{item.label}</span>
-        </Link>
+        </a>
       );
     }
 
-    // Group with children
-    const isAnyChildActive = item.children.some(c => isChildActive(c.to));
+    // Group with children — pick single active child using longest-prefix match
+    const matchesChild = (to: string) => {
+      if (to === "/home") return pathname === "/home";
+      return pathname === to || pathname.startsWith(to + "/");
+    };
+    const visibleChildren = item.children.filter(c => {
+      if (!c.roles && !c.setores) return true;
+      const roleMatch = c.roles ? c.roles.includes(role) : false;
+      const setorMatch = c.setores ? !!(setor && c.setores.includes(setor)) : false;
+      if (c.roles && c.setores) return roleMatch || setorMatch;
+      return c.roles ? roleMatch : setorMatch;
+    });
+    const activeChildTo = visibleChildren
+      .filter(c => !c.wip && matchesChild(c.to))
+      .sort((a, b) => b.to.length - a.to.length)[0]?.to;
+    const isAnyChildActive = !!activeChildTo;
     const isOpen = openGroups[item.id] ?? false;
+
     return (
       <div key={item.id}>
         <button
@@ -247,18 +278,22 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
 
         {isOpen && (
           <div className="ml-3 pl-3 border-l border-sidebar-border/40 mt-0.5 space-y-0.5">
-            {item.children.map(child => (
-              <Link
+            {visibleChildren.map(child => (
+              <a
                 key={child.to}
-                to={child.wip ? "#" : child.to}
-                onClick={(e) => {
-                  if (child.wip) { e.preventDefault(); return; }
+                href={child.wip ? "#" : child.to}
+                onClick={(event) => {
+                  if (child.wip) { event.preventDefault(); return; }
+                  if (shouldHandleInAppNavigation(event)) {
+                    event.preventDefault();
+                    navigateInApp(child.to);
+                  }
                   setSidebarOpen(false);
                 }}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
                   child.wip
                     ? "text-sidebar-foreground/30 cursor-default"
-                    : isChildActive(child.to)
+                    : child.to === activeChildTo
                     ? "bg-sidebar-accent text-sidebar-primary font-medium"
                     : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 }`}
@@ -270,7 +305,7 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
                     Em breve
                   </Badge>
                 )}
-              </Link>
+              </a>
             ))}
           </div>
         )}

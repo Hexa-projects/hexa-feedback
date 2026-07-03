@@ -1,0 +1,226 @@
+// Guarded PWA service worker registration for HexaOS.
+
+// Uses `virtual:pwa-register` from vite-plugin-pwa to control the update flow.
+// - Never registers in dev / Lovable preview / iframe
+// - Supports ?sw=off kill switch
+// - Unregisters stale SWs in refused contexts
+// - Exposes a tiny pub/sub store the UI can subscribe to
+
+const SW_PATH = "/sw.js";
+const REFRESHING_KEY = "hexaos.sw.refreshing";
+
+export type PwaUpdateState = {
+  needRefresh: boolean;
+  offlineReady: boolean;
+  updateAvailableAt: number | null;
+  updating: boolean;
+};
+
+type Listener = (s: PwaUpdateState) => void;
+
+const state: PwaUpdateState = {
+  needRefresh: false,
+  offlineReady: false,
+  updateAvailableAt: null,
+  updating: false,
+};
+
+const listeners = new Set<Listener>();
+let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | null = null;
+let registered = false;
+
+function emit() {
+  for (const l of listeners) l({ ...state });
+}
+
+export function subscribePwaUpdate(l: Listener): () => void {
+  listeners.add(l);
+  l({ ...state });
+  return () => listeners.delete(l);
+}
+
+export function getPwaUpdateState(): PwaUpdateState {
+  return { ...state };
+}
+
+export async function updateApp(): Promise<void> {
+  state.updating = true;
+  emit();
+  console.info("[pwa] applying update…");
+
+  // Fallback path: explicitly tell any waiting SW to skip waiting. This helps
+  // when the plugin's internal updater is missing (e.g. registration was
+  // aborted) so the new SW still activates and controllerchange triggers reload.
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) {
+        const scriptURL =
+          r.active?.scriptURL || r.waiting?.scriptURL || r.installing?.scriptURL || "";
+        if (!scriptURL.endsWith(SW_PATH)) continue;
+        r.waiting?.postMessage({ type: "SKIP_WAITING" });
+      }
+    }
+  } catch (err) {
+    console.warn("[pwa] skipWaiting postMessage failed", err);
+  }
+
+  try {
+    if (updateServiceWorker) {
+      await updateServiceWorker(true);
+      return;
+    }
+  } catch (err) {
+    console.warn("[pwa] updateServiceWorker failed", err);
+  }
+  // Last resort: hard reload
+  window.location.reload();
+}
+
+export function dismissUpdate(): void {
+  state.needRefresh = false;
+  emit();
+}
+
+function isRefusedContext(): boolean {
+  if (!import.meta.env.PROD) return true;
+  if (typeof window === "undefined") return true;
+  try {
+    if (window.top !== window.self) return true;
+  } catch {
+    return true;
+  }
+  const host = window.location.hostname;
+  if (host.startsWith("id-preview--") || host.startsWith("preview--")) return true;
+  if (host === "lovableproject.com" || host.endsWith(".lovableproject.com")) return true;
+  if (host === "lovableproject-dev.com" || host.endsWith(".lovableproject-dev.com")) return true;
+  if (host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev")) return true;
+  if (new URLSearchParams(window.location.search).get("sw") === "off") return true;
+  return false;
+}
+
+function flagUpdateAvailable(): void {
+  state.needRefresh = true;
+  state.updateAvailableAt = Date.now();
+  emit();
+}
+
+async function unregisterMatching(): Promise<void> {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(
+      regs
+        .filter((r) => {
+          const url = r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || "";
+          return url.endsWith(SW_PATH);
+        })
+        .map((r) => r.unregister()),
+    );
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Register the PWA service worker and wire up the update store.
+ * Safe to call multiple times — registration only runs once.
+ */
+export async function registerPwa(): Promise<void> {
+  if (registered) return;
+  registered = true;
+
+  if (isRefusedContext()) {
+    await unregisterMatching();
+    return;
+  }
+  if (!("serviceWorker" in navigator)) return;
+
+  // Guard against reload loops after controllerchange
+  if ("serviceWorker" in navigator) {
+    let refreshing = sessionStorage.getItem(REFRESHING_KEY) === "1";
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      sessionStorage.setItem(REFRESHING_KEY, "1");
+      window.location.reload();
+    });
+    // Clear the flag once the page has actually reloaded and completed load
+    window.addEventListener("load", () => {
+      // Small delay so we don't clear before the reload path finishes
+      setTimeout(() => sessionStorage.removeItem(REFRESHING_KEY), 1000);
+    });
+  }
+
+  try {
+    const { registerSW } = await import("virtual:pwa-register");
+    let swRegistration: ServiceWorkerRegistration | undefined;
+
+    updateServiceWorker = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        console.info("[pwa] ✨ nova versão encontrada");
+        flagUpdateAvailable();
+      },
+      onOfflineReady() {
+        console.info("[pwa] modo offline pronto");
+        state.offlineReady = true;
+        emit();
+      },
+      onRegisteredSW(swUrl, registration) {
+        swRegistration = registration;
+        console.info("[pwa] service worker registrado:", swUrl);
+        if (!registration) return;
+
+        if (registration.waiting) {
+          console.info("[pwa] atualização pendente detectada no registro");
+          flagUpdateAvailable();
+        }
+
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              console.info("[pwa] nova versão instalada e aguardando ativação");
+              flagUpdateAvailable();
+            }
+            if (worker.state === "activated") {
+              console.info("[pwa] atualização aplicada");
+            }
+          });
+        });
+
+        // Periodic update check (every 60s) — cheap HEAD to /sw.js.
+        const INTERVAL_MS = 60 * 1000;
+        const tick = () => {
+          if (!navigator.onLine) return;
+          registration.update().catch(() => {});
+        };
+        setInterval(tick, INTERVAL_MS);
+
+        // Re-check when tab gains focus / becomes visible again.
+        window.addEventListener("focus", tick);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") tick();
+        });
+
+        // Kick a check right after registration so freshly-published
+        // versions are picked up on the current session.
+        setTimeout(tick, 3000);
+      },
+      onRegisterError(err) {
+        console.warn("[pwa] registration error", err);
+      },
+    });
+
+    // Expose for debugging in prod console (safe, no secrets)
+    (window as any).__hexaosPwa = {
+      getRegistration: () => swRegistration,
+      checkForUpdate: () => swRegistration?.update(),
+    };
+  } catch (err) {
+    console.warn("[pwa] registration failed", err);
+  }
+
+}

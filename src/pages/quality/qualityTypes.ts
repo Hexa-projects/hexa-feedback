@@ -68,6 +68,7 @@ export interface QualityCase {
   data_limite?: string | null;
   data_verificacao?: string | null;
   closed_at?: string | null;
+  closed_by?: string | null;
   owner_id?: string | null;
   created_by?: string | null;
   work_order_id?: string | null;

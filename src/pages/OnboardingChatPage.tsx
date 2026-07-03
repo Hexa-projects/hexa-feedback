@@ -209,10 +209,42 @@ export default function OnboardingChatPage() {
               </Button>
             )}
             <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  if (profile?.id) {
+                    const { error } = await supabase
+                      .from("profiles")
+                      .update({ onboarding_completo: true })
+                      .eq("id", profile.id);
+                    if (error) console.warn("update onboarding_completo:", error);
+                    await refreshProfile().catch(() => {});
+                  }
+                } finally {
+                  window.location.assign("/home");
+                }
+              }}
+            >
+              Preencher depois
+            </Button>
+            <Button
               variant="ghost"
               size="sm"
               className="text-muted-foreground"
-              onClick={() => navigate("/home")}
+              onClick={async () => {
+                try {
+                  if (profile?.id) {
+                    await supabase
+                      .from("profiles")
+                      .update({ onboarding_completo: true })
+                      .eq("id", profile.id);
+                    await refreshProfile().catch(() => {});
+                  }
+                } finally {
+                  window.location.assign("/home");
+                }
+              }}
             >
               Sair
             </Button>

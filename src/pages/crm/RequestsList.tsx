@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -23,7 +24,7 @@ import {
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
-import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Plus, Search, FileText, Check, ChevronsUpDown, Loader2, List, LayoutGrid, Lock, Trash2, CheckCircle2, ExternalLink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -126,19 +127,10 @@ const TIPO_OPTIONS = [
   "Montagem de equipamento",
 ];
 
-const PRIORIDADE_COLORS: Record<string, string> = {
-  baixa: "bg-blue-100 text-blue-800",
-  media: "bg-yellow-100 text-yellow-800",
-  alta: "bg-orange-100 text-orange-800",
-  critica: "bg-red-100 text-red-800",
-};
-
 const STATUS_COLORS: Record<string, string> = {
   pendente: "bg-yellow-100 text-yellow-800",
-  em_analise: "bg-blue-100 text-blue-800",
   aprovada: "bg-green-100 text-green-800",
-  recusada: "bg-red-100 text-red-800",
-  rascunho: "bg-slate-100 text-slate-800",
+  reprovada: "bg-red-100 text-red-800",
 };
 
 const emptyForm = {
@@ -181,7 +173,6 @@ const emptyForm = {
   comissao: "",
   origem: "",
   origem_outro: "",
-  prioridade: "media",
   status: "pendente",
   observacoes: "",
 };
@@ -241,7 +232,10 @@ const parsePercent = (v: string) => {
 };
 
 export default function RequestsList() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const [isCeo, setIsCeo] = useState(false);
+  // CEO/Admin podem aprovar/reprovar/excluir.
+  const canEditStatus = role === "admin" || role === "gestor" || isCeo;
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -252,8 +246,71 @@ export default function RequestsList() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [docType, setDocType] = useState<"cnpj" | "cpf">("cnpj");
   const [form, setForm] = useState({ ...emptyForm });
   const [detail, setDetail] = useState<any | null>(null);
+  const [view, setView] = useState<"list" | "kanban">("list");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<any | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await (supabase as any).rpc("is_ceo_or_admin", { _user: user.id });
+      setIsCeo(!!data);
+    })();
+  }, [user]);
+
+  // Deep-link: /crm/requests?request=<id>&view=kanban (from notifications)
+  useEffect(() => {
+    const viewParam = searchParams.get("view");
+    if (viewParam === "kanban" || viewParam === "list") setView(viewParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const reqId = searchParams.get("request");
+    if (!reqId) return;
+    if (detail?.id === reqId) return;
+
+    let cancelled = false;
+    (async () => {
+      // 1) Try to find in the already-loaded list
+      const found = items.find((r) => r.id === reqId);
+      if (found) {
+        setDetail(found);
+      } else {
+        // 2) Fallback: fetch directly (avoids RLS/timing edge cases)
+        const { data, error } = await (supabase as any)
+          .from("commercial_requests")
+          .select("*")
+          .eq("id", reqId)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error || !data) {
+          toast.error("Solicitação não encontrada ou sem permissão de acesso.");
+        } else {
+          setDetail(data);
+          // Merge into the list so approve/reject updates render correctly
+          setItems((prev) => (prev.some((x) => x.id === data.id) ? prev : [data, ...prev]));
+        }
+      }
+      // Clean the url params after opening
+      const next = new URLSearchParams(searchParams);
+      next.delete("request");
+      next.delete("view");
+      setSearchParams(next, { replace: true });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, items]);
 
   const fetchWithTimeout = async (url: string, ms = 5000) => {
     const ctrl = new AbortController();
@@ -315,33 +372,105 @@ export default function RequestsList() {
     setCepLoading(false);
   };
 
+  // Normaliza a resposta de diferentes provedores públicos de CNPJ
+  // em um formato único usado pelo formulário.
+  const normalizeCnpjPayload = (raw: any) => {
+    if (!raw) return null;
+    // BrasilAPI: { razao_social, nome_fantasia, cep, logradouro, bairro, municipio, uf, ddd_telefone_1, email, ... }
+    // publica.cnpj.ws: { razao_social, estabelecimento: { cep, logradouro, bairro, cidade:{nome}, estado:{sigla}, ddd1, telefone1, email } }
+    // receitaws-proxy: { nome, fantasia, cep, logradouro, bairro, municipio, uf, telefone, email }
+    const est = raw?.estabelecimento || {};
+    const razao =
+      raw?.razao_social ||
+      raw?.nome ||
+      est?.nome_fantasia ||
+      raw?.nome_fantasia ||
+      "";
+    const cep = raw?.cep || est?.cep || "";
+    const logradouro = raw?.logradouro || est?.logradouro || "";
+    const numero = raw?.numero || est?.numero || "";
+    const complemento = raw?.complemento || est?.complemento || "";
+    const bairro = raw?.bairro || est?.bairro || "";
+    const municipio = raw?.municipio || est?.cidade?.nome || est?.municipio || "";
+    const uf = raw?.uf || est?.estado?.sigla || est?.uf || "";
+    const telefone =
+      raw?.ddd_telefone_1 ||
+      raw?.telefone ||
+      (est?.ddd1 && est?.telefone1 ? `${est.ddd1}${est.telefone1}` : "") ||
+      "";
+    const email = raw?.email || est?.email || "";
+    if (!razao && !cep && !logradouro) return null;
+    return { razao, cep, logradouro, numero, complemento, bairro, municipio, uf, telefone, email };
+  };
+
   const fetchCNPJ = async (cnpj: string) => {
     const clean = cnpj.replace(/\D/g, "");
     if (clean.length !== 14) return;
     setCnpjLoading(true);
-    try {
-      const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
-      const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`,
-        { headers: { Authorization: `Bearer ${anonKey}`, apikey: anonKey } }
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      setForm((f) => ({
-        ...f,
-        empresa: data?.nome || f.empresa,
-        cep_empresa: data?.cep ? maskCEP(String(data.cep)) : f.cep_empresa,
-        rua_empresa: data?.logradouro || f.rua_empresa,
-        bairro_empresa: data?.bairro || f.bairro_empresa,
-        cidade_empresa: data?.municipio || f.cidade_empresa,
-        uf_empresa: data?.uf || f.uf_empresa,
-      }));
-    } catch {
-      // falha silenciosa — mantém campo editável manualmente
-    } finally {
-      setCnpjLoading(false);
+
+    // Cascata de provedores públicos (sem custo/token). Retornamos na 1ª que responder.
+    const providers: Array<() => Promise<any>> = [
+      // 1) BrasilAPI (Receita Federal — CORS aberto)
+      async () => {
+        const r = await fetchWithTimeout(
+          `https://brasilapi.com.br/api/cnpj/v1/${clean}`,
+          6000
+        );
+        if (!r.ok) throw new Error("brasilapi");
+        return r.json();
+      },
+      // 2) publica.cnpj.ws (Receita Federal — CORS aberto, gratuita)
+      async () => {
+        const r = await fetchWithTimeout(
+          `https://publica.cnpj.ws/cnpj/${clean}`,
+          6000
+        );
+        if (!r.ok) throw new Error("cnpjws");
+        return r.json();
+      },
+      // 3) Proxy interno (ReceitaWS) — fallback
+      async () => {
+        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const r = await fetchWithTimeout(
+          `https://${projectId}.supabase.co/functions/v1/receitaws-proxy?cnpj=${clean}`,
+          8000
+        );
+        if (!r.ok) throw new Error("receitaws");
+        return r.json();
+      },
+    ];
+
+    let normalized: ReturnType<typeof normalizeCnpjPayload> = null;
+    for (const p of providers) {
+      try {
+        const raw = await p();
+        normalized = normalizeCnpjPayload(raw);
+        if (normalized) break;
+      } catch {
+        // segue para próximo provedor
+      }
     }
+
+    if (!normalized) {
+      setCnpjLoading(false);
+      toast.error("Não foi possível consultar este CNPJ agora. Preencha manualmente.");
+      return;
+    }
+
+    setForm((f) => ({
+      ...f,
+      empresa: normalized!.razao || f.empresa,
+      cep_empresa: normalized!.cep ? maskCEP(String(normalized!.cep)) : f.cep_empresa,
+      rua_empresa: normalized!.logradouro || f.rua_empresa,
+      bairro_empresa: normalized!.bairro || f.bairro_empresa,
+      cidade_empresa: normalized!.municipio || f.cidade_empresa,
+      uf_empresa: normalized!.uf || f.uf_empresa,
+      telefone: f.telefone || normalized!.telefone || "",
+      email_1: f.email_1 || normalized!.email || "",
+    }));
+    toast.success("Dados do CNPJ preenchidos automaticamente");
+    setCnpjLoading(false);
   };
 
   const load = async () => {
@@ -349,16 +478,101 @@ export default function RequestsList() {
     const { data, error } = await (supabase as any)
       .from("commercial_requests")
       .select("*")
+      .neq("status", "lixeira")
       .order("created_at", { ascending: false });
     if (error) toast.error("Erro ao carregar solicitações");
     setItems(data || []);
     setLoading(false);
   };
 
+  const softDelete = async (r: any) => {
+    if (!canEditStatus) return;
+    if (!window.confirm("Tem certeza que deseja excluir esta solicitação? Ela será movida para a Lixeira.")) return;
+    const prevStatus = r.status || "pendente";
+    const marker = `[TRASH_PREV:${prevStatus}|${new Date().toISOString()}]`;
+    const nextObs = r.observacoes ? `${marker}\n${r.observacoes}` : marker;
+    const { error } = await (supabase as any)
+      .from("commercial_requests")
+      .update({ status: "lixeira", observacoes: nextObs })
+      .eq("id", r.id);
+    if (error) return toast.error("Erro ao excluir: " + error.message);
+    setItems((prev) => prev.filter((x) => x.id !== r.id));
+    setDetail(null);
+    toast.success("Solicitação movida para a Lixeira");
+  };
+
+
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     load();
   }, [user]);
+
+  // Aprovação via RPC segura (SECURITY DEFINER). Cria o lead no funil de vendas.
+  const approveRequest = async (r: any) => {
+    if (!canEditStatus) return;
+    if (r.status !== "pendente") return;
+    setStatusSaving(true);
+    const { data, error } = await (supabase as any).rpc("approve_commercial_request", {
+      request_id: r.id,
+    });
+    setStatusSaving(false);
+    if (error) return toast.error("Erro ao aprovar: " + error.message);
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === r.id
+          ? { ...x, status: "aprovada", converted_lead_id: data, approved_at: new Date().toISOString() }
+          : x
+      )
+    );
+    setDetail((d: any) =>
+      d && d.id === r.id
+        ? { ...d, status: "aprovada", converted_lead_id: data, approved_at: new Date().toISOString() }
+        : d
+    );
+    toast.success("Solicitação aprovada — negócio criado em Vendas › Novo Negócio", {
+      action: {
+        label: "Ver no Kanban",
+        onClick: () => window.location.assign("/crm/kanban"),
+      },
+    });
+  };
+
+  const openRejectDialog = (r: any) => {
+    if (!canEditStatus) return;
+    if (r.status !== "pendente") return;
+    setRejectTarget(r);
+    setRejectReason("");
+    setRejectOpen(true);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (!reason) return toast.error("Informe o motivo da reprovação");
+    setStatusSaving(true);
+    const { error } = await (supabase as any).rpc("reject_commercial_request", {
+      request_id: rejectTarget.id,
+      reason,
+    });
+    setStatusSaving(false);
+    if (error) return toast.error("Erro ao reprovar: " + error.message);
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === rejectTarget.id
+          ? { ...x, status: "reprovada", rejection_reason: reason, rejected_at: new Date().toISOString() }
+          : x
+      )
+    );
+    setDetail((d: any) =>
+      d && d.id === rejectTarget.id
+        ? { ...d, status: "reprovada", rejection_reason: reason, rejected_at: new Date().toISOString() }
+        : d
+    );
+    setRejectOpen(false);
+    setRejectTarget(null);
+    setRejectReason("");
+    toast.success("Solicitação reprovada");
+  };
 
   const filtered = useMemo(() => {
     return items.filter((r) => {
@@ -377,8 +591,9 @@ export default function RequestsList() {
     const total = items.length;
     const pendentes = items.filter((i) => i.status === "pendente").length;
     const aprovadas = items.filter((i) => i.status === "aprovada").length;
+    const reprovadas = items.filter((i) => i.status === "reprovada").length;
     const valor = items.reduce((sum, i) => sum + (Number(i.preco) || 0), 0);
-    return { total, pendentes, aprovadas, valor };
+    return { total, pendentes, aprovadas, reprovadas, valor };
   }, [items]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -430,7 +645,7 @@ export default function RequestsList() {
       ["frete", "Frete"],
       ["comissao", "Comissão"],
       ["origem", "Origem"],
-      ["prioridade", "Prioridade"],
+      
       ["status", "Status"],
       ["observacoes", "Observações"],
     ];
@@ -479,10 +694,32 @@ export default function RequestsList() {
     delete payload.origem_outro;
     delete payload.categoria; delete payload.marca; delete payload.marca_outro;
     delete payload.modelo; delete payload.modelo_outro;
-    const { error } = await (supabase as any).from("commercial_requests").insert(payload);
+    // Toda nova solicitação nasce como PENDENTE — aguardando aprovação do CEO.
+    payload.status = "pendente";
+    const { data: inserted, error } = await (supabase as any)
+      .from("commercial_requests")
+      .insert(payload)
+      .select("id, empresa, preco")
+      .maybeSingle();
     setSaving(false);
     if (error) return toast.error("Erro ao salvar: " + error.message);
-    toast.success("Solicitação criada");
+    toast.success("Solicitação enviada para aprovação", {
+      description: "Os CEOs foram notificados para analisar.",
+    });
+    // Fire-and-forget: push notification to CEOs. The internal notification
+    // was already created by the DB trigger.
+    try {
+      if (inserted?.id) {
+        const bodyText =
+          `Nova solicitação` +
+          (inserted.empresa ? ` · ${inserted.empresa}` : "") +
+          (inserted.preco ? ` · R$ ${Number(inserted.preco).toLocaleString("pt-BR")}` : "") +
+          " — aguardando análise.";
+        supabase.functions.invoke("notify-ceos-push", {
+          body: { request_id: inserted.id, body: bodyText },
+        }).catch((err) => console.warn("[push] notify-ceos-push failed", err));
+      }
+    } catch (e) { console.warn("[push] dispatch failed", e); }
     setOpen(false);
     setForm({ ...emptyForm });
     load();
@@ -500,17 +737,62 @@ export default function RequestsList() {
               Registre e acompanhe solicitações comerciais de clientes.
             </p>
           </div>
-          <Button onClick={() => setOpen(true)} className="gap-1">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Solicitação
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-input bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => setView("list")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-[5px] transition-colors",
+                  view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Visualização em lista"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("kanban")}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-[5px] transition-colors",
+                  view === "kanban" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Visualização em kanban"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+            <Button onClick={() => setOpen(true)} className="gap-1">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Solicitação
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Kpi label="Total" value={kpis.total} />
-          <Kpi label="Pendentes" value={kpis.pendentes} tone="amber" />
-          <Kpi label="Aprovadas" value={kpis.aprovadas} tone="emerald" />
+          <Kpi
+            label="Pendentes"
+            value={kpis.pendentes}
+            tone="amber"
+            active={filterStatus === "pendente"}
+            onClick={() => setFilterStatus(filterStatus === "pendente" ? "all" : "pendente")}
+          />
+          <Kpi
+            label="Aprovadas"
+            value={kpis.aprovadas}
+            tone="emerald"
+            active={filterStatus === "aprovada"}
+            onClick={() => setFilterStatus(filterStatus === "aprovada" ? "all" : "aprovada")}
+          />
+          <Kpi
+            label="Reprovadas"
+            value={kpis.reprovadas}
+            tone="rose"
+            active={filterStatus === "reprovada"}
+            onClick={() => setFilterStatus(filterStatus === "reprovada" ? "all" : "reprovada")}
+          />
           <Kpi
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -536,17 +818,16 @@ export default function RequestsList() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="em_analise">Em análise</SelectItem>
-                <SelectItem value="aprovada">Aprovada</SelectItem>
-                <SelectItem value="recusada">Recusada</SelectItem>
-                <SelectItem value="rascunho">Rascunho</SelectItem>
+                <SelectItem value="pendente">Pendente(s)</SelectItem>
+                <SelectItem value="aprovada">Aprovada(s)</SelectItem>
+                <SelectItem value="reprovada">Reprovada(s)</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
         </Card>
 
-        {/* Tabela */}
+        {view === "list" ? (
+        /* Tabela */
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
@@ -570,7 +851,7 @@ export default function RequestsList() {
                       <TableHead>Empresa</TableHead>
                       <TableHead>Equipamento</TableHead>
                       <TableHead>Preço</TableHead>
-                      <TableHead>Prioridade</TableHead>
+                      
                       <TableHead>Status</TableHead>
                       <TableHead>Data</TableHead>
                     </TableRow>
@@ -596,11 +877,6 @@ export default function RequestsList() {
                             : "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge className={PRIORIDADE_COLORS[r.prioridade]}>
-                            {r.prioridade}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
                           <Badge className={STATUS_COLORS[r.status]}>
                             {r.status.replace("_", " ")}
                           </Badge>
@@ -616,6 +892,72 @@ export default function RequestsList() {
             )}
           </CardContent>
         </Card>
+        ) : (
+        /* Kanban */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {(["pendente", "aprovada", "reprovada"] as const).map((col) => {
+            const colItems = filtered.filter((r) => r.status === col);
+            return (
+              <div
+                key={col}
+                onDragOver={(e) => { if (canEditStatus) e.preventDefault(); }}
+                onDrop={async () => {
+                  if (!canEditStatus || !draggedId) return;
+                  const r = items.find((x) => x.id === draggedId);
+                  setDraggedId(null);
+                  if (!r || r.status !== "pendente") return;
+                  if (col === "aprovada") await approveRequest(r);
+                  else if (col === "reprovada") openRejectDialog(r);
+                }}
+                className={cn(
+                  "bg-muted/30 rounded-xl border-t-4 p-3 min-h-[300px]",
+                  col === "pendente" ? "border-t-yellow-400"
+                    : col === "aprovada" ? "border-t-green-400"
+                    : "border-t-red-400",
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold capitalize">{col}</h3>
+                  <span className="text-xs bg-muted rounded-full px-2 py-0.5">{colItems.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {colItems.map((r) => (
+                    <div
+                      key={r.id}
+                      draggable={canEditStatus}
+                      onDragStart={() => canEditStatus && setDraggedId(r.id)}
+                      onDoubleClick={() => setDetail(r)}
+                      className={cn(
+                        "p-3 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow select-none",
+                        canEditStatus ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+                      )}
+                    >
+                      <p className="text-xs text-muted-foreground truncate">{r.tipo}</p>
+                      <p className="text-sm font-medium truncate">{r.empresa}</p>
+                      {r.equipamento && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{r.equipamento}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-hexa-green">
+                          {r.preco
+                            ? Number(r.preco).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                            : "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(r.created_at), "dd/MM/yyyy")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {colItems.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">Nenhuma solicitação</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        )}
       </div>
 
       {/* Modal nova solicitação */}
@@ -674,29 +1016,66 @@ export default function RequestsList() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Field label="CNPJ">
-                  <Input
-                    placeholder="00.000.000/0000-00"
-                    value={form.cnpj}
-                    disabled={cnpjLoading || !!form.cpf.trim()}
-                    onChange={(e) => {
-                      const masked = maskCNPJ(e.target.value);
-                      setForm({ ...form, cnpj: masked });
-                      if (isValidCNPJ(masked)) fetchCNPJ(masked);
-                    }}
-                  />
-                </Field>
-                <Field label="CPF">
-                  <Input
-                    placeholder="000.000.000-00"
-                    value={form.cpf}
-                    disabled={!!form.cnpj.trim()}
-                    onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
-                  />
-                </Field>
+                <div>
+                  <Label>Tipo de documento *</Label>
+                  <div className="mt-1 inline-flex rounded-md border border-input bg-background p-0.5">
+                    {(["cnpj", "cpf"] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => {
+                          if (docType === opt) return;
+                          setDocType(opt);
+                          setForm({
+                            ...form,
+                            cnpj: "",
+                            cpf: "",
+                            empresa: "",
+                            cep_empresa: "",
+                            rua_empresa: "",
+                            bairro_empresa: "",
+                            cidade_empresa: "",
+                            cliente_nome: "",
+                          });
+                        }}
+                        className={cn(
+                          "px-4 py-1.5 text-sm font-medium rounded-[5px] transition-colors",
+                          docType === opt
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                        aria-pressed={docType === opt}
+                      >
+                        {opt.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {docType === "cnpj" ? (
+                  <Field label="CNPJ">
+                    <Input
+                      placeholder="00.000.000/0000-00"
+                      value={form.cnpj}
+                      disabled={cnpjLoading}
+                      onChange={(e) => {
+                        const masked = maskCNPJ(e.target.value);
+                        setForm({ ...form, cnpj: masked });
+                        if (isValidCNPJ(masked)) fetchCNPJ(masked);
+                      }}
+                    />
+                  </Field>
+                ) : (
+                  <Field label="CPF">
+                    <Input
+                      placeholder="000.000.000-00"
+                      value={form.cpf}
+                      onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
+                    />
+                  </Field>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Preencha <strong>CNPJ</strong> (para empresas) <em>ou</em> <strong>CPF</strong> (para pessoa física) — não os dois.
+                Selecione <strong>CNPJ</strong> (empresa) ou <strong>CPF</strong> (pessoa física).
               </p>
             </Section>
 
@@ -1049,23 +1428,7 @@ export default function RequestsList() {
 
             {/* Outros */}
             <Section title="Outros">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Prioridade">
-                  <Select
-                    value={form.prioridade}
-                    onValueChange={(v) => setForm({ ...form, prioridade: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="critica">Crítica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
+              <div className="grid grid-cols-1 gap-4">
                 <Field label="Status">
                   <Select
                     value={form.status}
@@ -1075,23 +1438,19 @@ export default function RequestsList() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="rascunho">Rascunho</SelectItem>
                       <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="em_analise">Em análise</SelectItem>
                       <SelectItem value="aprovada">Aprovada</SelectItem>
-                      <SelectItem value="recusada">Recusada</SelectItem>
+                      <SelectItem value="reprovada">Reprovada</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
-                <div className="md:col-span-2">
-                  <Field label="Observações">
-                    <Textarea
-                      rows={3}
-                      value={form.observacoes}
-                      onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-                    />
-                  </Field>
-                </div>
+                <Field label="Observações">
+                  <Textarea
+                    rows={3}
+                    value={form.observacoes}
+                    onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+                  />
+                </Field>
               </div>
             </Section>
 
@@ -1115,6 +1474,35 @@ export default function RequestsList() {
           </DialogHeader>
           {detail && (
             <div className="space-y-6">
+              {detail.status === "aprovada" && (
+                <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900 p-4">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                      Solicitação aprovada — em andamento em Negociações
+                    </p>
+                    <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+                      Todos os campos estão bloqueados para preservar o histórico. O card independente segue seu fluxo no Funil de Vendas.
+                    </p>
+                    {detail.converted_lead_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 h-7 gap-1 border-green-300 text-green-800 hover:bg-green-100 dark:text-green-300"
+                        onClick={() => {
+                          setDetail(null);
+                          navigate(`/crm/kanban?funnel=vendas&lead=${detail.converted_lead_id}`);
+                        }}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Abrir card em Negociações
+                      </Button>
+                    )}
+                  </div>
+                  <Lock className="w-4 h-4 text-green-600/70 shrink-0" />
+                </div>
+              )}
+
               <Section title="Identificação">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <ReadField label="Tipo" value={detail.tipo} />
@@ -1170,8 +1558,59 @@ export default function RequestsList() {
 
               <Section title="Outros">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ReadField label="Prioridade" value={detail.prioridade} />
-                  <ReadField label="Status" value={detail.status?.replace("_", " ")} />
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground flex items-center gap-1">
+                      Status
+                      {!canEditStatus && <Lock className="w-3 h-3" />}
+                    </Label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={STATUS_COLORS[detail.status] || ""}>
+                        {detail.status === "pendente"
+                          ? "Pendente"
+                          : detail.status === "aprovada"
+                          ? "Aprovada"
+                          : detail.status === "reprovada"
+                          ? "Reprovada"
+                          : detail.status}
+                      </Badge>
+                      {detail.status === "pendente" && (
+                        <span className="text-xs text-muted-foreground">
+                          Aguardando aprovação do CEO
+                        </span>
+                      )}
+                    </div>
+                    {canEditStatus && detail.status === "pendente" && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveRequest(detail)}
+                          disabled={statusSaving}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRejectDialog(detail)}
+                          disabled={statusSaving}
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          Reprovar
+                        </Button>
+                      </div>
+                    )}
+                    {detail.status === "reprovada" && detail.rejection_reason && (
+                      <p className="text-xs text-red-600 mt-2">
+                        <strong>Motivo:</strong> {detail.rejection_reason}
+                      </p>
+                    )}
+                    {!canEditStatus && detail.status === "pendente" && (
+                      <p className="text-xs text-muted-foreground">
+                        Apenas CEO ou Admin podem aprovar/reprovar.
+                      </p>
+                    )}
+                  </div>
                   <div className="md:col-span-2">
                     <ReadField label="Observações" value={detail.observacoes} multiline />
                   </div>
@@ -1187,9 +1626,49 @@ export default function RequestsList() {
               </Section>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <div>
+              {canEditStatus && detail && (
+                <Button
+                  variant="destructive"
+                  onClick={() => softDelete(detail)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" /> Excluir
+                </Button>
+              )}
+            </div>
             <Button variant="outline" onClick={() => setDetail(null)}>
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de reprovação — motivo obrigatório */}
+      <Dialog open={rejectOpen} onOpenChange={(o) => !o && setRejectOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reprovar solicitação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivo da reprovação</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              placeholder="Explique brevemente por que essa solicitação não pode seguir."
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={statusSaving}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmReject}
+              disabled={statusSaving || !rejectReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirmar reprovação
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1224,15 +1703,45 @@ function ReadField({
   );
 }
 
-function Kpi({ label, value, tone = "default" }: { label: string; value: any; tone?: string }) {
+function Kpi({
+  label,
+  value,
+  tone = "default",
+  active = false,
+  onClick,
+}: {
+  label: string;
+  value: any;
+  tone?: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   const tones: Record<string, string> = {
     default: "text-foreground",
     amber: "text-amber-600",
     emerald: "text-emerald-600",
     cyan: "text-cyan-600",
+    rose: "text-rose-600",
   };
+  const clickable = typeof onClick === "function";
   return (
-    <Card>
+    <Card
+      onClick={onClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (!clickable) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={cn(
+        "transition-all",
+        clickable && "cursor-pointer hover:border-primary/50",
+        active && "border-primary ring-2 ring-primary/40 bg-primary/5",
+      )}
+    >
       <CardContent className="p-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className={cn("text-2xl font-bold mt-1", tones[tone] || tones.default)}>{value}</div>

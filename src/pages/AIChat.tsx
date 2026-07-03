@@ -313,7 +313,7 @@ export default function AIChat() {
                   onChange={e => setInput(e.target.value)}
                   placeholder={mode === "assistant"
                     ? "Pergunte algo ao Assistente IA..."
-                    : "Consulte a IA sobre dados e operações..."}
+                    : "Consulte a IA Operacional sobre dados e operações..."}
                   className="min-h-[44px] max-h-32 resize-none"
                   onKeyDown={e => {
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }

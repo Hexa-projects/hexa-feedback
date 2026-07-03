@@ -311,7 +311,7 @@ export default function CoCEODashboard() {
           <CardTitle className="text-lg flex items-center gap-2">
             <Shield className="w-5 h-5" /> Matriz de Autonomia
           </CardTitle>
-          <CardDescription>Controle granular de permissões por tipo de ação.</CardDescription>
+          <CardDescription>Controle granular de permissões da IA operacional por tipo de ação.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">

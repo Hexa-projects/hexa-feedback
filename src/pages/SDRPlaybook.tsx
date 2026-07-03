@@ -63,7 +63,7 @@ const FUNNEL_STEPS = [
     actions: [
       "Identificar objeções e preparar respostas",
       "Se necessário, oferecer condição especial",
-      "Automação monitora SLA e dispara alertas",
+      "IA Operacional monitora SLA e dispara alertas",
     ],
     prompt: `O lead {nome} levantou a objeção: "{objecao}". Gere 3 argumentos de contorno, mantendo tom consultivo. Inclua caso de sucesso similar se possível.`,
     sla: "Responder objeções em 12h",
@@ -73,7 +73,7 @@ const FUNNEL_STEPS = [
 const AUTOMATIONS = [
   {
     trigger: "Lead sem resposta há 48h",
-    action: "Automação envia follow-up automático via WhatsApp",
+    action: "IA envia follow-up automático via WhatsApp",
     channel: "#alertas-ia",
     icon: Clock,
   },
@@ -91,7 +91,7 @@ const AUTOMATIONS = [
   },
   {
     trigger: "Lead qualificado com valor > R$ 10k",
-    action: "Notificação prioritária + sugestão de ação",
+    action: "Notificação prioritária + sugestão de ação da IA",
     channel: "#alertas-ia",
     icon: Zap,
   },
@@ -108,7 +108,7 @@ const IMPLEMENTATION_STEPS = [
   { step: 2, title: "Criar canais no Teams", desc: "Crie os canais #leads, #status e #alertas-ia no módulo Teams Interno" },
   { step: 3, title: "Importar base de leads", desc: "Use o módulo CRM > Novo Lead ou importe via planilha" },
   { step: 4, title: "Configurar WhatsApp", desc: "Em Configurações > Integrações, conecte a Evolution API para disparos" },
-  { step: 5, title: "Ativar automações", desc: "Configure regras de autonomia e gatilhos operacionais" },
+  { step: 5, title: "Ativar Automação", desc: "Em Configurações, configure regras de autonomia e gatilhos" },
   { step: 6, title: "Definir SLAs", desc: "Configure alertas automáticos para leads sem contato (24h, 48h, 72h)" },
   { step: 7, title: "Treinar equipe", desc: "Compartilhe este Playbook e faça onboarding prático de 30 min" },
   { step: 8, title: "Monitorar métricas", desc: "Acompanhe pipeline, conversão e SLA no Dashboard SDR diariamente" },
@@ -123,7 +123,7 @@ export default function SDRPlaybook() {
             <Rocket className="w-6 h-6 text-primary" /> Playbook SDR
           </h1>
           <p className="text-sm text-muted-foreground">
-            Guia completo de operação SDR com automações
+            Guia completo de operação SDR com automações da IA
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export default function SDRPlaybook() {
                   {[
                     { name: "#leads", desc: "Novos leads, movimentações no funil, atualizações" },
                     { name: "#status", desc: "Resumos diários, métricas, resultados de reuniões" },
-                    { name: "#alertas-ia", desc: "Insights e alertas automáticos" },
+                    { name: "#alertas-ia", desc: "Insights e alertas automáticos da IA" },
                   ].map(ch => (
                     <div key={ch.name} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Badge className="bg-primary/10 text-primary border-0 font-mono">{ch.name}</Badge>

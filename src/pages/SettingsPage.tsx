@@ -13,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield, Users, KeyRound, FileText, Zap, Plug, Settings2,
   Plus, Trash2, Edit2, Save, X, UserCheck, UserX, RefreshCw,
-  Mail, MessageSquare, Calendar, Check, AlertTriangle
+  Mail, MessageSquare, Calendar, Check, AlertTriangle, BellRing, Smartphone, PlugZap
 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { toast } from "sonner";
 
 // ── Types ──
@@ -26,6 +28,7 @@ interface UserProfile {
   funcao: string;
   onboarding_completo: boolean;
   created_at: string;
+  aprovador_base_conhecimento?: boolean;
 }
 
 interface UserRole {
@@ -101,12 +104,13 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-7 h-auto">
             <TabsTrigger value="users" className="text-xs gap-1"><Users className="w-3 h-3" />Usuários</TabsTrigger>
             <TabsTrigger value="permissions" className="text-xs gap-1"><KeyRound className="w-3 h-3" />Permissões</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs gap-1"><FileText className="w-3 h-3" />Templates</TabsTrigger>
             <TabsTrigger value="automations" className="text-xs gap-1"><Zap className="w-3 h-3" />Automações</TabsTrigger>
             <TabsTrigger value="msteams" className="text-xs gap-1"><MessageSquare className="w-3 h-3" />MS Teams</TabsTrigger>
+            <TabsTrigger value="push" className="text-xs gap-1"><BellRing className="w-3 h-3" />Push</TabsTrigger>
             <TabsTrigger value="integrations" className="text-xs gap-1"><Plug className="w-3 h-3" />Integrações</TabsTrigger>
           </TabsList>
 
@@ -115,12 +119,104 @@ export default function SettingsPage() {
           <TabsContent value="templates"><TemplatesTab /></TabsContent>
           <TabsContent value="automations"><AutomationsTab /></TabsContent>
           <TabsContent value="msteams"><MSTeamsTab /></TabsContent>
+          <TabsContent value="push"><PushTab /></TabsContent>
           <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
         </Tabs>
       </div>
     </HexaLayout>
   );
 }
+
+// ═══════════════════════════════════════════════════
+// TAB: Push Notifications (mobile / desktop)
+// ═══════════════════════════════════════════════════
+
+function PushTab() {
+  const push = usePushNotifications();
+
+  const handleSubscribe = async () => {
+    try {
+      await push.subscribe();
+      toast.success("Notificações no celular ativadas");
+    } catch (e: any) {
+      toast.error(e?.message || "Não foi possível ativar as notificações");
+    }
+  };
+
+  const handleUnsubscribe = async () => {
+    try {
+      await push.unsubscribe();
+      toast.success("Notificações no celular desativadas");
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao desativar");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Smartphone className="w-4 h-4" /> Notificações no celular
+        </CardTitle>
+        <CardDescription>
+          Receba push notifications quando surgirem novas solicitações pendentes.
+          A notificação interna do HexaOS continua funcionando mesmo sem push.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          <span className="text-muted-foreground">Status:</span>
+          {!push.isSupported ? (
+            <Badge variant="secondary">Não suportado neste navegador</Badge>
+          ) : push.isSubscribed && push.permission === "granted" ? (
+            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Ativado</Badge>
+          ) : push.permission === "denied" ? (
+            <Badge variant="destructive">Permissão bloqueada</Badge>
+          ) : (
+            <Badge variant="secondary">Desativado</Badge>
+          )}
+          <span className="text-muted-foreground">·</span>
+          <span className="text-xs text-muted-foreground">Plataforma: {push.platform}</span>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {!push.isSubscribed ? (
+            <Button onClick={handleSubscribe} disabled={!push.isSupported || push.loading || push.iosNeedsInstall}>
+              <BellRing className="w-4 h-4 mr-1" />
+              Ativar notificações no celular
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleUnsubscribe} disabled={push.loading}>
+              <X className="w-4 h-4 mr-1" /> Desativar notificações
+            </Button>
+          )}
+        </div>
+
+        {push.iosNeedsInstall && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+            <strong>iPhone / iPad:</strong> as notificações push só funcionam depois que o HexaOS
+            estiver <strong>instalado na Tela de Início</strong>. Toque em Compartilhar → "Adicionar
+            à Tela de Início", abra o HexaOS pelo ícone e volte aqui para ativar.
+          </div>
+        )}
+
+        {push.permission === "denied" && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
+            Você bloqueou as notificações deste site no navegador. Habilite manualmente nas
+            configurações do navegador e recarregue a página.
+          </div>
+        )}
+
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p><strong>Android (Chrome/Edge):</strong> toque em Ativar e permita as notificações.</p>
+          <p><strong>Desktop (Chrome/Edge/Firefox):</strong> toque em Ativar e permita.</p>
+          <p><strong>iOS/iPadOS 16.4+:</strong> requer o HexaOS instalado como app na tela inicial.</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 // ═══════════════════════════════════════════════════
 // TAB: Users
@@ -140,18 +236,22 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 
   const loadUsers = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, emailsRes] = await Promise.all([
       supabase.from("profiles").select("*").order("nome"),
       supabase.from("user_roles").select("*"),
+      (supabase as any).rpc("admin_list_user_emails"),
     ]);
 
     const profiles = (profilesRes.data || []) as UserProfile[];
     const roles = (rolesRes.data || []) as UserRole[];
+    const emails = (emailsRes.data || []) as Array<{ id: string; email: string }>;
     const roleMap = new Map(roles.map(r => [r.user_id, r.role]));
+    const emailMap = new Map(emails.map(e => [e.id, e.email]));
 
     const merged: UserWithRole[] = profiles.map(p => ({
       ...p,
       role: roleMap.get(p.id) || "colaborador",
+      email: emailMap.get(p.id),
     }));
     setUsers(merged);
     setLoading(false);
@@ -182,7 +282,8 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 
   const filtered = users.filter(u =>
     u.nome.toLowerCase().includes(search.toLowerCase()) ||
-    u.setor.toLowerCase().includes(search.toLowerCase())
+    u.setor.toLowerCase().includes(search.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -193,7 +294,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <Input
-          placeholder="Buscar por nome ou setor..."
+          placeholder="Buscar por nome, e-mail ou setor..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="max-w-sm"
@@ -215,9 +316,11 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-3 font-medium">Nome</th>
+                  <th className="text-left p-3 font-medium hidden lg:table-cell">E-mail</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Setor</th>
                   <th className="text-left p-3 font-medium hidden lg:table-cell">Função</th>
                   <th className="text-left p-3 font-medium">Perfil</th>
+                  <th className="text-center p-3 font-medium hidden md:table-cell" title="Responsável pela aprovação da Base de Conhecimento">Aprovador BC</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Status</th>
                   <th className="text-right p-3 font-medium">Ações</th>
                 </tr>
@@ -232,6 +335,9 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                         </div>
                         <span className="font-medium">{u.nome}</span>
                       </div>
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground text-xs">
+                      {u.email || "—"}
                     </td>
                     <td className="p-3 hidden md:table-cell">
                       {editingId === u.id ? (
@@ -261,6 +367,23 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                           {ROLE_LABELS[u.role]}
                         </Badge>
                       )}
+                    </td>
+                    <td className="p-3 hidden md:table-cell text-center">
+                      <Switch
+                        checked={!!u.aprovador_base_conhecimento}
+                        onCheckedChange={async (v) => {
+                          const { error } = await supabase
+                            .from("profiles")
+                            .update({ aprovador_base_conhecimento: v })
+                            .eq("id", u.id);
+                          if (error) {
+                            toast.error("Falha ao atualizar aprovador");
+                            return;
+                          }
+                          setUsers(prev => prev.map(x => x.id === u.id ? { ...x, aprovador_base_conhecimento: v } : x));
+                          toast.success(v ? "Definido como aprovador" : "Removido como aprovador");
+                        }}
+                      />
                     </td>
                     <td className="p-3 hidden md:table-cell">
                       {u.onboarding_completo ? (
@@ -745,8 +868,10 @@ function MSTeamsTab() {
 
 
 function IntegrationsTab() {
+  const navigate = useNavigate();
   const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
   const [configuredIntegrations, setConfiguredIntegrations] = useState<Record<string, boolean>>({});
+  const [rdInfo, setRdInfo] = useState<{ status: string; last_sync: string | null; last_error: string | null } | null>(null);
 
   useEffect(() => {
     const checkConfigs = async () => {
@@ -762,7 +887,24 @@ function IntegrationsTab() {
         setConfiguredIntegrations(map);
       }
     };
+    const loadRd = async () => {
+      const { data } = await supabase
+        .from("crm_integrations")
+        .select("status,last_full_sync_at,last_delta_sync_at,last_error")
+        .eq("provider", "rd_station")
+        .maybeSingle();
+      if (data) {
+        setRdInfo({
+          status: (data as any).status ?? "disconnected",
+          last_sync: (data as any).last_delta_sync_at ?? (data as any).last_full_sync_at ?? null,
+          last_error: (data as any).last_error ?? null,
+        });
+      } else {
+        setRdInfo({ status: "disconnected", last_sync: null, last_error: null });
+      }
+    };
     checkConfigs();
+    loadRd();
   }, []);
 
   if (activeIntegration === "whatsapp") {
@@ -774,6 +916,12 @@ function IntegrationsTab() {
 
   const getStatus = (key: string): "ativo" | "pendente" | "erro" => {
     if (key === "openclaw") return "ativo";
+    if (key === "rd_station") {
+      if (!rdInfo) return "pendente";
+      if (rdInfo.status === "connected") return "ativo";
+      if (rdInfo.status === "error") return "erro";
+      return "pendente";
+    }
     return configuredIntegrations[key] ? "ativo" : "pendente";
   };
 
@@ -805,6 +953,21 @@ function IntegrationsTab() {
       descricao: "Gateway de automação e integrações operacionais.",
       icon: Zap,
       config: ["URL", "Token", "Ambiente"],
+    },
+    {
+      key: "rd_station",
+      nome: "RD Station",
+      descricao: "CRM e Marketing: sincronização de contatos, empresas, negócios e webhooks.",
+      icon: PlugZap,
+      config: ["Client ID", "Client Secret", "OAuth", "Webhooks"],
+      extra: rdInfo
+        ? [
+            rdInfo.last_sync
+              ? `Última sync: ${new Date(rdInfo.last_sync).toLocaleString("pt-BR")}`
+              : "Nunca sincronizado",
+            rdInfo.last_error ? `Erro: ${rdInfo.last_error.slice(0, 80)}` : null,
+          ].filter(Boolean) as string[]
+        : [],
     },
   ];
 
@@ -848,6 +1011,13 @@ function IntegrationsTab() {
                         <Badge key={c} variant="outline" className="text-xs font-normal">{c}</Badge>
                       ))}
                     </div>
+                    {"extra" in int && (int as any).extra?.length ? (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                        {(int as any).extra.map((line: string) => (
+                          <div key={line}>{line}</div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <Button
@@ -858,8 +1028,10 @@ function IntegrationsTab() {
                       setActiveIntegration("whatsapp");
                     } else if (int.key === "calendar") {
                       setActiveIntegration("calendar");
+                    } else if (int.key === "rd_station") {
+                      navigate("/settings/integrations/rd-station");
                     } else if (getStatus(int.key) === "ativo") {
-                      toast.info("Configuração avançada do OpenClaw será habilitada em breve");
+                      toast.info("Configuração avançada será habilitada em breve");
                     } else {
                       toast.info(`Configuração de ${int.nome} será habilitada em breve`);
                     }

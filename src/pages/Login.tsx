@@ -104,31 +104,42 @@ export default function Login() {
             </Button>
           </div>
 
-          <div className="space-y-3">
+          <form
+            className="space-y-3"
+            autoComplete="on"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (mode === "login") {
+                handleLogin();
+              } else {
+                handleRegister();
+              }
+            }}
+          >
             {mode === "register" && (
               <div>
                 <Label>Nome completo</Label>
-                <Input value={nome} onChange={e => { setNome(e.target.value); setError(""); }} placeholder="Seu nome" />
+                <Input name="name" autoComplete="name" value={nome} onChange={e => { setNome(e.target.value); setError(""); }} placeholder="Seu nome" />
               </div>
             )}
 
             <div>
               <Label>E-mail</Label>
-              <Input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} placeholder="seu@email.com" />
+              <Input name="email" type="email" autoComplete="username" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} placeholder="seu@email.com" />
             </div>
 
             <div>
               <Label>Senha</Label>
-              <Input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} placeholder="Mínimo 6 caracteres" />
+              <Input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={e => { setPassword(e.target.value); setError(""); }} placeholder="Mínimo 6 caracteres" />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
             {successMsg && <p className="text-sm text-primary">{successMsg}</p>}
 
-            <Button className="w-full" onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading}>
+            <Button className="w-full" type="submit" disabled={loading}>
               {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Cadastrar"}
             </Button>
-          </div>
+          </form>
         </div>
 
         <p className="text-center text-xs text-white/30">

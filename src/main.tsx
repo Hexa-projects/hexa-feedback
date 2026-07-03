@@ -1,5 +1,18 @@
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
+import OfflineBanner from "./components/pwa/OfflineBanner";
+import { AppErrorBoundary, armChunkRecovery } from "./components/AppErrorBoundary";
 
-createRoot(document.getElementById("root")!).render(<App />);
+armChunkRecovery();
+
+createRoot(document.getElementById("root")!).render(
+  <BrowserRouter>
+    <AppErrorBoundary>
+      <OfflineBanner />
+      <App />
+    </AppErrorBoundary>
+  </BrowserRouter>,
+);
+

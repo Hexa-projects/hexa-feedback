@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Users, Plus, ArrowRight, Target, Clock, TrendingUp,
   Phone, MessageSquare, AlertTriangle, Download, CheckCircle2,
-  BarChart3, DollarSign, Calendar
+  Zap, BarChart3, DollarSign, Calendar
 } from "lucide-react";
 import { format, differenceInHours, differenceInDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -358,6 +358,7 @@ export default function HomePage() {
               )}
             </CardContent>
           </Card>
+
         </div>
       </div>
     </HexaLayout>

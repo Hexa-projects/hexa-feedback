@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,16 +9,24 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 // Eagerly loaded (auth flow)
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
+import PwaInstallPrompt from "./components/pwa/PwaInstallPrompt";
+import PwaUpdatePrompt from "./components/pwa/PwaUpdatePrompt";
+
 
 // Lazy-loaded pages
 const HomePage = lazy(() => import("./pages/HomePage"));
 const LeadsList = lazy(() => import("./pages/crm/LeadsList"));
+const ContactsList = lazy(() => import("./pages/crm/ContactsList"));
 const LeadForm = lazy(() => import("./pages/crm/LeadForm"));
 const LeadDetail = lazy(() => import("./pages/crm/LeadDetail"));
 const KanbanFunnel = lazy(() => import("./pages/crm/KanbanFunnel"));
 const ProposalsList = lazy(() => import("./pages/crm/ProposalsList"));
 const ContractsList = lazy(() => import("./pages/crm/ContractsList"));
 const RequestsList = lazy(() => import("./pages/crm/RequestsList"));
+const RequestDetailPage = lazy(() => import("./pages/crm/RequestDetailPage"));
+const RequestsTrash = lazy(() => import("./pages/crm/RequestsTrash"));
+const RdStationIntegration = lazy(() => import("./pages/crm/integrations/RdStationIntegration"));
+const CompaniesList = lazy(() => import("./pages/crm/CompaniesList"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
 const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
 const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
@@ -46,13 +54,16 @@ const ProjectForm = lazy(() => import("./pages/projects/ProjectForm"));
 const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const ExecutiveDashboard = lazy(() => import("./pages/ExecutiveDashboard"));
+
 const GargalosMap = lazy(() => import("./pages/GargalosMap"));
 const DataCollection = lazy(() => import("./pages/DataCollection"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
+const PwaInstall = lazy(() => import("./pages/PwaInstall"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -84,8 +95,8 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => (
-  <BrowserRouter>
-    <Routes>
+  <Routes>
+
       <Route path="/" element={<Login />} />
       <Route path="/docs" element={<Suspense fallback={<PageLoader />}><PublicApiDocs /></Suspense>} />
       <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
@@ -95,12 +106,18 @@ const AppRoutes = () => (
       <Route path="/executive" element={<PrivateRoute><ExecutiveDashboard /></PrivateRoute>} />
 
       {/* CRM */}
-      <Route path="/crm" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
+      <Route path="/crm" element={<PrivateRoute><ContactsList /></PrivateRoute>} />
+      <Route path="/crm/leads" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
       <Route path="/crm/new" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
       <Route path="/crm/kanban" element={<PrivateRoute><KanbanFunnel /></PrivateRoute>} />
       <Route path="/crm/proposals" element={<PrivateRoute><ProposalsList /></PrivateRoute>} />
       <Route path="/crm/contracts" element={<PrivateRoute><ContractsList /></PrivateRoute>} />
       <Route path="/crm/requests" element={<PrivateRoute><RequestsList /></PrivateRoute>} />
+      <Route path="/crm/requests/:id" element={<PrivateRoute><RequestDetailPage /></PrivateRoute>} />
+      <Route path="/crm/lixeira" element={<PrivateRoute><RequestsTrash /></PrivateRoute>} />
+      <Route path="/settings/integrations/rd-station" element={<PrivateRoute><RdStationIntegration /></PrivateRoute>} />
+      <Route path="/crm/integrations/rd-station" element={<Navigate to="/settings/integrations/rd-station" replace />} />
+      <Route path="/crm/empresas" element={<PrivateRoute><CompaniesList /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
       {/* Projetos & Implantação */}
@@ -141,12 +158,17 @@ const AppRoutes = () => (
       {/* Financeiro */}
       <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
 
+      {/* Legacy AI routes → home */}
+      <Route path="/focus-ai" element={<Navigate to="/home" replace />} />
+      <Route path="/automations" element={<Navigate to="/home" replace />} />
+
       {/* AUDITORIA OPERACIONAL */}
       <Route path="/gargalos" element={<PrivateRoute><GargalosMap /></PrivateRoute>} />
       <Route path="/coleta" element={<PrivateRoute><DataCollection /></PrivateRoute>} />
 
       {/* Configurações */}
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+      <Route path="/pwa" element={<PrivateRoute><PwaInstall /></PrivateRoute>} />
 
       {/* Calendário */}
       <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
@@ -170,17 +192,18 @@ const AppRoutes = () => (
       <Route path="/processes" element={<Navigate to="/coleta" replace />} />
       <Route path="/suggestions" element={<Navigate to="/coleta" replace />} />
 
-      <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
-    </Routes>
-  </BrowserRouter>
+    <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
+  </Routes>
 );
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <PwaInstallPrompt />
+        <PwaUpdatePrompt />
         <AppRoutes />
       </AuthProvider>
     </TooltipProvider>

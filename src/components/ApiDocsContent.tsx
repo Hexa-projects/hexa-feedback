@@ -276,7 +276,7 @@ export default function ApiDocsContent() {
 
         {/* ═══ ACTION API ═══ */}
         <TabsContent value="actions" className="space-y-6">
-          <SectionTitle icon={Code2} title="Action API" subtitle="Permite propor e executar ações administrativas com governança." />
+          <SectionTitle icon={Code2} title="Action API" subtitle="Permite à IA propor e executar ações administrativas com governança." />
           <Card>
             <CardHeader><CardTitle className="text-base">URL Base</CardTitle></CardHeader>
             <CardContent>
@@ -342,7 +342,7 @@ export default function ApiDocsContent() {
                     <Badge className="bg-primary/10 text-primary">Data API</Badge>
                     <span className="text-sm font-medium">Token OpenClaw</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Usado pela Data API para autenticar chamadas do OpenClaw.</p>
+                  <p className="text-xs text-muted-foreground">Usado pela Data API para autenticar chamadas do OpenClaw. O token é o mesmo configurado em Configurações → OpenClaw.</p>
                   <CodeBlock code={`# Via header X-OpenClaw-Token\ncurl -H "X-OpenClaw-Token: seu-token-aqui" ...\n\n# Ou via Authorization Bearer\ncurl -H "Authorization: Bearer seu-token-aqui" ...`} />
                 </div>
                 <div className="p-4 border rounded-lg space-y-2">
