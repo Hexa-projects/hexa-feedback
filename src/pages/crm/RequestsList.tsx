@@ -279,6 +279,55 @@ export default function RequestsList() {
       setSellers((comercial.length ? comercial : list).map((p: any) => ({ id: p.id, nome: p.nome })));
     })();
   }, []);
+
+  // Sugere cadastro assim que CPF/CNPJ válido for digitado e não existir no sistema
+  useEffect(() => {
+    if (!open) return;
+    if (suggestOpen) return;
+    const timer = setTimeout(async () => {
+      try {
+        if (docType === "cnpj") {
+          if (!isValidCNPJ(form.cnpj)) return;
+          const digits = form.cnpj.replace(/\D/g, "");
+          if (dismissedDocs.has(digits)) return;
+          const { data } = await (supabase as any)
+            .from("rd_organizations").select("id")
+            .or(`cnpj.eq.${form.cnpj},cnpj.eq.${digits}`)
+            .limit(1);
+          if (data && data.length) return;
+          const endereco = `${form.rua}, ${form.complemento} - ${form.bairro}, ${form.cidade}${form.uf ? "/" + form.uf : ""}${form.cep ? " - CEP " + form.cep : ""}`;
+          setSuggestKind("empresa");
+          setSuggestData({
+            nome: form.empresa,
+            doc: form.cnpj,
+            telefone: form.telefone,
+            email: form.email_1,
+            endereco: form.rua ? endereco : "",
+          });
+          setSuggestOpen(true);
+        } else {
+          if (!isValidCPF(form.cpf)) return;
+          const digits = form.cpf.replace(/\D/g, "");
+          if (dismissedDocs.has(digits)) return;
+          const { data } = await (supabase as any)
+            .from("commercial_requests").select("id").eq("cnpj", digits).limit(1);
+          if (data && data.length) return;
+          setSuggestKind("contato");
+          setSuggestData({
+            nome: form.cliente_nome,
+            doc: form.cpf,
+            telefone: form.telefone,
+            email: form.email_1,
+          });
+          setSuggestOpen(true);
+        }
+      } catch (err) {
+        console.warn("[suggest-early] check failed", err);
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.cnpj, form.cpf, docType, open, dismissedDocs]);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
