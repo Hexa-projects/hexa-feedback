@@ -1094,10 +1094,11 @@ export default function RequestsList() {
           />
           <Kpi
             className="col-span-2 md:col-span-1"
-            label="Valor total"
+            label={valorLabel}
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             tone="cyan"
           />
+
         </div>
 
         {/* Filtros */}
