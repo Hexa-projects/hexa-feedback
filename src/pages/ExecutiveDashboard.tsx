@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { LayoutDashboard, LineChart } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { KpiGrid } from "@/components/dashboard/KpiGrid";
@@ -224,7 +223,7 @@ export default function ExecutiveDashboard() {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <ChartCard title="Pipeline por etapa" loading={commercial.loading} error={commercial.error} onRetry={commercial.refetch} empty={!commercial.funnel.length} icon={<LineChart className="w-4 h-4" />}>
+        <ChartCard title="Pipeline por etapa" loading={commercial.loading} error={commercial.error} onRetry={commercial.refetch} empty={!commercial.funnel.length}>
           <StatusBreakdownChart data={commercial.funnel.map(f => ({ label: f.label, value: f.count }))} />
         </ChartCard>
         <ChartCard title="OS por urgência" loading={ops.loading} error={ops.error} onRetry={ops.refetch} empty={!ops.byUrgency.length}>
