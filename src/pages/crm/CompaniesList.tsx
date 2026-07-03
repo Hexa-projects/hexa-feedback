@@ -396,6 +396,80 @@ export default function CompaniesList() {
             </PopoverContent>
           </Popover>
 
+          {/* Filtros predefinidos (VENDAS / NEGOCIAÇÕES) */}
+          <Popover open={presetOpen} onOpenChange={setPresetOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "gap-2 min-w-[200px] justify-between",
+                  preset && "border-primary text-primary",
+                )}
+              >
+                <span className="truncate">
+                  {preset ? PRESET_LABELS[preset] : "Filtros predefinidos"}
+                </span>
+                <ChevronDown className="w-4 h-4 opacity-60 shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 p-0">
+              <div className="py-1">
+                <div className="px-3 pt-3 pb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Vendas
+                </div>
+                {SALES_PRESETS.map(key => {
+                  const active = preset === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setPreset(active ? null : key);
+                        setPresetOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                        active
+                          ? "text-primary font-medium bg-primary/5"
+                          : "text-foreground",
+                      )}
+                    >
+                      {PRESET_LABELS[key]}
+                    </button>
+                  );
+                })}
+
+                <div className="px-3 pt-3 pb-1 mt-1 border-t text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Negociações
+                </div>
+                {DEAL_PRESETS.map(key => {
+                  const active = preset === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setPreset(active ? null : key);
+                        setPresetOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                        active
+                          ? "text-primary font-medium bg-primary/5"
+                          : "text-foreground",
+                      )}
+                    >
+                      {PRESET_LABELS[key]}
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+
+
           {/* Table search (separate — não faz parte do painel) */}
           <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
