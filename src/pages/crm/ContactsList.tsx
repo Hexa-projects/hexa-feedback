@@ -178,8 +178,9 @@ export default function ContactsList() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
-  // modal create
+  // modal create / edit contact
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nome: "",
@@ -194,6 +195,20 @@ export default function ContactsList() {
   const [nomeError, setNomeError] = useState(false);
   const [companyPopoverOpen, setCompanyPopoverOpen] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+
+  // company edit sheet
+  type CompanyData = {
+    name: string;
+    tipo: string;
+    segment: string;
+    url: string;
+    summary: string;
+    address: string;
+    cnpj: string;
+  };
+  const [companyEditOpen, setCompanyEditOpen] = useState(false);
+  const [companyEditName, setCompanyEditName] = useState<string>("");
+  const [companyDataMap, setCompanyDataMap] = useState<Record<string, CompanyData>>({});
 
   useEffect(() => {
     (async () => {
