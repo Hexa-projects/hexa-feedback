@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { navigateInApp } from "@/lib/navigation";
 import {
   Bell, Check, CheckCheck, Trash2, Info, AlertTriangle,
   CheckCircle2, XCircle, Cpu, X
@@ -39,7 +39,6 @@ function timeAgo(dateStr: string): string {
 export default function NotificationDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const {
     notifications, unreadCount, loading,
     markAsRead, markAllAsRead, deleteNotification,
@@ -76,7 +75,7 @@ export default function NotificationDropdown() {
       return;
     }
 
-    navigate(target, { replace: false });
+    navigateInApp(target);
     setOpen(false);
   };
 
