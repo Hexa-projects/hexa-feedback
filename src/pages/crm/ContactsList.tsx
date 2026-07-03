@@ -407,6 +407,17 @@ export default function ContactsList() {
     }
   };
 
+  // Delete confirm
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const handleDeleteSelected = () => {
+    const ids = new Set(selected);
+    setContacts(prev => prev.filter(c => !ids.has(c.id)));
+    const n = ids.size;
+    setSelected(new Set());
+    setDeleteConfirmOpen(false);
+    toast.success(`${n} contato${n > 1 ? "s" : ""} excluído${n > 1 ? "s" : ""}`);
+  };
+
   return (
     <HexaLayout>
       <div className="space-y-4">
