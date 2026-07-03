@@ -1947,12 +1947,13 @@ export default function RequestsList() {
             <DialogTitle>Reprovar solicitação</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>Motivo da reprovação</Label>
+            <Label>Motivo da reprovação *</Label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               rows={4}
-              placeholder="Explique brevemente por que essa solicitação não pode seguir."
+              placeholder="Descreva o motivo da reprovação..."
+              autoFocus
             />
           </div>
           <DialogFooter className="gap-2">
