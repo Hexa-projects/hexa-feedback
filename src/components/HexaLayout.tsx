@@ -99,7 +99,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: FlaskConical,
     children: [
       { to: "/lab", label: "Peças em Reparo", icon: Wrench },
-      { to: "/lab/knowledge", label: "Base de Conhecimento", icon: BookOpen },
       { to: "/lab/new", label: "Registrar Peça", icon: FlaskConical },
       { to: "/lab/import", label: "Importar Dados (ETL)", icon: ArrowDownToLine },
     ],
