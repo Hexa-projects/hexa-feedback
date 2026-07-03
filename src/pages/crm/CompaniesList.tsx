@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Building2, ChevronDown, Search } from "lucide-react";
+import { Building2, ChevronDown, Filter, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Org = {
@@ -77,6 +77,19 @@ function dealsOf(org: Org): any[] {
   const p = org.raw_payload || {};
   const arr = p.deals ?? p.deal_list ?? p.deals_history ?? [];
   return Array.isArray(arr) ? arr : [];
+}
+
+function segmentOf(org: Org): string {
+  const p = org.raw_payload || {};
+  return (
+    p.segment ||
+    p.sector ||
+    p.industry ||
+    p.company?.segment ||
+    p.company?.sector ||
+    p.company?.industry ||
+    ""
+  );
 }
 
 function toDate(v: any): Date | null {
@@ -157,6 +170,10 @@ export default function CompaniesList() {
   const [preset, setPreset] = useState<PresetFilter>(null);
   const [presetOpen, setPresetOpen] = useState(false);
 
+  // Quick search popover
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     (async () => {
 
@@ -204,7 +221,8 @@ export default function CompaniesList() {
       list = list.filter(o =>
         (o.name || "").toLowerCase().includes(q) ||
         (o.email || "").toLowerCase().includes(q) ||
-        (o.cnpj || "").toLowerCase().includes(q),
+        (o.cnpj || "").toLowerCase().includes(q) ||
+        segmentOf(o).toLowerCase().includes(q),
       );
     }
     return list;
@@ -470,16 +488,61 @@ export default function CompaniesList() {
 
 
 
-          {/* Table search (separate — não faz parte do painel) */}
-          <div className="relative flex-1 min-w-[220px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar empresa..."
-              className="pl-9"
-              value={tableSearch}
-              onChange={e => setTableSearch(e.target.value)}
-            />
-          </div>
+          {/* Filtros — painel de busca rápida */}
+          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "gap-2 min-w-[200px] justify-between",
+                  tableSearch.trim() && "border-primary text-primary",
+                )}
+              >
+                <span className="truncate">
+                  {tableSearch.trim()
+                    ? `Filtros · ${tableSearch.trim()}`
+                    : "Filtros"}
+                </span>
+                {tableSearch.trim() ? (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                  </span>
+                ) : (
+                  <Filter className="w-4 h-4 opacity-60 shrink-0" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 p-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  ref={searchInputRef}
+                  placeholder="Buscar por nome, CNPJ, segmento..."
+                  className="pl-9 pr-9"
+                  value={tableSearch}
+                  onChange={e => setTableSearch(e.target.value)}
+                />
+                {tableSearch.trim() && (
+                  <button
+                    type="button"
+                    aria-label="Limpar busca"
+                    onClick={() => {
+                      setTableSearch("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Filtra por nome, CNPJ e segmento em tempo real.
+              </p>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <Card>
@@ -489,7 +552,11 @@ export default function CompaniesList() {
             ) : filteredOrgs.length === 0 ? (
               <div className="text-center py-12">
                 <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">Nenhuma empresa encontrada</p>
+                <p className="text-muted-foreground">
+                  {tableSearch.trim()
+                    ? `Nenhuma empresa encontrada para "${tableSearch.trim()}"`
+                    : "Nenhuma empresa encontrada"}
+                </p>
               </div>
             ) : (
               <Table>
