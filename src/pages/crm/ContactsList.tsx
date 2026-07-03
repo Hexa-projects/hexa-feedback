@@ -614,7 +614,7 @@ export default function ContactsList() {
       >
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Criar Contato</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Contato" : "Criar Contato"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Nome */}
