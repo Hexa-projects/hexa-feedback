@@ -551,7 +551,11 @@ export default function CompaniesList() {
             ) : filteredOrgs.length === 0 ? (
               <div className="text-center py-12">
                 <Building2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">Nenhuma empresa encontrada</p>
+                <p className="text-muted-foreground">
+                  {tableSearch.trim()
+                    ? `Nenhuma empresa encontrada para "${tableSearch.trim()}"`
+                    : "Nenhuma empresa encontrada"}
+                </p>
               </div>
             ) : (
               <Table>
