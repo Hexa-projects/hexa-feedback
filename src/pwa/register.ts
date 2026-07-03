@@ -26,7 +26,7 @@ const state: PwaUpdateState = {
 };
 
 const listeners = new Set<Listener>();
-let updateSW: ((reloadPage?: boolean) => Promise<void>) | null = null;
+let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | null = null;
 let registered = false;
 
 function emit() {
@@ -44,7 +44,7 @@ export function getPwaUpdateState(): PwaUpdateState {
 }
 
 export async function updateApp(): Promise<void> {
-  if (!updateSW) {
+  if (!updateServiceWorker) {
     // Fallback: hard reload
     window.location.reload();
     return;
@@ -52,9 +52,9 @@ export async function updateApp(): Promise<void> {
   state.updating = true;
   emit();
   try {
-    await updateSW(true);
+    await updateServiceWorker(true);
   } catch (err) {
-    console.warn("[pwa] updateSW failed", err);
+    console.warn("[pwa] updateServiceWorker failed", err);
     // Force reload as last resort
     window.location.reload();
   }
@@ -80,6 +80,12 @@ function isRefusedContext(): boolean {
   if (host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev")) return true;
   if (new URLSearchParams(window.location.search).get("sw") === "off") return true;
   return false;
+}
+
+function flagUpdateAvailable(): void {
+  state.needRefresh = true;
+  state.updateAvailableAt = Date.now();
+  emit();
 }
 
 async function unregisterMatching(): Promise<void> {
@@ -133,12 +139,10 @@ export async function registerPwa(): Promise<void> {
     const { registerSW } = await import("virtual:pwa-register");
     let swRegistration: ServiceWorkerRegistration | undefined;
 
-    updateSW = registerSW({
+    updateServiceWorker = registerSW({
       immediate: true,
       onNeedRefresh() {
-        state.needRefresh = true;
-        state.updateAvailableAt = Date.now();
-        emit();
+        flagUpdateAvailable();
       },
       onOfflineReady() {
         state.offlineReady = true;
@@ -147,6 +151,20 @@ export async function registerPwa(): Promise<void> {
       onRegisteredSW(_swUrl, registration) {
         swRegistration = registration;
         if (!registration) return;
+
+        if (registration.waiting) {
+          flagUpdateAvailable();
+        }
+
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              flagUpdateAvailable();
+            }
+          });
+        });
 
         // Periodic update check (every 60s) — cheap HEAD to /sw.js.
         const INTERVAL_MS = 60 * 1000;
