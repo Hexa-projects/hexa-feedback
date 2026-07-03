@@ -264,6 +264,20 @@ export default function RequestsList() {
   const [savingContact, setSavingContact] = useState(false);
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [companyInitial, setCompanyInitial] = useState<any>(null);
+  const [sellers, setSellers] = useState<{ id: string; nome: string }[]>([]);
+  const [vendedorMode, setVendedorMode] = useState<"select" | "other">("select");
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("id, nome, setor")
+        .order("nome", { ascending: true });
+      const list = (data || []).filter((p: any) => p.nome);
+      const comercial = list.filter((p: any) => (p.setor || "").toString().toLowerCase() === "comercial");
+      setSellers((comercial.length ? comercial : list).map((p: any) => ({ id: p.id, nome: p.nome })));
+    })();
+  }, []);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
