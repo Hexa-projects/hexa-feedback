@@ -985,8 +985,8 @@ export default function RequestsList() {
                       <TableHead>Empresa</TableHead>
                       <TableHead>Equipamento</TableHead>
                       <TableHead>Preço</TableHead>
-                      
                       <TableHead>Status</TableHead>
+                      {filterStatus === "reprovada" && <TableHead>Motivo</TableHead>}
                       <TableHead>Data</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1015,6 +1015,14 @@ export default function RequestsList() {
                             {r.status.replace("_", " ")}
                           </Badge>
                         </TableCell>
+                        {filterStatus === "reprovada" && (
+                          <TableCell
+                            className="text-sm text-red-700 max-w-[320px] truncate"
+                            title={r.rejection_reason || ""}
+                          >
+                            {r.rejection_reason || "-"}
+                          </TableCell>
+                        )}
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(r.created_at), "dd/MM/yyyy")}
                         </TableCell>
