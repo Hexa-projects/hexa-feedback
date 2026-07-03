@@ -591,8 +591,9 @@ export default function RequestsList() {
     const total = items.length;
     const pendentes = items.filter((i) => i.status === "pendente").length;
     const aprovadas = items.filter((i) => i.status === "aprovada").length;
+    const reprovadas = items.filter((i) => i.status === "reprovada").length;
     const valor = items.reduce((sum, i) => sum + (Number(i.preco) || 0), 0);
-    return { total, pendentes, aprovadas, valor };
+    return { total, pendentes, aprovadas, reprovadas, valor };
   }, [items]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -769,10 +770,11 @@ export default function RequestsList() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Kpi label="Total" value={kpis.total} />
           <Kpi label="Pendentes" value={kpis.pendentes} tone="amber" />
           <Kpi label="Aprovadas" value={kpis.aprovadas} tone="emerald" />
+          <Kpi label="Reprovadas" value={kpis.reprovadas} tone="rose" />
           <Kpi
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -800,6 +802,7 @@ export default function RequestsList() {
                 <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="pendente">Pendente(s)</SelectItem>
                 <SelectItem value="aprovada">Aprovada(s)</SelectItem>
+                <SelectItem value="reprovada">Reprovada(s)</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
@@ -1688,6 +1691,7 @@ function Kpi({ label, value, tone = "default" }: { label: string; value: any; to
     amber: "text-amber-600",
     emerald: "text-emerald-600",
     cyan: "text-cyan-600",
+    rose: "text-rose-600",
   };
   return (
     <Card>
