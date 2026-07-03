@@ -627,9 +627,9 @@ interface Automation {
 
 function AutomationsTab() {
   const [automations, setAutomations] = useState<Automation[]>([
-    { id: "1", nome: "Alerta de SLA crítico", gatilho: "OS sem atualização > 24h", condicao: "urgencia = Crítica", acao: "Enviar alerta via Focus AI", ativo: true },
+    { id: "1", nome: "Alerta de SLA crítico", gatilho: "OS sem atualização > 24h", condicao: "urgencia = Crítica", acao: "Enviar alerta operacional", ativo: true },
     { id: "2", nome: "Follow-up de lead", gatilho: "Lead sem contato > 3 dias", condicao: "status = Contato Inicial", acao: "Criar tarefa de follow-up", ativo: true },
-    { id: "3", nome: "Resumo diário de gargalos", gatilho: "Cron diário 08:00", condicao: "Sempre", acao: "Gerar resumo via Focus AI", ativo: false },
+    { id: "3", nome: "Resumo diário de gargalos", gatilho: "Cron diário 08:00", condicao: "Sempre", acao: "Gerar resumo operacional", ativo: false },
     { id: "4", nome: "Notificação de proposta expirada", gatilho: "Proposta expirada", condicao: "validade < hoje", acao: "Enviar e-mail ao responsável", ativo: true },
   ]);
   const [editing, setEditing] = useState<string | null>(null);
@@ -705,7 +705,7 @@ function AutomationsTab() {
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Ação</Label>
-                      <Input value={editData.acao || ""} onChange={e => setEditData({ ...editData, acao: e.target.value })} placeholder="Ex: Enviar alerta via Focus AI" />
+                      <Input value={editData.acao || ""} onChange={e => setEditData({ ...editData, acao: e.target.value })} placeholder="Ex: Enviar alerta operacional" />
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -750,7 +750,7 @@ function AutomationsTab() {
 // ═══════════════════════════════════════════════════
 
 const TEAMS_WEBHOOKS = [
-  { key: "webhook_diretoria", label: "Webhook Diretoria (Focus AI)", description: "Alertas estratégicos e relatórios proativos" },
+  { key: "webhook_diretoria", label: "Webhook Diretoria", description: "Alertas estratégicos e relatórios proativos" },
   { key: "webhook_comercial", label: "Webhook Comercial (Hunter)", description: "Alertas de leads, propostas e contratos" },
   { key: "webhook_operacoes", label: "Webhook Operações (Gear)", description: "Alertas de OS, SLA e agendamentos" },
   { key: "webhook_laboratorio", label: "Webhook Laboratório (Tracker)", description: "Alertas de estoque, peças e manutenção" },
@@ -884,7 +884,7 @@ function IntegrationsTab() {
     {
       key: "whatsapp",
       nome: "WhatsApp (Evolution API)",
-      descricao: "Envio automático de resumos, alertas e comunicados via WhatsApp pelo Focus AI.",
+      descricao: "Envio automático de resumos, alertas e comunicados via WhatsApp.",
       icon: MessageSquare,
       config: ["URL da API", "Global Key", "Instância", "API Key"],
     },
@@ -905,7 +905,7 @@ function IntegrationsTab() {
     {
       key: "openclaw",
       nome: "OpenClaw Gateway",
-      descricao: "Motor de IA e automação inteligente (Focus AI).",
+      descricao: "Gateway de automação e integrações operacionais.",
       icon: Zap,
       config: ["URL", "Token", "Ambiente"],
     },
@@ -962,7 +962,7 @@ function IntegrationsTab() {
                     } else if (int.key === "calendar") {
                       setActiveIntegration("calendar");
                     } else if (getStatus(int.key) === "ativo") {
-                      toast.info("Use a aba Focus AI para gerenciar o OpenClaw");
+                      toast.info("Configuração avançada será habilitada em breve");
                     } else {
                       toast.info(`Configuração de ${int.nome} será habilitada em breve`);
                     }
