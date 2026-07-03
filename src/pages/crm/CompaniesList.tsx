@@ -300,6 +300,9 @@ export default function CompaniesList() {
               Empresas sincronizadas do RD Station CRM
             </p>
           </div>
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Criar Empresa
+          </Button>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
