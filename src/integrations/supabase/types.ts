@@ -924,6 +924,7 @@ export type Database = {
           last_error: string | null
           last_full_sync_at: string | null
           pending_state: string | null
+          private_token_enc: string | null
           provider: string
           redirect_uri: string | null
           scopes: string | null
@@ -939,6 +940,7 @@ export type Database = {
           last_error?: string | null
           last_full_sync_at?: string | null
           pending_state?: string | null
+          private_token_enc?: string | null
           provider: string
           redirect_uri?: string | null
           scopes?: string | null
@@ -954,6 +956,7 @@ export type Database = {
           last_error?: string | null
           last_full_sync_at?: string | null
           pending_state?: string | null
+          private_token_enc?: string | null
           provider?: string
           redirect_uri?: string | null
           scopes?: string | null
