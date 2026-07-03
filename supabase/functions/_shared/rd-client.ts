@@ -1,13 +1,10 @@
-// Shared helpers for RD Station CRM v2 edge functions.
+// Shared helpers for RD Station CRM (v1) edge functions using Private/Instance Token.
 // - Token encryption (AES-GCM using RD_TOKEN_ENC_KEY)
-// - OAuth token refresh with rotation
-// - Authenticated fetch with retry/backoff and pagination
+// - Authenticated fetch (?token=...) with retry/backoff and pagination
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-export const RD_API_BASE = "https://api.rd.services";
-export const RD_AUTH_TOKEN_URL = `${RD_API_BASE}/auth/token`;
-export const RD_AUTH_DIALOG_URL = `${RD_API_BASE}/auth/dialog`;
+export const RD_CRM_V1_BASE = "https://crm.rdstation.com/api/v1";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,7 +68,6 @@ export async function requireAdmin(req: Request): Promise<{ userId: string } | R
 async function getCryptoKey(): Promise<CryptoKey> {
   const raw = Deno.env.get("RD_TOKEN_ENC_KEY") ?? "";
   const bytes = new TextEncoder().encode(raw);
-  // Hash to 32 bytes so key length is always valid.
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   return crypto.subtle.importKey("raw", hash, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
@@ -96,89 +92,24 @@ export async function decryptSecret(payload: string): Promise<string> {
   return new TextDecoder().decode(plain);
 }
 
-// ---------------- OAuth ----------------
+// ---------------- Private Token ----------------
 
-export function redirectUri(): string {
-  return `${requiredEnv("SUPABASE_URL")}/functions/v1/rd-oauth-callback`;
-}
-
-export async function getOAuthCredentials(svc?: SupabaseClient): Promise<{ client_id: string; client_secret: string; redirect_uri: string }> {
+export async function getPrivateToken(svc?: SupabaseClient): Promise<string> {
   const client = svc ?? serviceRoleClient();
   const { data } = await client
     .from("crm_integrations")
-    .select("client_id, client_secret_enc, redirect_uri")
+    .select("private_token_enc")
     .eq("provider", "rd_station")
     .maybeSingle();
-  const client_id = (data?.client_id as string | null) || Deno.env.get("RD_STATION_CLIENT_ID") || "";
-  let client_secret = "";
-  if (data?.client_secret_enc) {
-    try { client_secret = await decryptSecret(data.client_secret_enc as string); } catch (_) { client_secret = ""; }
+  if (data?.private_token_enc) {
+    try {
+      const tok = await decryptSecret(data.private_token_enc as string);
+      if (tok) return tok;
+    } catch (_) { /* fall through */ }
   }
-  if (!client_secret) client_secret = Deno.env.get("RD_STATION_CLIENT_SECRET") ?? "";
-  const redirect_uri = (data?.redirect_uri as string | null) || redirectUri();
-  if (!client_id) throw new Error("RD_STATION_CLIENT_ID not configured");
-  if (!client_secret) throw new Error("RD_STATION_CLIENT_SECRET not configured");
-  return { client_id, client_secret, redirect_uri };
-}
-
-export async function exchangeCode(code: string) {
-  const creds = await getOAuthCredentials();
-  const res = await fetch(RD_AUTH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: creds.client_id,
-      client_secret: creds.client_secret,
-      code,
-      redirect_uri: creds.redirect_uri,
-    }),
-  });
-  if (!res.ok) throw new Error(`token exchange failed: ${res.status} ${await res.text()}`);
-  return res.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>;
-}
-
-export async function refreshTokens(refreshToken: string) {
-  const creds = await getOAuthCredentials();
-  const res = await fetch(RD_AUTH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: creds.client_id,
-      client_secret: creds.client_secret,
-      refresh_token: refreshToken,
-    }),
-  });
-  if (!res.ok) throw new Error(`refresh failed: ${res.status} ${await res.text()}`);
-  return res.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>;
-}
-
-export async function getAccessToken(svc: SupabaseClient): Promise<string> {
-  const { data, error } = await svc
-    .from("crm_external_accounts")
-    .select("id, access_token_enc, refresh_token_enc, expires_at")
-    .eq("provider", "rd_station")
-    .maybeSingle();
-  if (error) throw error;
-  if (!data?.access_token_enc || !data?.refresh_token_enc) throw new Error("rd_not_connected");
-
-  const expiresAt = data.expires_at ? new Date(data.expires_at as string).getTime() : 0;
-  const needsRefresh = expiresAt - Date.now() < 5 * 60 * 1000;
-  if (!needsRefresh) return decryptSecret(data.access_token_enc);
-
-  const currentRefresh = await decryptSecret(data.refresh_token_enc);
-  const fresh = await refreshTokens(currentRefresh);
-  const newAccess = await encryptSecret(fresh.access_token);
-  const newRefresh = await encryptSecret(fresh.refresh_token);
-  const newExpiresAt = new Date(Date.now() + fresh.expires_in * 1000).toISOString();
-  await svc
-    .from("crm_external_accounts")
-    .update({
-      access_token_enc: newAccess,
-      refresh_token_enc: newRefresh,
-      expires_at: newExpiresAt,
-    })
-    .eq("provider", "rd_station");
-  return fresh.access_token;
+  const envTok = Deno.env.get("RD_STATION_PRIVATE_TOKEN") ?? "";
+  if (envTok) return envTok;
+  throw new Error("rd_private_token_not_configured");
 }
 
 // ---------------- HTTP wrapper ----------------
@@ -189,15 +120,16 @@ export async function rdFetch(
   init: RequestInit = {},
   attempt = 0,
 ): Promise<Response> {
-  const token = await getAccessToken(svc);
-  const url = path.startsWith("http") ? path : `${RD_API_BASE}${path}`;
-  const res = await fetch(url, {
+  const token = await getPrivateToken(svc);
+  const base = path.startsWith("http") ? path : `${RD_CRM_V1_BASE}${path}`;
+  const url = new URL(base);
+  url.searchParams.set("token", token);
+  const res = await fetch(url.toString(), {
     ...init,
     headers: {
-      ...(init.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
       Accept: "application/json",
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.headers ?? {}),
     },
   });
   if ((res.status === 429 || res.status >= 500) && attempt < 4) {
@@ -207,6 +139,9 @@ export async function rdFetch(
   }
   return res;
 }
+
+// ---------------- Pagination (CRM v1) ----------------
+// v1 returns `{ <resource>: [...], has_more, total, page, limit }` on most endpoints.
 
 export async function* rdPaginate<T = any>(
   svc: SupabaseClient,
@@ -224,10 +159,20 @@ export async function* rdPaginate<T = any>(
       throw new Error(`GET ${path} failed: ${res.status} ${text.slice(0, 500)}`);
     }
     const body = await res.json();
-    const items: T[] = itemsKey ? body[itemsKey] : (Array.isArray(body) ? body : body.deals ?? body.contacts ?? body.organizations ?? body.tasks ?? body.users ?? body.pipelines ?? body.stages ?? body.custom_fields ?? body.sources ?? body.lost_reasons ?? body.products ?? []);
+    let items: T[] | undefined;
+    if (itemsKey && Array.isArray(body?.[itemsKey])) {
+      items = body[itemsKey];
+    } else if (Array.isArray(body)) {
+      items = body as T[];
+    } else if (body && typeof body === "object") {
+      // Auto-detect the first array field in the response.
+      const firstArrayKey = Object.keys(body).find((k) => Array.isArray((body as any)[k]));
+      if (firstArrayKey) items = (body as any)[firstArrayKey];
+    }
     if (!items || items.length === 0) return;
     yield items;
-    if (items.length < limit) return;
+    const hasMore = typeof body?.has_more === "boolean" ? body.has_more : items.length >= limit;
+    if (!hasMore) return;
     page += 1;
     if (page > 500) return; // hard safety
   }
