@@ -164,7 +164,6 @@ function maskPhone(v: string): string {
   return out;
 }
 
-type PhoneEntry = { tipo: "Comercial" | "Residencial" | "Celular"; numero: string };
 const PHONE_TYPES: PhoneEntry["tipo"][] = ["Comercial", "Residencial", "Celular"];
 
 type SortDir = "asc" | "desc";
