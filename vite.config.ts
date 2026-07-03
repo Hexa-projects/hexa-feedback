@@ -85,13 +85,15 @@ export default defineConfig(({ mode }) => ({
           /^\/realtime\/v1/,
         ],
         runtimeCaching: [
-          // SPA navigations: network-first with offline fallback
+          // SPA navigations: always try network first, short timeout, then cache.
+          // Ensures a freshly-deployed index.html is fetched instead of a stale one.
           {
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
               cacheName: "hexaos-pages",
               cacheableResponse: { statuses: [200] },
+              networkTimeoutSeconds: 3,
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 },
             },
           },
