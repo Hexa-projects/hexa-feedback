@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
 
 // Taxonomia de Equipamentos (Categoria → Marca → Modelos)
 const EQUIPMENT_CATEGORIES: { sigla: string; nome: string }[] = [
