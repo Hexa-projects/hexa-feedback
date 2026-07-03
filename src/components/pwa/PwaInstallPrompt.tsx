@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
-import { Link } from "react-router-dom";
 
 /**
  * Discreet post-login install banner. Only renders when the browser supports
@@ -60,12 +59,12 @@ export default function PwaInstallPrompt() {
             >
               Agora não
             </Button>
-            <Link
-              to="/pwa"
+            <a
+              href="/pwa"
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1"
             >
               Saiba mais
-            </Link>
+            </a>
           </div>
         </div>
       </div>
