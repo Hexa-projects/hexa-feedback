@@ -375,16 +375,38 @@ export default function ContactsList() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return contacts;
+    const cargoQ = filterCargo.trim().toLowerCase();
     return contacts.filter(c => {
-      return (
-        c.nome.toLowerCase().includes(q) ||
-        c.empresa.toLowerCase().includes(q) ||
-        c.emails.some(e => e.toLowerCase().includes(q)) ||
-        c.telefones.some(t => t.toLowerCase().includes(q))
-      );
+      if (q) {
+        const hit =
+          c.nome.toLowerCase().includes(q) ||
+          c.empresa.toLowerCase().includes(q) ||
+          (c.cargo || "").toLowerCase().includes(q) ||
+          c.emails.some(e => e.toLowerCase().includes(q)) ||
+          c.telefones.some(t => t.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      if (filterEmpresa !== "all") {
+        if (filterEmpresa === "__none__") {
+          if (c.empresa.trim()) return false;
+        } else if (c.empresa !== filterEmpresa) return false;
+      }
+      if (cargoQ && !(c.cargo || "").toLowerCase().includes(cargoQ)) return false;
+      if (filterEmail === "with" && c.emails.length === 0) return false;
+      if (filterEmail === "without" && c.emails.length > 0) return false;
+      if (filterPhone === "with" && c.telefones.length === 0) return false;
+      if (filterPhone === "without" && c.telefones.length > 0) return false;
+      if (filterPhoneType !== "any") {
+        const hasType = (c.phonesData || []).some(p => p.tipo === filterPhoneType);
+        if (!hasType) return false;
+      }
+      if (filterDeals === "none" && c.negociacoes > 0) return false;
+      if (filterDeals === "with" && c.negociacoes < 1) return false;
+      if (filterDeals === "gte3" && c.negociacoes < 3) return false;
+      if (filterDeals === "gte5" && c.negociacoes < 5) return false;
+      return true;
     });
-  }, [contacts, search]);
+  }, [contacts, search, filterEmpresa, filterCargo, filterEmail, filterPhone, filterPhoneType, filterDeals]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
