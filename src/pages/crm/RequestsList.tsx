@@ -1371,35 +1371,43 @@ export default function RequestsList() {
                   ) : (
                     <Field label="Nome">
                       <Popover open={contactOpen} onOpenChange={setContactOpen}>
-                        <PopoverTrigger asChild>
+                        <PopoverAnchor asChild>
                           <Input
                             placeholder="Buscar contato cadastrado..."
+                            autoComplete="off"
                             value={form.cliente_nome}
-                            onFocus={() => setContactOpen(true)}
+                            onFocus={() => { if (form.cliente_nome.trim().length >= 2) setContactOpen(true); }}
                             onChange={(e) => {
                               const v = e.target.value;
-                              setContactOpen(true);
                               if (v.trim() === "") {
+                                setContactOpen(false);
                                 setForm((f) => ({ ...f, cliente_nome: "", cpf: "", telefone: "", email_1: "" }));
                               } else {
-                                setForm({ ...form, cliente_nome: v });
+                                setContactOpen(v.trim().length >= 2);
+                                setForm((f) => ({ ...f, cliente_nome: v }));
                               }
                             }}
                           />
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        </PopoverAnchor>
+                        <PopoverContent
+                          className="p-0 w-[--radix-popover-trigger-width]"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                          onInteractOutside={(e) => {
+                            const t = e.target as HTMLElement;
+                            if (t?.tagName === "INPUT") e.preventDefault();
+                          }}
+                        >
                           <Command shouldFilter={false}>
                             <CommandList>
-                              {form.cliente_nome.trim().length < 2 ? (
-                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                              ) : contactSugs.length === 0 ? (
+                              {contactSugs.length === 0 ? (
                                 <CommandEmpty>Nenhum contato encontrado</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Contatos cadastrados">
                                   {contactSugs.map((s, i) => (
                                     <CommandItem
-                                      key={i}
-                                      value={s.nome}
+                                      key={`${s.nome}-${i}`}
+                                      value={`${s.nome}-${i}`}
                                       onSelect={() => {
                                         setForm((f) => ({
                                           ...f,
@@ -1409,6 +1417,7 @@ export default function RequestsList() {
                                           telefone: s.telefone || f.telefone,
                                           email_1: s.email || f.email_1,
                                         }));
+                                        setContactSugs([]);
                                         setContactOpen(false);
                                       }}
                                     >
