@@ -230,6 +230,12 @@ export default function ContactsList() {
   // filters
   const [filterOpen, setFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [filterEmpresa, setFilterEmpresa] = useState<string>("all"); // "all" | "__none__" | nome empresa
+  const [filterCargo, setFilterCargo] = useState<string>("");
+  const [filterEmail, setFilterEmail] = useState<"any" | "with" | "without">("any");
+  const [filterPhone, setFilterPhone] = useState<"any" | "with" | "without">("any");
+  const [filterPhoneType, setFilterPhoneType] = useState<"any" | "Celular" | "Comercial" | "Residencial">("any");
+  const [filterDeals, setFilterDeals] = useState<"any" | "none" | "with" | "gte3" | "gte5">("any");
 
   // pagination
   const [pageSize, setPageSize] = useState(10);
@@ -369,16 +375,38 @@ export default function ContactsList() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return contacts;
+    const cargoQ = filterCargo.trim().toLowerCase();
     return contacts.filter(c => {
-      return (
-        c.nome.toLowerCase().includes(q) ||
-        c.empresa.toLowerCase().includes(q) ||
-        c.emails.some(e => e.toLowerCase().includes(q)) ||
-        c.telefones.some(t => t.toLowerCase().includes(q))
-      );
+      if (q) {
+        const hit =
+          c.nome.toLowerCase().includes(q) ||
+          c.empresa.toLowerCase().includes(q) ||
+          (c.cargo || "").toLowerCase().includes(q) ||
+          c.emails.some(e => e.toLowerCase().includes(q)) ||
+          c.telefones.some(t => t.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      if (filterEmpresa !== "all") {
+        if (filterEmpresa === "__none__") {
+          if (c.empresa.trim()) return false;
+        } else if (c.empresa !== filterEmpresa) return false;
+      }
+      if (cargoQ && !(c.cargo || "").toLowerCase().includes(cargoQ)) return false;
+      if (filterEmail === "with" && c.emails.length === 0) return false;
+      if (filterEmail === "without" && c.emails.length > 0) return false;
+      if (filterPhone === "with" && c.telefones.length === 0) return false;
+      if (filterPhone === "without" && c.telefones.length > 0) return false;
+      if (filterPhoneType !== "any") {
+        const hasType = (c.phonesData || []).some(p => p.tipo === filterPhoneType);
+        if (!hasType) return false;
+      }
+      if (filterDeals === "none" && c.negociacoes > 0) return false;
+      if (filterDeals === "with" && c.negociacoes < 1) return false;
+      if (filterDeals === "gte3" && c.negociacoes < 3) return false;
+      if (filterDeals === "gte5" && c.negociacoes < 5) return false;
+      return true;
     });
-  }, [contacts, search]);
+  }, [contacts, search, filterEmpresa, filterCargo, filterEmail, filterPhone, filterPhoneType, filterDeals]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -398,9 +426,32 @@ export default function ContactsList() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [search, pageSize, filterEmpresa, filterCargo, filterEmail, filterPhone, filterPhoneType, filterDeals]);
 
-  const activeFilters = search.trim() ? 1 : 0;
+  const activeFilters =
+    (search.trim() ? 1 : 0) +
+    (filterEmpresa !== "all" ? 1 : 0) +
+    (filterCargo.trim() ? 1 : 0) +
+    (filterEmail !== "any" ? 1 : 0) +
+    (filterPhone !== "any" ? 1 : 0) +
+    (filterPhoneType !== "any" ? 1 : 0) +
+    (filterDeals !== "any" ? 1 : 0);
+
+  const empresaOptions = useMemo(() => {
+    const s = new Set<string>();
+    contacts.forEach(c => { if (c.empresa.trim()) s.add(c.empresa); });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [contacts]);
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setFilterEmpresa("all");
+    setFilterCargo("");
+    setFilterEmail("any");
+    setFilterPhone("any");
+    setFilterPhoneType("any");
+    setFilterDeals("any");
+  };
 
   const pageSelectedCount = pageRows.filter(r => selected.has(r.id)).length;
   const allSelected = pageRows.length > 0 && pageSelectedCount === pageRows.length;
@@ -570,23 +621,101 @@ export default function ContactsList() {
               Filtros ({activeFilters})
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80">
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Buscar</div>
-              <Input
-                placeholder="Nome, e-mail, telefone ou empresa"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                autoFocus
-              />
-              <div className="flex justify-between">
+          <PopoverContent align="start" className="w-[380px] max-h-[80vh] overflow-y-auto">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Busca livre</Label>
+                <Input
+                  placeholder="Nome, e-mail, telefone, cargo ou empresa"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Empresa</Label>
+                <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="all">Todas as empresas</SelectItem>
+                    <SelectItem value="__none__">Sem empresa vinculada</SelectItem>
+                    {empresaOptions.map(e => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Cargo contém</Label>
+                <Input
+                  placeholder="Ex: Diretor, Gerente..."
+                  value={filterCargo}
+                  onChange={e => setFilterCargo(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">E-mail</Label>
+                  <Select value={filterEmail} onValueChange={(v: any) => setFilterEmail(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      <SelectItem value="with">Com e-mail</SelectItem>
+                      <SelectItem value="without">Sem e-mail</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Telefone</Label>
+                  <Select value={filterPhone} onValueChange={(v: any) => setFilterPhone(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer</SelectItem>
+                      <SelectItem value="with">Com telefone</SelectItem>
+                      <SelectItem value="without">Sem telefone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tipo de telefone</Label>
+                <Select value={filterPhoneType} onValueChange={(v: any) => setFilterPhoneType(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Qualquer tipo</SelectItem>
+                    <SelectItem value="Celular">Celular</SelectItem>
+                    <SelectItem value="Comercial">Comercial</SelectItem>
+                    <SelectItem value="Residencial">Residencial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Negociações</Label>
+                <Select value={filterDeals} onValueChange={(v: any) => setFilterDeals(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Todas</SelectItem>
+                    <SelectItem value="none">Sem negociação</SelectItem>
+                    <SelectItem value="with">Com pelo menos 1</SelectItem>
+                    <SelectItem value="gte3">3 ou mais</SelectItem>
+                    <SelectItem value="gte5">5 ou mais</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-between pt-2 border-t">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSearch("")}
-                  disabled={!search}
+                  onClick={clearAllFilters}
+                  disabled={activeFilters === 0}
                 >
-                  Limpar
+                  Limpar tudo
                 </Button>
                 <Button size="sm" onClick={() => setFilterOpen(false)}>
                   Aplicar
