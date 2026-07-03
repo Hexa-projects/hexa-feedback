@@ -125,7 +125,9 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
     } catch {
       /* noop */
     }
-    window.location.reload();
+    clearAppShellCachesAndWorkers().finally(() => {
+      window.location.reload();
+    });
   };
 
   render() {
