@@ -269,8 +269,14 @@ export default function ContactsList() {
 
   const activeFilters = search.trim() ? 1 : 0;
 
-  const allSelected =
-    pageRows.length > 0 && pageRows.every(r => selected.has(r.id));
+  const pageSelectedCount = pageRows.filter(r => selected.has(r.id)).length;
+  const allSelected = pageRows.length > 0 && pageSelectedCount === pageRows.length;
+  const someSelected = pageSelectedCount > 0 && pageSelectedCount < pageRows.length;
+  const headerCheckboxState: boolean | "indeterminate" = allSelected
+    ? true
+    : someSelected
+      ? "indeterminate"
+      : false;
   const toggleAll = () => {
     const next = new Set(selected);
     if (allSelected) pageRows.forEach(r => next.delete(r.id));
@@ -283,6 +289,13 @@ export default function ContactsList() {
     else next.add(id);
     setSelected(next);
   };
+  const clearSelection = () => setSelected(new Set());
+  const selectAllFiltered = () => {
+    setSelected(new Set(sorted.map(r => r.id)));
+  };
+  const selectedCount = selected.size;
+  const allFilteredSelected =
+    sorted.length > 0 && sorted.every(r => selected.has(r.id));
 
   const pageNumbers = useMemo(() => buildPages(currentPage, totalPages), [
     currentPage,
