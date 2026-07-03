@@ -2111,22 +2111,29 @@ export default function RequestsList() {
         </DialogContent>
       </Dialog>
 
-      {/* Sugerir cadastro de contato (CPF não encontrado) */}
+      {/* Sugerir cadastro (CPF → contato / CNPJ → empresa) */}
       <Dialog open={suggestOpen} onOpenChange={setSuggestOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cadastrar novo contato</DialogTitle>
+            <DialogTitle>
+              {suggestKind === "empresa" ? "Cadastrar nova empresa" : "Cadastrar novo contato"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <p className="text-muted-foreground">
-              O CPF informado não está cadastrado no sistema. Deseja adicionar este cliente à sua lista de contatos?
+              {suggestKind === "empresa"
+                ? "O CNPJ informado não está cadastrado no sistema. Deseja adicionar esta empresa à sua lista de empresas?"
+                : "O CPF informado não está cadastrado no sistema. Deseja adicionar este cliente à sua lista de contatos?"}
             </p>
             {suggestData && (
               <div className="rounded-md border bg-muted/40 p-3 space-y-1">
-                <div><span className="text-muted-foreground">Nome:</span> <strong>{suggestData.nome || "—"}</strong></div>
-                <div><span className="text-muted-foreground">CPF:</span> <strong>{suggestData.cpf || "—"}</strong></div>
+                <div><span className="text-muted-foreground">{suggestKind === "empresa" ? "Empresa" : "Nome"}:</span> <strong>{suggestData.nome || "—"}</strong></div>
+                <div><span className="text-muted-foreground">{suggestKind === "empresa" ? "CNPJ" : "CPF"}:</span> <strong>{suggestData.doc || "—"}</strong></div>
                 <div><span className="text-muted-foreground">Telefone:</span> <strong>{suggestData.telefone || "—"}</strong></div>
                 <div><span className="text-muted-foreground">E-mail:</span> <strong>{suggestData.email || "—"}</strong></div>
+                {suggestKind === "empresa" && suggestData.endereco && (
+                  <div><span className="text-muted-foreground">Endereço:</span> <strong>{suggestData.endereco}</strong></div>
+                )}
               </div>
             )}
           </div>
@@ -2136,23 +2143,45 @@ export default function RequestsList() {
             </Button>
             <Button
               onClick={() => {
-                if (suggestData) {
+                if (!suggestData) return;
+                if (suggestKind === "empresa") {
+                  setCompanyInitial({
+                    name: suggestData.nome || "",
+                    cnpj: suggestData.doc || "",
+                    address: suggestData.endereco || "",
+                    tipo: "",
+                    segment: "",
+                    url: "",
+                    summary: "",
+                  });
+                  setSuggestOpen(false);
+                  setCreateCompanyOpen(true);
+                } else {
                   setContactForm({
                     nome: suggestData.nome || "",
-                    cpf: suggestData.cpf || "",
+                    cpf: suggestData.doc || "",
                     telefone: suggestData.telefone || "",
                     email: suggestData.email || "",
                   });
+                  setSuggestOpen(false);
+                  setCreateContactOpen(true);
                 }
-                setSuggestOpen(false);
-                setCreateContactOpen(true);
               }}
             >
-              Cadastrar contato
+              {suggestKind === "empresa" ? "Cadastrar empresa" : "Cadastrar contato"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateCompanySheet
+        open={createCompanyOpen}
+        onOpenChange={setCreateCompanyOpen}
+        mode="create"
+        initial={companyInitial || undefined}
+        onCreated={() => setCompanyInitial(null)}
+      />
+
 
       {/* Criar Contato pré-preenchido */}
       <Dialog open={createContactOpen} onOpenChange={setCreateContactOpen}>
