@@ -248,7 +248,11 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
       if (to === "/home") return pathname === "/home";
       return pathname === to || pathname.startsWith(to + "/");
     };
-    const visibleChildren = item.children.filter(c => !c.roles || c.roles.includes(role));
+    const visibleChildren = item.children.filter(c => {
+      if (c.roles && !c.roles.includes(role)) return false;
+      if (c.setores && !(setor && c.setores.includes(setor))) return false;
+      return true;
+    });
     const activeChildTo = visibleChildren
       .filter(c => !c.wip && matchesChild(c.to))
       .sort((a, b) => b.to.length - a.to.length)[0]?.to;
