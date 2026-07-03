@@ -126,16 +126,6 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    id: "nucleo_ai",
-    label: "Núcleo AI",
-    icon: Brain,
-    roles: ["admin"],
-    children: [
-      { to: "/focus-ai", label: "The Swarm", icon: Brain },
-      { to: "/automations", label: "Regras & MS Teams", icon: Zap },
-    ],
-  },
-  {
     id: "auditoria",
     label: "Auditoria Operacional",
     icon: ClipboardList,
