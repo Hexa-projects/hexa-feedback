@@ -104,7 +104,17 @@ export default function Login() {
             </Button>
           </div>
 
-          <div className="space-y-3">
+          <form
+            className="space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (mode === "login") {
+                handleLogin();
+              } else {
+                handleRegister();
+              }
+            }}
+          >
             {mode === "register" && (
               <div>
                 <Label>Nome completo</Label>
@@ -125,10 +135,10 @@ export default function Login() {
             {error && <p className="text-sm text-destructive">{error}</p>}
             {successMsg && <p className="text-sm text-primary">{successMsg}</p>}
 
-            <Button className="w-full" onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading}>
+            <Button className="w-full" type="submit" disabled={loading}>
               {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Cadastrar"}
             </Button>
-          </div>
+          </form>
         </div>
 
         <p className="text-center text-xs text-white/30">
