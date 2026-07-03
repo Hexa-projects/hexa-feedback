@@ -772,9 +772,27 @@ export default function RequestsList() {
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Kpi label="Total" value={kpis.total} />
-          <Kpi label="Pendentes" value={kpis.pendentes} tone="amber" />
-          <Kpi label="Aprovadas" value={kpis.aprovadas} tone="emerald" />
-          <Kpi label="Reprovadas" value={kpis.reprovadas} tone="rose" />
+          <Kpi
+            label="Pendentes"
+            value={kpis.pendentes}
+            tone="amber"
+            active={filterStatus === "pendente"}
+            onClick={() => setFilterStatus(filterStatus === "pendente" ? "all" : "pendente")}
+          />
+          <Kpi
+            label="Aprovadas"
+            value={kpis.aprovadas}
+            tone="emerald"
+            active={filterStatus === "aprovada"}
+            onClick={() => setFilterStatus(filterStatus === "aprovada" ? "all" : "aprovada")}
+          />
+          <Kpi
+            label="Reprovadas"
+            value={kpis.reprovadas}
+            tone="rose"
+            active={filterStatus === "reprovada"}
+            onClick={() => setFilterStatus(filterStatus === "reprovada" ? "all" : "reprovada")}
+          />
           <Kpi
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -1685,7 +1703,19 @@ function ReadField({
   );
 }
 
-function Kpi({ label, value, tone = "default" }: { label: string; value: any; tone?: string }) {
+function Kpi({
+  label,
+  value,
+  tone = "default",
+  active = false,
+  onClick,
+}: {
+  label: string;
+  value: any;
+  tone?: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   const tones: Record<string, string> = {
     default: "text-foreground",
     amber: "text-amber-600",
@@ -1693,8 +1723,25 @@ function Kpi({ label, value, tone = "default" }: { label: string; value: any; to
     cyan: "text-cyan-600",
     rose: "text-rose-600",
   };
+  const clickable = typeof onClick === "function";
   return (
-    <Card>
+    <Card
+      onClick={onClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (!clickable) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={cn(
+        "transition-all",
+        clickable && "cursor-pointer hover:border-primary/50",
+        active && "border-primary ring-2 ring-primary/40 bg-primary/5",
+      )}
+    >
       <CardContent className="p-4">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className={cn("text-2xl font-bold mt-1", tones[tone] || tones.default)}>{value}</div>
