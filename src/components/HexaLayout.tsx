@@ -160,7 +160,7 @@ const SETOR_GROUPS: Record<string, string[]> = {
   Financeiro: ["dashboard", "financeiro", "auditoria"],
   "Logística": ["dashboard", "operacoes", "qualidade", "estoque", "auditoria"],
   Administrativo: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
