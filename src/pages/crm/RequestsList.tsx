@@ -1216,7 +1216,7 @@ export default function RequestsList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <Field label="Nome da empresa *">
-                      <Popover open={companyOpen && companySugs.length > 0 || (form.empresa.trim().length >= 2 && companyOpen)} onOpenChange={setCompanyOpen}>
+                      <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
                         <PopoverTrigger asChild>
                           <Input
                             value={form.empresa}
