@@ -16,6 +16,7 @@ import PwaUpdatePrompt from "./components/pwa/PwaUpdatePrompt";
 // Lazy-loaded pages
 const HomePage = lazy(() => import("./pages/HomePage"));
 const LeadsList = lazy(() => import("./pages/crm/LeadsList"));
+const ContactsList = lazy(() => import("./pages/crm/ContactsList"));
 const LeadForm = lazy(() => import("./pages/crm/LeadForm"));
 const LeadDetail = lazy(() => import("./pages/crm/LeadDetail"));
 const KanbanFunnel = lazy(() => import("./pages/crm/KanbanFunnel"));
@@ -105,7 +106,8 @@ const AppRoutes = () => (
       <Route path="/executive" element={<PrivateRoute><ExecutiveDashboard /></PrivateRoute>} />
 
       {/* CRM */}
-      <Route path="/crm" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
+      <Route path="/crm" element={<PrivateRoute><ContactsList /></PrivateRoute>} />
+      <Route path="/crm/leads" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
       <Route path="/crm/new" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
       <Route path="/crm/kanban" element={<PrivateRoute><KanbanFunnel /></PrivateRoute>} />
       <Route path="/crm/proposals" element={<PrivateRoute><ProposalsList /></PrivateRoute>} />
