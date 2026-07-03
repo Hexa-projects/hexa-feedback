@@ -83,13 +83,14 @@ function isValidCnpj(cnpj: string): boolean {
 
 export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Props) {
   const [name, setName] = useState("");
+  const [tipo, setTipo] = useState("");
   const [segment, setSegment] = useState("");
   const [url, setUrl] = useState("");
   const [summary, setSummary] = useState("");
   const [address, setAddress] = useState("");
   const [cnpj, setCnpj] = useState("");
-  const [cnpjAddress, setCnpjAddress] = useState("");
   const [nameError, setNameError] = useState(false);
+  const [tipoError, setTipoError] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
