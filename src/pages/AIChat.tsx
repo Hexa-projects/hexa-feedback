@@ -172,7 +172,7 @@ export default function AIChat() {
     },
     focus: {
       icon: Brain,
-      label: "Focus AI",
+      label: "IA Operacional",
       sublabel: "OpenClaw · Análise autônoma",
       color: "text-hexa-amber-dark",
       bg: "bg-hexa-amber/10",
@@ -182,7 +182,7 @@ export default function AIChat() {
 
   const currentMode = modeConfig[mode];
   const agentName = mode === "focus"
-    ? agents.find(a => a.id === selectedAgent)?.nome || "Focus AI Geral"
+    ? agents.find(a => a.id === selectedAgent)?.nome || "IA Operacional"
     : "Assistente IA";
 
   return (
@@ -313,7 +313,7 @@ export default function AIChat() {
                   onChange={e => setInput(e.target.value)}
                   placeholder={mode === "assistant"
                     ? "Pergunte algo ao Assistente IA..."
-                    : "Consulte o Focus AI sobre dados e operações..."}
+                    : "Consulte a IA Operacional sobre dados e operações..."}
                   className="min-h-[44px] max-h-32 resize-none"
                   onKeyDown={e => {
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }

@@ -784,7 +784,7 @@ export default function CorporateChannels() {
                           <div className="flex-1 min-w-0">
                             {!compact && (
                               <div className="flex items-baseline gap-2 mb-0.5">
-                                <span className={`text-sm font-semibold ${isMe ? "text-primary" : ""}`}>{m.is_ai ? "Focus AI" : (m.profiles?.nome || "Usuário")}</span>
+                                <span className={`text-sm font-semibold ${isMe ? "text-primary" : ""}`}>{m.is_ai ? "IA Operacional" : (m.profiles?.nome || "Usuário")}</span>
                                 <span className="text-[10px] text-muted-foreground">{new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
                               </div>
                             )}

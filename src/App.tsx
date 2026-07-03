@@ -48,12 +48,12 @@ const ProjectForm = lazy(() => import("./pages/projects/ProjectForm"));
 const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
-const FocusAI = lazy(() => import("./pages/FocusAI"));
+
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const ExecutiveDashboard = lazy(() => import("./pages/ExecutiveDashboard"));
-const AutomationsPage = lazy(() => import("./pages/AutomationsPage"));
+
 const GargalosMap = lazy(() => import("./pages/GargalosMap"));
 const DataCollection = lazy(() => import("./pages/DataCollection"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
@@ -148,9 +148,9 @@ const AppRoutes = () => (
       {/* Financeiro */}
       <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
 
-      {/* NÚCLEO AI */}
-      <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
-      <Route path="/automations" element={<PrivateRoute><AutomationsPage /></PrivateRoute>} />
+      {/* Legacy AI routes → home */}
+      <Route path="/focus-ai" element={<Navigate to="/home" replace />} />
+      <Route path="/automations" element={<Navigate to="/home" replace />} />
 
       {/* AUDITORIA OPERACIONAL */}
       <Route path="/gargalos" element={<PrivateRoute><GargalosMap /></PrivateRoute>} />
@@ -173,9 +173,9 @@ const AppRoutes = () => (
       <Route path="/dashboard" element={<Navigate to="/reports" replace />} />
 
       {/* Removed routes redirect to home */}
-      <Route path="/agentes" element={<Navigate to="/focus-ai" replace />} />
-      <Route path="/ops" element={<Navigate to="/focus-ai" replace />} />
-      <Route path="/openclaw/*" element={<Navigate to="/focus-ai" replace />} />
+      <Route path="/agentes" element={<Navigate to="/home" replace />} />
+      <Route path="/ops" element={<Navigate to="/home" replace />} />
+      <Route path="/openclaw/*" element={<Navigate to="/home" replace />} />
       <Route path="/api-docs" element={<Navigate to="/settings" replace />} />
       <Route path="/playbook" element={<Navigate to="/crm" replace />} />
       <Route path="/tools" element={<Navigate to="/coleta" replace />} />
