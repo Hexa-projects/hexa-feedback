@@ -159,17 +159,21 @@ export async function registerPwa(): Promise<void> {
     updateServiceWorker = registerSW({
       immediate: true,
       onNeedRefresh() {
+        console.info("[pwa] ✨ nova versão encontrada");
         flagUpdateAvailable();
       },
       onOfflineReady() {
+        console.info("[pwa] modo offline pronto");
         state.offlineReady = true;
         emit();
       },
-      onRegisteredSW(_swUrl, registration) {
+      onRegisteredSW(swUrl, registration) {
         swRegistration = registration;
+        console.info("[pwa] service worker registrado:", swUrl);
         if (!registration) return;
 
         if (registration.waiting) {
+          console.info("[pwa] atualização pendente detectada no registro");
           flagUpdateAvailable();
         }
 
@@ -178,7 +182,11 @@ export async function registerPwa(): Promise<void> {
           if (!worker) return;
           worker.addEventListener("statechange", () => {
             if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              console.info("[pwa] nova versão instalada e aguardando ativação");
               flagUpdateAvailable();
+            }
+            if (worker.state === "activated") {
+              console.info("[pwa] atualização aplicada");
             }
           });
         });
