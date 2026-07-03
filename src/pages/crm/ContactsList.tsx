@@ -36,6 +36,9 @@ import {
   Check,
   ChevronsUpDown,
   Loader2,
+  Phone,
+  Plus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -147,15 +150,17 @@ const PAGE_SIZES = [10, 25, 50, 100];
 
 function maskPhone(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 10) {
-    return d
-      .replace(/^(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  }
-  return d
-    .replace(/^(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2");
+  if (!d) return "";
+  let out = "+55";
+  if (d.length > 0) out += " (" + d.slice(0, 2);
+  if (d.length >= 2) out += ")";
+  if (d.length > 2) out += " " + d.slice(2, 7);
+  if (d.length > 7) out += "-" + d.slice(7, 11);
+  return out;
 }
+
+type PhoneEntry = { tipo: "Comercial" | "Residencial" | "Celular"; numero: string };
+const PHONE_TYPES: PhoneEntry["tipo"][] = ["Comercial", "Residencial", "Celular"];
 
 type SortDir = "asc" | "desc";
 
@@ -177,11 +182,14 @@ export default function ContactsList() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nome: "",
-    empresa: "",
-    email: "",
-    telefone: "",
     cargo: "",
+    whatsapp: "",
+    empresa: "",
   });
+  const [phones, setPhones] = useState<PhoneEntry[]>([
+    { tipo: "Celular", numero: "" },
+  ]);
+  const [emails, setEmails] = useState<string[]>([""]);
   const [nomeError, setNomeError] = useState(false);
   const [companyPopoverOpen, setCompanyPopoverOpen] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
@@ -252,6 +260,13 @@ export default function ContactsList() {
     totalPages,
   ]);
 
+  const resetForm = () => {
+    setForm({ nome: "", cargo: "", whatsapp: "", empresa: "" });
+    setPhones([{ tipo: "Celular", numero: "" }]);
+    setEmails([""]);
+    setNomeError(false);
+  };
+
   const handleCreate = () => {
     if (!form.nome.trim()) {
       setNomeError(true);
@@ -259,18 +274,19 @@ export default function ContactsList() {
     }
     setSaving(true);
     setTimeout(() => {
+      const cleanEmails = emails.map(e => e.trim()).filter(Boolean);
+      const cleanPhones = phones.map(p => p.numero.trim()).filter(Boolean);
       const newC: Contact = {
         id: `local-${Date.now()}`,
         nome: form.nome.trim(),
         empresa: form.empresa || "",
-        emails: form.email ? [form.email] : [],
-        telefones: form.telefone ? [form.telefone] : [],
+        emails: cleanEmails,
+        telefones: cleanPhones,
         cargo: form.cargo || "",
         negociacoes: 0,
       };
       setContacts(prev => [newC, ...prev]);
-      setForm({ nome: "", empresa: "", email: "", telefone: "", cargo: "" });
-      setNomeError(false);
+      resetForm();
       setSaving(false);
       setCreateOpen(false);
       toast.success("Contato criado com sucesso");
@@ -488,20 +504,28 @@ export default function ContactsList() {
       </div>
 
       {/* Modal Criar contato */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog
+        open={createOpen}
+        onOpenChange={o => {
+          setCreateOpen(o);
+          if (!o) resetForm();
+        }}
+      >
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Criar contato</DialogTitle>
+            <DialogTitle>Criar Contato</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Nome */}
             <div className="space-y-2">
               <Label htmlFor="ct-nome">
                 Nome <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="ct-nome"
-                placeholder="Digite o nome"
+                placeholder="Digite o nome do contato"
                 value={form.nome}
+                maxLength={100}
                 onChange={e => {
                   setForm({ ...form, nome: e.target.value });
                   if (e.target.value.trim()) setNomeError(false);
@@ -518,8 +542,148 @@ export default function ContactsList() {
               )}
             </div>
 
+            {/* Cargo */}
             <div className="space-y-2">
-              <Label>Empresa</Label>
+              <Label htmlFor="ct-cargo">Cargo</Label>
+              <Input
+                id="ct-cargo"
+                placeholder="Digite o cargo do contato"
+                value={form.cargo}
+                maxLength={100}
+                onChange={e => setForm({ ...form, cargo: e.target.value })}
+              />
+            </div>
+
+            {/* WhatsApp */}
+            <div className="space-y-2">
+              <Label htmlFor="ct-whatsapp">Nome de usuário no WhatsApp</Label>
+              <Input
+                id="ct-whatsapp"
+                placeholder="@"
+                value={form.whatsapp}
+                maxLength={50}
+                onChange={e => setForm({ ...form, whatsapp: e.target.value })}
+              />
+            </div>
+
+            {/* Telefones */}
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <div className="space-y-2">
+                {phones.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Select
+                      value={p.tipo}
+                      onValueChange={v =>
+                        setPhones(prev =>
+                          prev.map((x, ix) =>
+                            ix === i ? { ...x, tipo: v as PhoneEntry["tipo"] } : x,
+                          ),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-[150px]">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <SelectValue />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PHONE_TYPES.map(t => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="+55 (00) 00000-0000"
+                      value={p.numero}
+                      inputMode="tel"
+                      onChange={e =>
+                        setPhones(prev =>
+                          prev.map((x, ix) =>
+                            ix === i
+                              ? { ...x, numero: maskPhone(e.target.value) }
+                              : x,
+                          ),
+                        )
+                      }
+                    />
+                    {phones.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remover telefone"
+                        onClick={() =>
+                          setPhones(prev => prev.filter((_, ix) => ix !== i))
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                onClick={() =>
+                  setPhones(prev => [...prev, { tipo: "Celular", numero: "" }])
+                }
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar telefone
+              </button>
+            </div>
+
+            {/* E-mails */}
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <div className="space-y-2">
+                {emails.map((em, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      type="email"
+                      placeholder="seunome@email.com"
+                      value={em}
+                      maxLength={255}
+                      onChange={e =>
+                        setEmails(prev =>
+                          prev.map((x, ix) => (ix === i ? e.target.value : x)),
+                        )
+                      }
+                    />
+                    {emails.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remover e-mail"
+                        onClick={() =>
+                          setEmails(prev => prev.filter((_, ix) => ix !== i))
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                onClick={() => setEmails(prev => [...prev, ""])}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar e-mail
+              </button>
+            </div>
+
+            {/* Empresa */}
+            <div className="space-y-2">
+              <Label>Empresa do contato</Label>
               <Popover
                 open={companyPopoverOpen}
                 onOpenChange={setCompanyPopoverOpen}
@@ -531,9 +695,7 @@ export default function ContactsList() {
                     className="w-full justify-between font-normal"
                   >
                     {form.empresa || (
-                      <span className="text-muted-foreground">
-                        Selecionar empresa
-                      </span>
+                      <span className="text-muted-foreground">Selecionar</span>
                     )}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -571,40 +733,14 @@ export default function ContactsList() {
               </Popover>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ct-email">E-mail</Label>
-              <Input
-                id="ct-email"
-                type="email"
-                placeholder="nome@empresa.com"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ct-telefone">Telefone</Label>
-              <Input
-                id="ct-telefone"
-                placeholder="(11) 98765-4321"
-                value={form.telefone}
-                inputMode="numeric"
-                onChange={e =>
-                  setForm({ ...form, telefone: maskPhone(e.target.value) })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ct-cargo">Cargo</Label>
-              <Input
-                id="ct-cargo"
-                placeholder="Ex.: Diretor Comercial"
-                value={form.cargo}
-                onChange={e => setForm({ ...form, cargo: e.target.value })}
-              />
+            {/* Campos personalizados */}
+            <div className="pt-2">
+              <div className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Campos personalizados
+              </div>
             </div>
           </div>
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -615,7 +751,7 @@ export default function ContactsList() {
             </Button>
             <Button onClick={handleCreate} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Criar contato
+              Criar Contato
             </Button>
           </DialogFooter>
         </DialogContent>
