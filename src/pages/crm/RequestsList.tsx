@@ -943,7 +943,7 @@ export default function RequestsList() {
       }
     } catch (e) { console.warn("[push] dispatch failed", e); }
 
-    // Se for CPF e o contato não estiver cadastrado, sugerir cadastro
+    // Sugestão pós-cadastro: contato (CPF) ou empresa (CNPJ) inexistentes
     if (hasCpf) {
       try {
         const phoneDigits = String(form.telefone || "").replace(/\D/g, "");
@@ -952,33 +952,25 @@ export default function RequestsList() {
         let exists = false;
         if (phoneDigits) {
           const { data: byPhone } = await (supabase as any)
-            .from("rd_contacts")
-            .select("id")
-            .ilike("phone", `%${phoneDigits}%`)
-            .limit(1);
+            .from("rd_contacts").select("id").ilike("phone", `%${phoneDigits}%`).limit(1);
           if (byPhone && byPhone.length) exists = true;
         }
         if (!exists && emailNorm) {
           const { data: byEmail } = await (supabase as any)
-            .from("rd_contacts")
-            .select("id")
-            .ilike("email", emailNorm)
-            .limit(1);
+            .from("rd_contacts").select("id").ilike("email", emailNorm).limit(1);
           if (byEmail && byEmail.length) exists = true;
         }
         if (!exists && cpfDigits) {
           const { data: byCpf } = await (supabase as any)
-            .from("commercial_requests")
-            .select("id")
-            .eq("cnpj", cpfDigits)
-            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000")
-            .limit(1);
+            .from("commercial_requests").select("id").eq("cnpj", cpfDigits)
+            .neq("id", inserted?.id || "00000000-0000-0000-0000-000000000000").limit(1);
           if (byCpf && byCpf.length) exists = true;
         }
         if (!exists) {
+          setSuggestKind("contato");
           setSuggestData({
             nome: form.cliente_nome,
-            cpf: form.cpf,
+            doc: form.cpf,
             telefone: form.telefone,
             email: form.email_1,
           });
@@ -987,7 +979,40 @@ export default function RequestsList() {
       } catch (err) {
         console.warn("[suggest-contact] check failed", err);
       }
+    } else if (hasCnpj) {
+      try {
+        const cnpjDigits = String(form.cnpj || "").replace(/\D/g, "");
+        const nameNorm = String(form.empresa || "").trim();
+        let exists = false;
+        if (cnpjDigits) {
+          // rd_organizations.cnpj pode estar formatado ou só dígitos — checa ambos
+          const { data: byCnpj } = await (supabase as any)
+            .from("rd_organizations").select("id")
+            .or(`cnpj.eq.${form.cnpj},cnpj.eq.${cnpjDigits}`)
+            .limit(1);
+          if (byCnpj && byCnpj.length) exists = true;
+        }
+        if (!exists && nameNorm) {
+          const { data: byName } = await (supabase as any)
+            .from("rd_organizations").select("id").ilike("name", nameNorm).limit(1);
+          if (byName && byName.length) exists = true;
+        }
+        if (!exists) {
+          setSuggestKind("empresa");
+          setSuggestData({
+            nome: form.empresa,
+            doc: form.cnpj,
+            telefone: form.telefone,
+            email: form.email_1,
+            endereco: enderecoAtendimento,
+          });
+          setSuggestOpen(true);
+        }
+      } catch (err) {
+        console.warn("[suggest-company] check failed", err);
+      }
     }
+
 
     setOpen(false);
     setForm({ ...emptyForm });
