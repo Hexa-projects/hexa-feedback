@@ -79,7 +79,7 @@ export default function WebhookOpsDashboard() {
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Activity className="w-5 h-5 text-primary" />
-            Centro de Operações — Focus AI
+            Centro de Operações
           </h2>
           <p className="text-xs text-muted-foreground">Pipeline de webhooks, ações e aprendizado</p>
         </div>
@@ -128,7 +128,7 @@ export default function WebhookOpsDashboard() {
         <TabsContent value="actions">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Ações propostas pelo Focus AI aguardando decisão</CardTitle>
+              <CardTitle className="text-sm">Ações propostas aguardando decisão</CardTitle>
             </CardHeader>
             <CardContent>
               {pendingActions.length === 0 ? (

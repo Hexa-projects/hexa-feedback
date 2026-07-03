@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Home, Users, Briefcase, Wrench, FlaskConical,
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
-  ChevronDown, Brain, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
-  MessageCircle, Bot, Hash, BookOpen, Zap, FileText, Target,
+  ChevronDown, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
+  MessageCircle, Bot, Hash, BookOpen, FileText, Target,
   Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -124,16 +124,6 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    id: "nucleo_ai",
-    label: "Núcleo AI",
-    icon: Brain,
-    roles: ["admin"],
-    children: [
-      { to: "/focus-ai", label: "The Swarm", icon: Brain },
-      { to: "/automations", label: "Regras & MS Teams", icon: Zap },
-    ],
-  },
-  {
     id: "auditoria",
     label: "Auditoria Operacional",
     icon: ClipboardList,
@@ -155,7 +145,7 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria", "settings"],
   gestor: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
   colaborador: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "auditoria"],
 };
@@ -168,7 +158,7 @@ const SETOR_GROUPS: Record<string, string[]> = {
   Financeiro: ["dashboard", "financeiro", "auditoria"],
   "Logística": ["dashboard", "operacoes", "qualidade", "estoque", "auditoria"],
   Administrativo: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "nucleo_ai", "auditoria", "settings"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
@@ -240,8 +230,6 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
     // Group with children
     const isAnyChildActive = item.children.some(c => isChildActive(c.to));
     const isOpen = openGroups[item.id] ?? false;
-    const isHighlighted = item.id === "nucleo_ai";
-
     return (
       <div key={item.id}>
         <button
@@ -249,12 +237,10 @@ export default function HexaLayout({ children }: { children: React.ReactNode }) 
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
             isAnyChildActive
               ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-              : isHighlighted
-              ? "text-hexa-amber hover:bg-sidebar-accent/50"
               : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           }`}
         >
-          <item.icon className={`w-4 h-4 shrink-0 ${isHighlighted ? "text-hexa-amber" : ""}`} />
+          <item.icon className="w-4 h-4 shrink-0" />
           <span className="flex-1 text-left">{item.label}</span>
           <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         </button>
