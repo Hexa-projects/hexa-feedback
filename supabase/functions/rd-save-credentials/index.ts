@@ -1,5 +1,5 @@
-// rd-save-credentials: stores RD Station OAuth client_id + client_secret in DB (encrypted).
-import { corsHeaders, jsonResponse, requireAdmin, serviceRoleClient, encryptSecret, redirectUri } from "../_shared/rd-client.ts";
+// rd-save-credentials: stores RD Station CRM Private Token in DB (encrypted).
+import { corsHeaders, jsonResponse, requireAdmin, serviceRoleClient, encryptSecret, getPrivateToken, rdFetch } from "../_shared/rd-client.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -8,38 +8,54 @@ Deno.serve(async (req) => {
     const auth = await requireAdmin(req);
     if (auth instanceof Response) return auth;
 
+    const svc = serviceRoleClient();
+
     if (req.method === "GET") {
-      const svc = serviceRoleClient();
       const { data } = await svc
         .from("crm_integrations")
-        .select("client_id, client_secret_enc, redirect_uri")
+        .select("private_token_enc, status, last_error")
         .eq("provider", "rd_station")
         .maybeSingle();
       return jsonResponse({
-        client_id: data?.client_id ?? "",
-        has_client_secret: !!data?.client_secret_enc,
-        redirect_uri: data?.redirect_uri ?? redirectUri(),
-        default_redirect_uri: redirectUri(),
+        has_private_token: !!data?.private_token_enc,
+        status: data?.status ?? "disconnected",
+        last_error: data?.last_error ?? null,
       });
     }
 
     const body = await req.json().catch(() => ({}));
-    const client_id = String(body.client_id ?? "").trim();
-    const client_secret = String(body.client_secret ?? "").trim();
-    const custom_redirect = String(body.redirect_uri ?? "").trim();
+    const private_token = String(body.private_token ?? "").trim();
+    if (!private_token) return jsonResponse({ error: "private_token_required" }, 400);
 
-    if (!client_id) return jsonResponse({ error: "client_id_required" }, 400);
-
-    const svc = serviceRoleClient();
-    const update: Record<string, unknown> = {
+    // Save encrypted token first (upsert)
+    const enc = await encryptSecret(private_token);
+    const { error: upErr } = await svc.from("crm_integrations").upsert({
       provider: "rd_station",
-      client_id,
-      redirect_uri: custom_redirect || null,
-    };
-    if (client_secret) update.client_secret_enc = await encryptSecret(client_secret);
+      private_token_enc: enc,
+      status: "pending",
+    }, { onConflict: "provider" });
+    if (upErr) return jsonResponse({ error: "save_failed", detail: upErr.message }, 500);
 
-    const { error } = await svc.from("crm_integrations").upsert(update, { onConflict: "provider" });
-    if (error) return jsonResponse({ error: "save_failed", detail: error.message }, 500);
+    // Validate token with a lightweight call (/deal_pipelines)
+    try {
+      const res = await rdFetch(svc, "/deal_pipelines?page=1&limit=1");
+      if (!res.ok) {
+        const text = await res.text();
+        await svc.from("crm_integrations").update({
+          status: "error",
+          last_error: `validation_failed: ${res.status} ${text.slice(0, 200)}`,
+        }).eq("provider", "rd_station");
+        return jsonResponse({ ok: false, error: "invalid_token", detail: text.slice(0, 200) }, 400);
+      }
+      await svc.from("crm_integrations").update({ status: "connected", last_error: null })
+        .eq("provider", "rd_station");
+    } catch (err) {
+      await svc.from("crm_integrations").update({
+        status: "error",
+        last_error: (err as Error).message?.slice(0, 200) ?? "unknown",
+      }).eq("provider", "rd_station");
+      return jsonResponse({ ok: false, error: "validation_error", detail: (err as Error).message }, 400);
+    }
 
     return jsonResponse({ ok: true });
   } catch (err) {
