@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
 
 type Contact = {
   id: string;
@@ -51,7 +52,11 @@ type Contact = {
   telefones: string[];
   cargo: string;
   negociacoes: number;
+  whatsapp?: string;
+  phonesData?: PhoneEntry[];
 };
+
+type PhoneEntry = { tipo: "Comercial" | "Residencial" | "Celular"; numero: string };
 
 const MOCK_CONTACTS: Contact[] = [
   {
@@ -159,7 +164,6 @@ function maskPhone(v: string): string {
   return out;
 }
 
-type PhoneEntry = { tipo: "Comercial" | "Residencial" | "Celular"; numero: string };
 const PHONE_TYPES: PhoneEntry["tipo"][] = ["Comercial", "Residencial", "Celular"];
 
 type SortDir = "asc" | "desc";
@@ -177,8 +181,9 @@ export default function ContactsList() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
-  // modal create
+  // modal create / edit contact
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nome: "",
@@ -193,6 +198,20 @@ export default function ContactsList() {
   const [nomeError, setNomeError] = useState(false);
   const [companyPopoverOpen, setCompanyPopoverOpen] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+
+  // company edit sheet
+  type CompanyData = {
+    name: string;
+    tipo: string;
+    segment: string;
+    url: string;
+    summary: string;
+    address: string;
+    cnpj: string;
+  };
+  const [companyEditOpen, setCompanyEditOpen] = useState(false);
+  const [companyEditName, setCompanyEditName] = useState<string>("");
+  const [companyDataMap, setCompanyDataMap] = useState<Record<string, CompanyData>>({});
 
   useEffect(() => {
     (async () => {
@@ -267,7 +286,33 @@ export default function ContactsList() {
     setNomeError(false);
   };
 
-  const handleCreate = () => {
+  const openEditContact = (c: Contact) => {
+    setEditingId(c.id);
+    setForm({
+      nome: c.nome,
+      cargo: c.cargo || "",
+      whatsapp: c.whatsapp || "",
+      empresa: c.empresa || "",
+    });
+    setPhones(
+      c.phonesData && c.phonesData.length
+        ? c.phonesData
+        : c.telefones.length
+          ? c.telefones.map(n => ({ tipo: "Celular" as const, numero: n }))
+          : [{ tipo: "Celular", numero: "" }],
+    );
+    setEmails(c.emails.length ? c.emails : [""]);
+    setNomeError(false);
+    setCreateOpen(true);
+  };
+
+  const openCreateContact = () => {
+    setEditingId(null);
+    resetForm();
+    setCreateOpen(true);
+  };
+
+  const handleSubmit = () => {
     if (!form.nome.trim()) {
       setNomeError(true);
       return;
@@ -275,22 +320,68 @@ export default function ContactsList() {
     setSaving(true);
     setTimeout(() => {
       const cleanEmails = emails.map(e => e.trim()).filter(Boolean);
-      const cleanPhones = phones.map(p => p.numero.trim()).filter(Boolean);
-      const newC: Contact = {
-        id: `local-${Date.now()}`,
-        nome: form.nome.trim(),
-        empresa: form.empresa || "",
-        emails: cleanEmails,
-        telefones: cleanPhones,
-        cargo: form.cargo || "",
-        negociacoes: 0,
-      };
-      setContacts(prev => [newC, ...prev]);
+      const cleanPhonesData = phones.filter(p => p.numero.trim());
+      const cleanPhones = cleanPhonesData.map(p => p.numero.trim());
+      if (editingId) {
+        setContacts(prev =>
+          prev.map(c =>
+            c.id === editingId
+              ? {
+                  ...c,
+                  nome: form.nome.trim(),
+                  empresa: form.empresa || "",
+                  cargo: form.cargo || "",
+                  whatsapp: form.whatsapp || "",
+                  emails: cleanEmails,
+                  telefones: cleanPhones,
+                  phonesData: cleanPhonesData,
+                }
+              : c,
+          ),
+        );
+        toast.success("Contato atualizado com sucesso");
+      } else {
+        const newC: Contact = {
+          id: `local-${Date.now()}`,
+          nome: form.nome.trim(),
+          empresa: form.empresa || "",
+          emails: cleanEmails,
+          telefones: cleanPhones,
+          phonesData: cleanPhonesData,
+          whatsapp: form.whatsapp || "",
+          cargo: form.cargo || "",
+          negociacoes: 0,
+        };
+        setContacts(prev => [newC, ...prev]);
+        toast.success("Contato criado com sucesso");
+      }
       resetForm();
+      setEditingId(null);
       setSaving(false);
       setCreateOpen(false);
-      toast.success("Contato criado com sucesso");
     }, 300);
+  };
+
+  const openEditCompany = (name: string) => {
+    if (!name) return;
+    setCompanyEditName(name);
+    setCompanyEditOpen(true);
+  };
+
+  const handleCompanySaved = (data: CompanyData) => {
+    const oldName = companyEditName;
+    const newName = data.name;
+    setCompanyDataMap(prev => {
+      const next = { ...prev };
+      if (oldName && oldName !== newName) delete next[oldName];
+      next[newName] = data;
+      return next;
+    });
+    if (oldName && oldName !== newName) {
+      setContacts(prev =>
+        prev.map(c => (c.empresa === oldName ? { ...c, empresa: newName } : c)),
+      );
+    }
   };
 
   return (
@@ -339,7 +430,7 @@ export default function ContactsList() {
         </Popover>
 
         <div className="flex items-center gap-2 ml-auto">
-          <Button onClick={() => setCreateOpen(true)}>Criar contato</Button>
+          <Button onClick={openCreateContact}>Criar contato</Button>
         </div>
       </div>
 
@@ -404,12 +495,24 @@ export default function ContactsList() {
                       <button
                         type="button"
                         className="text-primary hover:underline font-medium text-left"
-                        onClick={() => toast.info(`Contato: ${c.nome}`)}
+                        onClick={() => openEditContact(c)}
                       >
                         {c.nome}
                       </button>
                     </td>
-                    <td className="p-3">{c.empresa || ""}</td>
+                    <td className="p-3">
+                      {c.empresa ? (
+                        <button
+                          type="button"
+                          className="text-primary hover:underline text-left"
+                          onClick={() => openEditCompany(c.empresa)}
+                        >
+                          {c.empresa}
+                        </button>
+                      ) : (
+                        ""
+                      )}
+                    </td>
                     <td className="p-3 max-w-[220px]">
                       <div className="truncate" title={c.emails.join(", ")}>
                         {c.emails.join(", ")}
@@ -506,12 +609,15 @@ export default function ContactsList() {
         open={createOpen}
         onOpenChange={o => {
           setCreateOpen(o);
-          if (!o) resetForm();
+          if (!o) {
+            resetForm();
+            setEditingId(null);
+          }
         }}
       >
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Criar Contato</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Contato" : "Criar Contato"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Nome */}
@@ -741,13 +847,23 @@ export default function ContactsList() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreate} disabled={saving}>
+            <Button onClick={handleSubmit} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Criar Contato
+              {editingId ? "Salvar alterações" : "Criar Contato"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateCompanySheet
+        open={companyEditOpen}
+        onOpenChange={setCompanyEditOpen}
+        mode="edit"
+        initial={
+          companyDataMap[companyEditName] || { name: companyEditName }
+        }
+        onSaved={handleCompanySaved}
+      />
       </div>
     </HexaLayout>
   );

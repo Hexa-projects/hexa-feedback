@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,10 +30,23 @@ import {
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+type CompanyFields = {
+  name: string;
+  tipo: string;
+  segment: string;
+  url: string;
+  summary: string;
+  address: string;
+  cnpj: string;
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated?: (org: any) => void;
+  mode?: "create" | "edit";
+  initial?: Partial<CompanyFields>;
+  onSaved?: (data: CompanyFields) => void;
 };
 
 const SEGMENTOS_POR_TIPO: Record<string, string[]> = {
@@ -81,7 +94,7 @@ function isValidCnpj(cnpj: string): boolean {
   return d1 === parseInt(d[12]) && d2 === parseInt(d[13]);
 }
 
-export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Props) {
+export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode = "create", initial, onSaved }: Props) {
   const [name, setName] = useState("");
   const [tipo, setTipo] = useState("");
   const [segment, setSegment] = useState("");
@@ -113,7 +126,28 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
     setTipoError(false);
   };
 
+  useEffect(() => {
+    if (open && mode === "edit" && initial) {
+      setName(initial.name || "");
+      setTipo(initial.tipo || "");
+      setSegment(initial.segment || "");
+      setUrl(initial.url || "");
+      setSummary(initial.summary || "");
+      setAddress(initial.address || "");
+      setCnpj(initial.cnpj || "");
+      setNameError(false);
+      setTipoError(false);
+    }
+    if (!open && mode === "create") {
+      // keep create behavior as-is
+    }
+  }, [open, mode, initial]);
+
   const requestClose = () => {
+    if (mode === "edit") {
+      onOpenChange(false);
+      return;
+    }
     if (isDirty) setConfirmClose(true);
     else onOpenChange(false);
   };
@@ -166,6 +200,20 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
     if (hasError) return;
     setSaving(true);
     try {
+      if (mode === "edit") {
+        onSaved?.({
+          name: name.trim(),
+          tipo,
+          segment,
+          url,
+          summary,
+          address,
+          cnpj,
+        });
+        toast.success("Empresa atualizada com sucesso");
+        onOpenChange(false);
+        return;
+      }
       const rd_id = `local-${crypto.randomUUID()}`;
       const raw_payload: any = {
         name: name.trim(),
@@ -195,7 +243,7 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao criar empresa");
+      toast.error(err?.message || (mode === "edit" ? "Erro ao atualizar empresa" : "Erro ao criar empresa"));
     } finally {
       setSaving(false);
     }
@@ -223,7 +271,7 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
           }}
         >
           <SheetHeader className="p-6 border-b">
-            <SheetTitle>Criar Empresa</SheetTitle>
+            <SheetTitle>{mode === "edit" ? "Editar Empresa" : "Criar Empresa"}</SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -354,7 +402,7 @@ export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Pr
             </Button>
             <Button type="button" onClick={handleSubmit} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Criar Empresa
+              {mode === "edit" ? "Salvar alterações" : "Criar Empresa"}
             </Button>
           </div>
         </SheetContent>
