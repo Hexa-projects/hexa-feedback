@@ -1,8 +1,9 @@
 import { Component, type ReactNode } from "react";
 
 const RELOAD_FLAG = "hexaos.chunk-reload";
+const APP_SHELL_SW_PATH = "/sw.js";
 
-function isChunkLoadError(err: unknown): boolean {
+function isRecoverableStaleAppError(err: unknown): boolean {
   if (!err) return false;
   const anyErr = err as { name?: string; message?: string };
   const name = anyErr?.name ?? "";
@@ -12,19 +13,63 @@ function isChunkLoadError(err: unknown): boolean {
     /Loading chunk [\d]+ failed/i.test(msg) ||
     /Failed to fetch dynamically imported module/i.test(msg) ||
     /error loading dynamically imported module/i.test(msg) ||
-    /Importing a module script failed/i.test(msg)
+    /Importing a module script failed/i.test(msg) ||
+    /Cannot destructure property ['"]?basename['"]? of .*useContext\(.*\).*null/i.test(msg) ||
+    /useContext\(.*\) is null/i.test(msg)
   );
 }
 
+function isAppCache(name: string): boolean {
+  return (
+    name === "hexaos-pages" ||
+    name === "hexaos-assets" ||
+    name === "hexaos-images" ||
+    /^workbox-precache/i.test(name) ||
+    /^workbox-runtime/i.test(name)
+  );
+}
+
+async function clearAppShellCachesAndWorkers(): Promise<void> {
+  await Promise.allSettled([
+    (async () => {
+      if (!("caches" in window)) return;
+      const names = await caches.keys();
+      await Promise.allSettled(names.filter(isAppCache).map((name) => caches.delete(name)));
+    })(),
+    (async () => {
+      if (!("serviceWorker" in navigator)) return;
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.allSettled(
+        registrations
+          .filter((registration) => {
+            const scriptURL =
+              registration.active?.scriptURL ||
+              registration.waiting?.scriptURL ||
+              registration.installing?.scriptURL ||
+              "";
+            try {
+              return new URL(scriptURL).pathname === APP_SHELL_SW_PATH;
+            } catch {
+              return scriptURL.endsWith(APP_SHELL_SW_PATH);
+            }
+          })
+          .map((registration) => registration.unregister()),
+      );
+    })(),
+  ]);
+}
+
 /** Force a one-shot hard reload to fetch a fresh index.html + chunk manifest. */
-function safeReloadOnce(): boolean {
+function recoverFromStaleAppOnce(): boolean {
   try {
     if (sessionStorage.getItem(RELOAD_FLAG) === "1") return false;
     sessionStorage.setItem(RELOAD_FLAG, "1");
   } catch {
     // sessionStorage unavailable — just reload once and hope.
   }
-  window.location.reload();
+  clearAppShellCachesAndWorkers().finally(() => {
+    window.location.reload();
+  });
   return true;
 }
 
@@ -32,13 +77,16 @@ function safeReloadOnce(): boolean {
 export function armChunkRecovery(): void {
   // Global listeners for lazy-import failures that never reach an ErrorBoundary.
   window.addEventListener("error", (event) => {
-    if (isChunkLoadError(event.error) || isChunkLoadError({ message: event.message } as Error)) {
-      safeReloadOnce();
+    if (
+      isRecoverableStaleAppError(event.error) ||
+      isRecoverableStaleAppError({ message: event.message } as Error)
+    ) {
+      recoverFromStaleAppOnce();
     }
   });
   window.addEventListener("unhandledrejection", (event) => {
-    if (isChunkLoadError(event.reason)) {
-      safeReloadOnce();
+    if (isRecoverableStaleAppError(event.reason)) {
+      recoverFromStaleAppOnce();
     }
   });
 
@@ -65,8 +113,8 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
   }
 
   componentDidCatch(error: Error) {
-    if (isChunkLoadError(error)) {
-      if (safeReloadOnce()) return;
+    if (isRecoverableStaleAppError(error)) {
+      if (recoverFromStaleAppOnce()) return;
     }
     console.error("[AppErrorBoundary]", error);
   }
@@ -77,7 +125,9 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
     } catch {
       /* noop */
     }
-    window.location.reload();
+    clearAppShellCachesAndWorkers().finally(() => {
+      window.location.reload();
+    });
   };
 
   render() {

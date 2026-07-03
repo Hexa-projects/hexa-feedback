@@ -73,8 +73,8 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff,woff2}"],
         cleanupOutdatedCaches: true,
-        clientsClaim: false,
-        skipWaiting: false,
+        clientsClaim: true,
+        skipWaiting: true,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [
           /^\/~oauth/,
@@ -91,7 +91,7 @@ export default defineConfig(({ mode }) => ({
             handler: "NetworkFirst",
             options: {
               cacheName: "hexaos-pages",
-              networkTimeoutSeconds: 5,
+              cacheableResponse: { statuses: [200] },
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 },
             },
           },

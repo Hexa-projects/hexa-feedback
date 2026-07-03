@@ -41,6 +41,14 @@ export function usePwaInstall() {
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
+      if (detectInstalled()) return;
+      try {
+        if (localStorage.getItem(DISMISS_KEY) === "1") return;
+      } catch {
+        /* noop */
+      }
+      // The deferred event is only kept because PwaInstallPrompt renders a real
+      // install button that later calls event.prompt().
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
     };
