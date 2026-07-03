@@ -174,6 +174,49 @@ function maskPhone(v: string): string {
   return out;
 }
 
+// Padroniza nomes vindos do RD (remove pontuações órfãs, CAIXA ALTA e sujeira).
+function normalizeName(raw: string): string {
+  if (!raw) return "";
+  let s = String(raw).replace(/\s+/g, " ").trim();
+  s = s.replace(/^[\s.,;:•\-]+/, "").replace(/[\s.,;:•\-]+$/, "").trim();
+  s = s.replace(/\s+/g, " ");
+  if (!s) return "";
+  const letters = s.replace(/[^A-Za-zÀ-ÿ]/g, "");
+  const isAllUpper = letters.length > 1 && letters === letters.toUpperCase();
+  const isAllLower = letters.length > 1 && letters === letters.toLowerCase();
+  if (isAllUpper || isAllLower) {
+    const minor = new Set(["de", "da", "do", "das", "dos", "e", "di", "du", "van", "von", "la", "le"]);
+    s = s
+      .toLowerCase()
+      .split(" ")
+      .map((w, i) => {
+        if (!w) return w;
+        if (i > 0 && minor.has(w)) return w;
+        return w
+          .split("-")
+          .map(p => (p ? p.charAt(0).toUpperCase() + p.slice(1) : p))
+          .join("-");
+      })
+      .join(" ");
+  }
+  return s;
+}
+
+// Formata telefones para um padrão único: +55 (DD) 9XXXX-XXXX ou (DD) XXXX-XXXX
+function formatPhoneBR(raw: string): string {
+  if (!raw) return "";
+  let d = String(raw).replace(/\D/g, "");
+  if (!d) return "";
+  if (d.length > 11 && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 10) {
+    return `+55 (${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  }
+  if (d.length === 11) {
+    return `+55 (${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+  return `+${d}`;
+}
+
 const PHONE_TYPES: PhoneEntry["tipo"][] = ["Comercial", "Residencial", "Celular"];
 
 type SortDir = "asc" | "desc";
@@ -256,23 +299,38 @@ export default function ContactsList() {
       });
       const mapped: Contact[] = (cts || []).map((c: any) => {
         const raw = c.raw_payload || {};
-        const emails: string[] = Array.isArray(raw.emails)
+        const rawEmails: string[] = Array.isArray(raw.emails)
           ? raw.emails.map((e: any) => e?.email).filter(Boolean)
           : (c.email ? [c.email] : []);
-        const phonesData: PhoneEntry[] = Array.isArray(raw.phones)
+        const emails = Array.from(
+          new Set(
+            rawEmails
+              .map((e: string) => String(e).trim().toLowerCase())
+              .filter(Boolean),
+          ),
+        );
+        const rawPhones: PhoneEntry[] = Array.isArray(raw.phones)
           ? raw.phones.map((p: any) => ({
               tipo: (p?.type === "cellphone" ? "Celular" : p?.type === "work" ? "Comercial" : p?.type === "home" ? "Residencial" : "Celular") as PhoneEntry["tipo"],
-              numero: p?.phone || "",
+              numero: formatPhoneBR(p?.phone || ""),
             })).filter((p: PhoneEntry) => p.numero)
-          : (c.phone ? [{ tipo: "Celular" as const, numero: c.phone }] : []);
+          : (c.phone ? [{ tipo: "Celular" as const, numero: formatPhoneBR(c.phone) }] : []);
+        // dedup por número
+        const seen = new Set<string>();
+        const phonesData = rawPhones.filter(p => {
+          if (seen.has(p.numero)) return false;
+          seen.add(p.numero);
+          return true;
+        });
+        const nome = normalizeName(c.name) || "(sem nome)";
         return {
           id: c.id,
-          nome: c.name || "(sem nome)",
-          empresa: c.organization_rd_id ? (orgMap.get(c.organization_rd_id) || "") : "",
+          nome,
+          empresa: c.organization_rd_id ? normalizeName(orgMap.get(c.organization_rd_id) || "") : "",
           emails,
           telefones: phonesData.map(p => p.numero),
           phonesData,
-          cargo: raw.title || raw.job_title || raw.position || "",
+          cargo: normalizeName(raw.title || raw.job_title || raw.position || ""),
           negociacoes: dealCount.get(c.rd_id) || 0,
         };
       });
