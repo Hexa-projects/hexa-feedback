@@ -358,7 +358,7 @@ export default function ContactsList() {
           emails,
           telefones: phonesData.map(p => p.numero),
           phonesData,
-          cargo: normalizeName(raw.title || raw.job_title || raw.position || ""),
+          cargo: normalizeName(raw.title || raw.job_title || raw.position || cargoByContact.get(c.rd_id) || ""),
           negociacoes: dealCount.get(c.rd_id) || 0,
         };
       });
