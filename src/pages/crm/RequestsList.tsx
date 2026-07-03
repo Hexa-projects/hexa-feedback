@@ -1299,35 +1299,44 @@ export default function RequestsList() {
                   {docType === "cnpj" ? (
                     <Field label="Nome da empresa">
                       <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
-                        <PopoverTrigger asChild>
+                        <PopoverAnchor asChild>
                           <Input
                             placeholder="Buscar empresa cadastrada..."
+                            autoComplete="off"
                             value={form.empresa}
-                            onFocus={() => setCompanyOpen(true)}
+                            onFocus={() => { if (form.empresa.trim().length >= 2) setCompanyOpen(true); }}
                             onChange={(e) => {
                               const v = e.target.value;
-                              setCompanyOpen(true);
                               if (v.trim() === "") {
+                                setCompanyOpen(false);
                                 setForm((f) => ({ ...f, empresa: "", cnpj: "", telefone: "", email_1: "", contato: "" }));
                               } else {
-                                setForm({ ...form, empresa: v });
+                                setCompanyOpen(v.trim().length >= 2);
+                                setForm((f) => ({ ...f, empresa: v }));
                               }
                             }}
                           />
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                        </PopoverAnchor>
+                        <PopoverContent
+                          className="p-0 w-[--radix-popover-trigger-width]"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                          onInteractOutside={(e) => {
+                            // Don't close when interacting with the trigger input itself
+                            const t = e.target as HTMLElement;
+                            if (t?.tagName === "INPUT") e.preventDefault();
+                          }}
+                        >
                           <Command shouldFilter={false}>
                             <CommandList>
-                              {form.empresa.trim().length < 2 ? (
-                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                              ) : companySugs.length === 0 ? (
+                              {companySugs.length === 0 ? (
                                 <CommandEmpty>Nenhuma empresa encontrada</CommandEmpty>
                               ) : (
                                 <CommandGroup heading="Empresas cadastradas">
                                   {companySugs.map((s, i) => (
                                     <CommandItem
-                                      key={i}
-                                      value={s.empresa}
+                                      key={`${s.empresa}-${s.cnpj ?? i}`}
+                                      value={`${s.empresa}-${s.cnpj ?? i}`}
                                       onSelect={() => {
                                         setForm((f) => ({
                                           ...f,
@@ -1342,6 +1351,7 @@ export default function RequestsList() {
                                           cidade_empresa: s.cidade || f.cidade_empresa,
                                           uf_empresa: s.uf || f.uf_empresa,
                                         }));
+                                        setCompanySugs([]);
                                         setCompanyOpen(false);
                                       }}
                                     >
