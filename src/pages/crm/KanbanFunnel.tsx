@@ -241,13 +241,18 @@ export default function KanbanFunnel() {
 
   // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
   // Also hide leads that were soft-deleted (status = "lixeira").
-  const filteredLeads = useMemo(
-    () =>
-      leads.filter(
-        (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
-      ),
-    [leads, selectedFunnel],
-  );
+  const filteredLeads = useMemo(() => {
+    let list = leads.filter(
+      (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
+    );
+    if (ownerQuick === "mine" && user?.id) {
+      list = list.filter((l) => l.user_id === user.id);
+    } else if (selectedOwners.length > 0) {
+      const set = new Set(selectedOwners);
+      list = list.filter((l) => l.user_id && set.has(l.user_id));
+    }
+    return list;
+  }, [leads, selectedFunnel, ownerQuick, selectedOwners, user?.id]);
 
   const handleDeleteLead = async (lead: any) => {
     if (!canEditRequest) return;
