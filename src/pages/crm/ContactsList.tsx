@@ -609,7 +609,10 @@ export default function ContactsList() {
         open={createOpen}
         onOpenChange={o => {
           setCreateOpen(o);
-          if (!o) resetForm();
+          if (!o) {
+            resetForm();
+            setEditingId(null);
+          }
         }}
       >
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
