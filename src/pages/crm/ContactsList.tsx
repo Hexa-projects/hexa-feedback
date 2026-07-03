@@ -179,7 +179,8 @@ const PHONE_TYPES: PhoneEntry["tipo"][] = ["Comercial", "Residencial", "Celular"
 type SortDir = "asc" | "desc";
 
 export default function ContactsList() {
-  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
