@@ -153,8 +153,13 @@ export default function CompaniesList() {
   const [draftOwners, setDraftOwners] = useState<string[]>([]);
   const [ownerSearch, setOwnerSearch] = useState("");
 
+  // Preset filter (independent single-select dropdown)
+  const [preset, setPreset] = useState<PresetFilter>(null);
+  const [presetOpen, setPresetOpen] = useState(false);
+
   useEffect(() => {
     (async () => {
+
       const [{ data: orgData }, { data: userData }] = await Promise.all([
         supabase
           .from("rd_organizations")
