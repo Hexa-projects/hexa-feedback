@@ -733,12 +733,6 @@ export default function ContactsList() {
               </Popover>
             </div>
 
-            {/* Campos personalizados */}
-            <div className="pt-2">
-              <div className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Campos personalizados
-              </div>
-            </div>
           </div>
 
           <DialogFooter>
