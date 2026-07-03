@@ -256,10 +256,13 @@ export default function RequestsList() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectTarget, setRejectTarget] = useState<any | null>(null);
   const [suggestOpen, setSuggestOpen] = useState(false);
-  const [suggestData, setSuggestData] = useState<{ nome: string; cpf: string; telefone: string; email: string } | null>(null);
+  const [suggestKind, setSuggestKind] = useState<"contato" | "empresa">("contato");
+  const [suggestData, setSuggestData] = useState<{ nome: string; doc: string; telefone: string; email: string; endereco?: string } | null>(null);
   const [createContactOpen, setCreateContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ nome: "", cpf: "", telefone: "", email: "" });
   const [savingContact, setSavingContact] = useState(false);
+  const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
+  const [companyInitial, setCompanyInitial] = useState<any>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
