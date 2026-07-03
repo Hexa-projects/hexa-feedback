@@ -94,7 +94,7 @@ function isValidCnpj(cnpj: string): boolean {
   return d1 === parseInt(d[12]) && d2 === parseInt(d[13]);
 }
 
-export default function CreateCompanySheet({ open, onOpenChange, onCreated }: Props) {
+export default function CreateCompanySheet({ open, onOpenChange, onCreated, mode = "create", initial, onSaved }: Props) {
   const [name, setName] = useState("");
   const [tipo, setTipo] = useState("");
   const [segment, setSegment] = useState("");
