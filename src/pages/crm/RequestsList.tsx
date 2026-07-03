@@ -1369,7 +1369,7 @@ export default function RequestsList() {
                       </Popover>
                     </Field>
                   ) : (
-                    <Field label="Nome">
+                    <Field label="Nome do cliente">
                       <Popover open={contactOpen} onOpenChange={setContactOpen}>
                         <PopoverAnchor asChild>
                           <Input
@@ -1486,66 +1486,6 @@ export default function RequestsList() {
               </Section>
             )}
 
-            {form.cpf.trim() && (
-              <Section title="Dados do Cliente">
-                <Field label="Nome do cliente *">
-                  <Popover open={contactOpen} onOpenChange={setContactOpen}>
-                    <PopoverTrigger asChild>
-                      <Input
-                        value={form.cliente_nome}
-                        onFocus={() => setContactOpen(true)}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setContactOpen(true);
-                          if (v.trim() === "") {
-                            setForm((f) => ({ ...f, cliente_nome: "", cpf: "", telefone: "", email_1: "" }));
-                          } else {
-                            setForm({ ...form, cliente_nome: v });
-                          }
-                        }}
-                      />
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                      <Command shouldFilter={false}>
-                        <CommandList>
-                          {form.cliente_nome.trim().length < 2 ? (
-                            <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                          ) : contactSugs.length === 0 ? (
-                            <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
-                          ) : (
-                            <CommandGroup heading="Contatos cadastrados">
-                              {contactSugs.map((s, i) => (
-                                <CommandItem
-                                  key={i}
-                                  value={s.nome}
-                                  onSelect={() => {
-                                    setForm((f) => ({
-                                      ...f,
-                                      cliente_nome: s.nome,
-                                      cpf: s.cpf ? maskCPF(s.cpf) : f.cpf,
-                                      telefone: s.telefone || f.telefone,
-                                      email_1: s.email || f.email_1,
-                                    }));
-                                    setContactOpen(false);
-                                  }}
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{s.nome}</span>
-                                    {(s.email || s.telefone) && (
-                                      <span className="text-xs text-muted-foreground">{[s.email, s.telefone].filter(Boolean).join(" · ")}</span>
-                                    )}
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          )}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </Field>
-              </Section>
-            )}
 
             {/* Endereço de Atendimento */}
             <Section title="Endereço de Atendimento">
