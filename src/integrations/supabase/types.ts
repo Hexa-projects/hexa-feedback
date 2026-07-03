@@ -917,6 +917,7 @@ export type Database = {
       crm_integrations: {
         Row: {
           client_id: string | null
+          client_secret_enc: string | null
           created_at: string
           id: string
           last_delta_sync_at: string | null
@@ -924,12 +925,14 @@ export type Database = {
           last_full_sync_at: string | null
           pending_state: string | null
           provider: string
+          redirect_uri: string | null
           scopes: string | null
           status: string
           updated_at: string
         }
         Insert: {
           client_id?: string | null
+          client_secret_enc?: string | null
           created_at?: string
           id?: string
           last_delta_sync_at?: string | null
@@ -937,12 +940,14 @@ export type Database = {
           last_full_sync_at?: string | null
           pending_state?: string | null
           provider: string
+          redirect_uri?: string | null
           scopes?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           client_id?: string | null
+          client_secret_enc?: string | null
           created_at?: string
           id?: string
           last_delta_sync_at?: string | null
@@ -950,6 +955,7 @@ export type Database = {
           last_full_sync_at?: string | null
           pending_state?: string | null
           provider?: string
+          redirect_uri?: string | null
           scopes?: string | null
           status?: string
           updated_at?: string
