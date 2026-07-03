@@ -44,20 +44,37 @@ export function getPwaUpdateState(): PwaUpdateState {
 }
 
 export async function updateApp(): Promise<void> {
-  if (!updateServiceWorker) {
-    // Fallback: hard reload
-    window.location.reload();
-    return;
-  }
   state.updating = true;
   emit();
+  console.info("[pwa] applying update…");
+
+  // Fallback path: explicitly tell any waiting SW to skip waiting. This helps
+  // when the plugin's internal updater is missing (e.g. registration was
+  // aborted) so the new SW still activates and controllerchange triggers reload.
   try {
-    await updateServiceWorker(true);
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) {
+        const scriptURL =
+          r.active?.scriptURL || r.waiting?.scriptURL || r.installing?.scriptURL || "";
+        if (!scriptURL.endsWith(SW_PATH)) continue;
+        r.waiting?.postMessage({ type: "SKIP_WAITING" });
+      }
+    }
+  } catch (err) {
+    console.warn("[pwa] skipWaiting postMessage failed", err);
+  }
+
+  try {
+    if (updateServiceWorker) {
+      await updateServiceWorker(true);
+      return;
+    }
   } catch (err) {
     console.warn("[pwa] updateServiceWorker failed", err);
-    // Force reload as last resort
-    window.location.reload();
   }
+  // Last resort: hard reload
+  window.location.reload();
 }
 
 export function dismissUpdate(): void {
