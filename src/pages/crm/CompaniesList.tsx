@@ -217,7 +217,8 @@ export default function CompaniesList() {
       list = list.filter(o =>
         (o.name || "").toLowerCase().includes(q) ||
         (o.email || "").toLowerCase().includes(q) ||
-        (o.cnpj || "").toLowerCase().includes(q),
+        (o.cnpj || "").toLowerCase().includes(q) ||
+        segmentOf(o).toLowerCase().includes(q),
       );
     }
     return list;
