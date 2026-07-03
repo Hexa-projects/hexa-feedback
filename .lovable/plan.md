@@ -1,83 +1,122 @@
+# Reinvenção Dashboards HexaOS — Central de Inteligência Operacional
 
-# Push Notifications + Deep-link de Solicitações
+Objetivo: transformar `/executive`, `/reports`, `/home` e dashboards setoriais em uma arquitetura unificada, com camada de KPIs consistente, filtros globais, drill-down e exportações. Sem remover funcionalidade existente sem substituto.
 
-## Parte 1 — Deep-link da notificação interna
+## Escopo (o que vai ser feito)
 
-**Banco (SQL manual via `db/manual-migrations/`)**
-- Atualizar `notify_ceos_commercial_request_pending()`: gravar `link = '/crm/requests/' || NEW.id::text` (hoje grava `/crm/requests` sem id).
+### 1. Fundação: camada de KPIs + design system de dashboard
+Criar componentes reutilizáveis e hooks centralizados. Nada de lógica de KPI espalhada dentro das telas.
 
-**Frontend**
-- `NotificationDropdown.tsx`: manter `useNavigate` mas simplificar — se `n.link` existir, navegar direto; senão, se `metadata.request_id` existir, ir para `/crm/requests/:id`. Marca como lida.
+**Componentes novos em `src/components/dashboard/`:**
+- `DashboardShell` — layout com header (título, período, última atualização, botão atualizar), filtros e slots
+- `DashboardFilters` + `DateRangeFilter` + `SectorFilter` — filtros globais persistidos em URL/localStorage
+- `KpiCard` / `KpiTrendCard` / `KpiGrid` — card denso com valor, formato, delta vs período anterior, status semântico (healthy/attention/critical/neutral), tooltip com fonte do dado
+- `ChartCard` — wrapper com título, ações, empty/error/loading
+- `TrendLineChart`, `StatusBreakdownChart`, `FunnelChart` — Recharts responsivos
+- `AlertPriorityList` — lista priorizada, cada item com ação rápida e link
+- `DrilldownDrawer` — sheet que abre com tabela paginada dos registros que compõem o KPI
+- `EmptyDashboardState` — estado vazio explicando o que cadastrar
+- `ExportMenu` — CSV/JSON
+- `SectionSummaryTable` — resumo por setor
+- `DataSourceTooltip` — informa origem do dado
 
-## Parte 2 — Rota `/crm/requests/:id`
+**Camada de definição em `src/lib/`:**
+- `kpi-definitions.ts` — tipo `KpiDefinition` com `{ key, label, description, value, previousValue, trend, format, domain, sourceTables, status, target?, drilldownRecords? }`
+- `kpi-utils.ts` — helpers de formato (currency BRL, percent, duration), comparação de período, status semântico, agregações
 
-- Nova página `src/pages/crm/RequestDetailPage.tsx`:
-  - `useParams<{ id }>()`, carrega a solicitação por id (com fallback direto do Supabase).
-  - Estados: loading, erro, "não encontrada".
-  - Reusa `RequestDetailModal` como conteúdo/painel, OU renderiza os mesmos blocos em página cheia.
-  - Se `is_ceo_or_admin` (checar via `has_role` ou `funcao`) e status = `pendente`: botões Aprovar/Reprovar chamando as RPCs existentes `approve_commercial_request` e `reject_commercial_request`.
-- Registrar rota em `HexaLayout`/router.
+**Hooks em `src/hooks/dashboard/`:**
+- `useDashboardFilters` — estado global de filtros (período, setor, responsável, unidade, cliente) via Zustand ou contexto
+- `useExecutiveKpis`, `useCommercialKpis`, `useFinanceKpis`, `useOperationsKpis`, `useQualityKpis`, `useStockKpis`, `useLabKpis`, `useProjectKpis`, `usePeopleProcessKpis`
+- `useKpiDrilldown(kpiKey)` — busca paginada dos registros de um KPI
 
-## Parte 3 — Push Notifications (Web Push + VAPID)
+Regras dos hooks: `Promise.all`, `{ data, loading, error, refetch }`, cálculo de período anterior, respeitam filtros globais, ligam-se ao Supabase client existente.
 
-### Banco
-Migration nova: cria `public.push_subscriptions` com colunas do prompt, RLS (owner CRUD + service_role full), GRANTs, unique `(user_id, endpoint)`, trigger `updated_at`.
+### 2. Cockpit Executivo — `/executive`
+Refatorar `ExecutiveDashboard.tsx`:
+- Header com período, "atualizado há X min", botão atualizar
+- Filtros globais (sheet no mobile)
+- Grid de KPIs principais (12 cards): receita/despesa/resultado do mês, pipeline total, pipeline ponderado, solicitações pendentes, OS críticas, OS atrasadas, estoque crítico, RNC abertas, ações qualidade atrasadas, projetos atrasados
+- Painel "Atenção agora" — `AlertPriorityList` com solicitações pendentes, OS críticas/vencidas, leads parados, propostas vencendo, contas vencidas, RNC atrasadas, estoque zerado. Cada item linka pro registro.
+- Gráficos: evolução receita/despesa/resultado, pipeline por estágio, OS por status/urgência, qualidade (abertas/atrasadas/eficácia), estoque por faixa
+- `SectionSummaryTable` — Comercial, Operações, Financeiro, Qualidade, Estoque, Laboratório, Projetos com KPIs-chave e link "abrir detalhes" que leva à aba correspondente de `/reports`
 
-### VAPID Keys
-- Solicitar 3 secrets via `add_secret`:
-  - `VAPID_PUBLIC_KEY` (também exposto no frontend via edge function ou secret `VITE_VAPID_PUBLIC_KEY` opcional — vamos buscar via edge function `get-vapid-public-key` para não hardcodar).
-  - `VAPID_PRIVATE_KEY`
-  - `VAPID_SUBJECT` (ex.: `mailto:admin@hexaos.com.br`)
+### 3. Central de BI — `/reports`
+Refatorar `Dashboard.tsx` para uma única rota com abas (mais simples e coerente do que subrotas):
+- Abas: Visão Geral, Comercial, Financeiro, Operações, Qualidade, Estoque, Laboratório, Projetos, Pessoas & Processos
+- Filtros persistentes por aba (localStorage + URL param)
+- `ExportMenu` (CSV/JSON) e botão "Gerar snapshot executivo" gravando em `kpi_snapshots`
+- Cada aba consome seu hook `useXxxKpis` e renderiza `KpiGrid` + `ChartCard`s + `SectionSummaryTable`
+- Drill-down via `DrilldownDrawer` ao clicar em qualquer KPI ou barra de gráfico
+- Skeleton loading por card (falha em um não bloqueia os outros)
+- Estado vazio útil e erro com "tentar novamente"
 
-### Service Worker
-- Adicionar `public/push-sw.js` (worker dedicado, além do PWA cleanup sw existente) com listeners `push` e `notificationclick`. Escopo `/`. Registrado apenas quando o usuário ativa push (não conflita com PWA sw kill-switch).
-- Payload: `{ title, body, url, tag, notification_id }`.
-- `notificationclick`: focar aba existente e `postMessage` para navegar, ou abrir nova.
+### 4. Home `/home`
+Manter como visão pessoal do usuário. Ajustar apenas para usar `KpiCard` e linguagem visual dos novos componentes, sem alterar funcionalidade. Card "Insights" continua removido (já foi).
 
-### Frontend
-- `src/hooks/usePushNotifications.ts`:
-  - Detecta suporte, permission, isSubscribed.
-  - `subscribe()`: registra `/push-sw.js`, pede permissão, chama `pushManager.subscribe({ userVisibleOnly, applicationServerKey })`, faz upsert em `push_subscriptions`.
-  - `unsubscribe()`: `subscription.unsubscribe()` + delete/disable no DB.
-  - Detecta iOS + `!standalone` → expõe flag `iosNeedsInstall`.
-  - Busca VAPID public key via edge function `get-vapid-public-key`.
-- Nova seção em `SettingsPage.tsx`: card "Notificações no celular" com status, botões Ativar/Desativar, orientações Android/iOS.
+### 5. Dashboards setoriais existentes
+`FinanceDashboard`, `StockDashboard`, `QualityDashboard`, `WorkOrdersList` (header KPIs), `ProjectsList` (header), `LabPartsList` (header): substituir os cards atuais pelos novos `KpiCard`/`KpiGrid` consumindo o hook do domínio. Layout e rotas mantidos. Sem tocar em formulários, listas, criação, edição.
 
-### Edge Functions
-1. `get-vapid-public-key` — retorna `VAPID_PUBLIC_KEY` (auth required).
-2. `send-push-notification` — recebe `{ user_ids, title, body, url, tag, metadata }`, busca subs ativas, envia via `npm:web-push@3`. Marca `enabled=false` em 404/410.
+### 6. Regras de negócio (implementadas em `kpi-utils` / hooks)
+- Ganho/Fechado = fechamento comercial; Perdido/Cancelado sai do pipeline ativo
+- OS atrasada = não concluída/cancelada com prazo passado
+- RNC/RACP encerrada/cancelada não conta como aberta
+- Ações qualidade concluídas/canceladas não são pendentes
+- Financeiro: previsto vs realizado pelo status; vencidas = pending com `data_vencimento < today`
+- Estoque: crítico = 0; baixo = >0 e ≤ mínimo
+- Projeto atrasado = não concluído com `data_prevista < today`
 
-### Trigger de integração
-- No trigger PL/pgSQL `notify_ceos_commercial_request_pending`: após inserir notificações internas, usar `pg_net.http_post` para chamar `send-push-notification` com service role (chave em GUC `app.settings.service_role_key` — ou passar via secret na função). Se `pg_net` não estiver disponível, plano B: chamar `send-push-notification` diretamente do frontend após inserir a solicitação (mais simples, mas menos robusto).
-- **Decisão:** usar `pg_net` — Supabase suporta por padrão. Fallback: cliente chama a edge function após criar solicitação (`RequestsList` já faz insert).
+### 7. Performance
+- Agregações via `count: 'exact', head: true` sempre que possível
+- `Promise.all` por hook
+- Drill-downs paginados (page size 25)
+- Se um domínio ficar pesado, migração SQL criando view ou RPC (só se necessário — deixar para fase 2)
+- Snapshots vão pra `kpi_snapshots` existente
 
-## Detalhes técnicos
+### 8. RLS / Perfis
+Não altero políticas nesta entrega. Os hooks respeitam o que o RLS retorna: admin/gestor vê tudo, colaborador vê o setor dele. Diretoria vê consolidado via `is_privileged`.
 
-- Todos os edge functions com `verify_jwt=false` (padrão) + `getClaims` em `send-push-notification` e `get-vapid-public-key`.
-- `web-push` importado via `npm:web-push@3.6.7` no Deno.
-- Payload sem PII: só empresa nome curto + link.
-- Frontend nunca vê `VAPID_PRIVATE_KEY` nem service role.
-- Manter PWA existente (`src/pwa/register.ts`) intacto — o novo push worker é arquivo separado.
-- Notificação `link` passa a incluir id → `NotificationDropdown` fica mais simples.
+### 9. i18n e encoding
+Toda interface em pt-BR. Corrijo textos com encoding quebrado nos arquivos tocados.
 
-## Arquivos a criar/editar
+## Fora do escopo (não vou fazer nesta entrega)
+- Novas RLS policies (usa as atuais)
+- Novas migrations SQL a menos que uma view seja obrigatória para performance
+- Redesign de formulários/listas dos módulos
+- Alterações no CRM Kanban, OS, Solicitações, Onboarding, Núcleo removido
+- Novos KPIs que exijam novas colunas de banco
 
-**Criar**
-- `db/manual-migrations/2026-07-03_push_subscriptions.sql`
-- `db/manual-migrations/2026-07-03_notify_link_with_id.sql`
-- `public/push-sw.js`
-- `src/hooks/usePushNotifications.ts`
-- `src/pages/crm/RequestDetailPage.tsx`
-- `supabase/functions/get-vapid-public-key/index.ts`
-- `supabase/functions/send-push-notification/index.ts`
+## Ordem de execução
+1. Fundação (componentes + hooks + kpi-definitions + kpi-utils)
+2. `/reports` como Central de BI com abas — 9 hooks setoriais
+3. `/executive` Cockpit consumindo os mesmos hooks
+4. Substituir cards dos dashboards setoriais (Finance, Stock, Quality, etc.) pelos novos componentes
+5. `npm run build` + verificação de tipos
+6. Ajustes de responsividade (filtros viram sheet no mobile)
 
-**Editar**
-- `src/components/NotificationDropdown.tsx` — deep-link simplificado.
-- `src/components/HexaLayout.tsx` (ou router) — rota `/crm/requests/:id`.
-- `src/pages/SettingsPage.tsx` — seção push.
-- `supabase/config.toml` — registrar as 2 edge functions.
+## Entregáveis técnicos
+```
+src/lib/kpi-definitions.ts
+src/lib/kpi-utils.ts
+src/hooks/dashboard/useDashboardFilters.ts
+src/hooks/dashboard/useExecutiveKpis.ts
+src/hooks/dashboard/useCommercialKpis.ts
+src/hooks/dashboard/useFinanceKpis.ts
+src/hooks/dashboard/useOperationsKpis.ts
+src/hooks/dashboard/useQualityKpis.ts
+src/hooks/dashboard/useStockKpis.ts
+src/hooks/dashboard/useLabKpis.ts
+src/hooks/dashboard/useProjectKpis.ts
+src/hooks/dashboard/usePeopleProcessKpis.ts
+src/hooks/dashboard/useKpiDrilldown.ts
+src/components/dashboard/*.tsx (14 componentes listados)
+src/pages/ExecutiveDashboard.tsx (refatorado)
+src/pages/Dashboard.tsx (vira Central de BI com abas)
+src/pages/finance/FinanceDashboard.tsx (adota componentes)
+src/pages/stock/StockDashboard.tsx (adota componentes)
+src/pages/quality/QualityDashboard.tsx (adota componentes)
+```
 
-## Fora de escopo
-- Não altero UI de outras telas.
-- Não altero fluxo de aprovação existente.
-- Ícones do push usam `/icons/*` já existentes do PWA.
+## Aviso de tamanho
+Este é um refactor grande (~25 arquivos novos + ~6 refatorados). Vou entregar em uma sequência de mensagens dentro desta task, começando pela fundação, depois `/reports`, depois `/executive`, depois setoriais. Cada fase compila antes de partir pra próxima.
+
+Confirma que posso seguir com essa arquitetura (abas dentro de `/reports` em vez de subrotas, sem novas migrations agora, dashboards setoriais reaproveitam os novos componentes sem mudar sua rota)?
