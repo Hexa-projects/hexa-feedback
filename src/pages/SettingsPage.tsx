@@ -28,6 +28,7 @@ interface UserProfile {
   funcao: string;
   onboarding_completo: boolean;
   created_at: string;
+  aprovador_base_conhecimento?: boolean;
 }
 
 interface UserRole {
