@@ -1182,28 +1182,146 @@ export default function RequestsList() {
                     ))}
                   </div>
                 </div>
-                {docType === "cnpj" ? (
-                  <Field label="CNPJ">
-                    <Input
-                      placeholder="00.000.000/0000-00"
-                      value={form.cnpj}
-                      disabled={cnpjLoading}
-                      onChange={(e) => {
-                        const masked = maskCNPJ(e.target.value);
-                        setForm({ ...form, cnpj: masked });
-                        if (isValidCNPJ(masked)) fetchCNPJ(masked);
-                      }}
-                    />
-                  </Field>
-                ) : (
-                  <Field label="CPF">
-                    <Input
-                      placeholder="000.000.000-00"
-                      value={form.cpf}
-                      onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
-                    />
-                  </Field>
-                )}
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {docType === "cnpj" ? (
+                    <Field label="CNPJ">
+                      <Input
+                        placeholder="00.000.000/0000-00"
+                        value={form.cnpj}
+                        disabled={cnpjLoading}
+                        onChange={(e) => {
+                          const masked = maskCNPJ(e.target.value);
+                          setForm({ ...form, cnpj: masked });
+                          if (isValidCNPJ(masked)) fetchCNPJ(masked);
+                        }}
+                      />
+                    </Field>
+                  ) : (
+                    <Field label="CPF">
+                      <Input
+                        placeholder="000.000.000-00"
+                        value={form.cpf}
+                        onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })}
+                      />
+                    </Field>
+                  )}
+                  {docType === "cnpj" ? (
+                    <Field label="Nome da empresa">
+                      <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
+                        <PopoverTrigger asChild>
+                          <Input
+                            placeholder="Buscar empresa cadastrada..."
+                            value={form.empresa}
+                            onFocus={() => setCompanyOpen(true)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setCompanyOpen(true);
+                              if (v.trim() === "") {
+                                setForm((f) => ({ ...f, empresa: "", cnpj: "", telefone: "", email_1: "", contato: "" }));
+                              } else {
+                                setForm({ ...form, empresa: v });
+                              }
+                            }}
+                          />
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                          <Command shouldFilter={false}>
+                            <CommandList>
+                              {form.empresa.trim().length < 2 ? (
+                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
+                              ) : companySugs.length === 0 ? (
+                                <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
+                              ) : (
+                                <CommandGroup heading="Empresas cadastradas">
+                                  {companySugs.map((s, i) => (
+                                    <CommandItem
+                                      key={i}
+                                      value={s.empresa}
+                                      onSelect={() => {
+                                        setForm((f) => ({
+                                          ...f,
+                                          empresa: s.empresa,
+                                          cnpj: s.cnpj ? maskCNPJ(s.cnpj) : f.cnpj,
+                                          telefone: s.telefone || f.telefone,
+                                          email_1: s.email_1 || f.email_1,
+                                          contato: s.contato || f.contato,
+                                        }));
+                                        setCompanyOpen(false);
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{s.empresa}</span>
+                                        {s.cnpj && <span className="text-xs text-muted-foreground">{maskCNPJ(s.cnpj)}</span>}
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </Field>
+                  ) : (
+                    <Field label="Nome">
+                      <Popover open={contactOpen} onOpenChange={setContactOpen}>
+                        <PopoverTrigger asChild>
+                          <Input
+                            placeholder="Buscar contato cadastrado..."
+                            value={form.cliente_nome}
+                            onFocus={() => setContactOpen(true)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setContactOpen(true);
+                              if (v.trim() === "") {
+                                setForm((f) => ({ ...f, cliente_nome: "", cpf: "", telefone: "", email_1: "" }));
+                              } else {
+                                setForm({ ...form, cliente_nome: v });
+                              }
+                            }}
+                          />
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                          <Command shouldFilter={false}>
+                            <CommandList>
+                              {form.cliente_nome.trim().length < 2 ? (
+                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
+                              ) : contactSugs.length === 0 ? (
+                                <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
+                              ) : (
+                                <CommandGroup heading="Contatos cadastrados">
+                                  {contactSugs.map((s, i) => (
+                                    <CommandItem
+                                      key={i}
+                                      value={s.nome}
+                                      onSelect={() => {
+                                        setForm((f) => ({
+                                          ...f,
+                                          cliente_nome: s.nome,
+                                          cpf: s.cpf ? maskCPF(s.cpf) : f.cpf,
+                                          telefone: s.telefone || f.telefone,
+                                          email_1: s.email || f.email_1,
+                                        }));
+                                        setContactOpen(false);
+                                      }}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{s.nome}</span>
+                                        {(s.email || s.telefone) && (
+                                          <span className="text-xs text-muted-foreground">{[s.email, s.telefone].filter(Boolean).join(" · ")}</span>
+                                        )}
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </Field>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Selecione <strong>CNPJ</strong> (empresa) ou <strong>CPF</strong> (pessoa física).
