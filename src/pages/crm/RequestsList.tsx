@@ -1336,64 +1336,7 @@ export default function RequestsList() {
             {form.cnpj.trim() && (
               <Section title="Dados da Empresa">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Field label="Nome da empresa *">
-                      <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
-                        <PopoverTrigger asChild>
-                          <Input
-                            value={form.empresa}
-                            onFocus={() => setCompanyOpen(true)}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setCompanyOpen(true);
-                              if (v.trim() === "") {
-                                // Limpa campos autopreenchidos
-                                setForm((f) => ({ ...f, empresa: "", cnpj: "", telefone: "", email_1: "", contato: "" }));
-                              } else {
-                                setForm({ ...form, empresa: v });
-                              }
-                            }}
-                          />
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                          <Command shouldFilter={false}>
-                            <CommandList>
-                              {form.empresa.trim().length < 2 ? (
-                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                              ) : companySugs.length === 0 ? (
-                                <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
-                              ) : (
-                                <CommandGroup heading="Empresas cadastradas">
-                                  {companySugs.map((s, i) => (
-                                    <CommandItem
-                                      key={i}
-                                      value={s.empresa}
-                                      onSelect={() => {
-                                        setForm((f) => ({
-                                          ...f,
-                                          empresa: s.empresa,
-                                          cnpj: s.cnpj ? maskCNPJ(s.cnpj) : f.cnpj,
-                                          telefone: s.telefone || f.telefone,
-                                          email_1: s.email_1 || f.email_1,
-                                          contato: s.contato || f.contato,
-                                        }));
-                                        setCompanyOpen(false);
-                                      }}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span className="font-medium">{s.empresa}</span>
-                                        {s.cnpj && <span className="text-xs text-muted-foreground">{maskCNPJ(s.cnpj)}</span>}
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </Field>
-                  </div>
+
                   <Field label="CEP (fiscal)">
                     <Input
                       placeholder="00000-000"
