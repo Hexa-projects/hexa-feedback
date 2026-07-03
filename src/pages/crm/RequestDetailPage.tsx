@@ -169,56 +169,52 @@ export default function RequestDetailPage() {
         )}
 
         {!loading && request && (
-          <>
-            {/* Reuse the existing detail component in read-only mode */}
-            <div className="rounded-xl border bg-card p-2">
-              <RequestDetailModal
-                requestId={request.id}
-                open
-                onClose={() => navigate("/crm/requests")}
-                canEdit={false}
-              />
-            </div>
-
-            {canAct && (
-              <Card>
-                <CardContent className="py-4 space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Button onClick={handleApprove} disabled={busy}>
-                      {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
-                      Aprovar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowRejectBox((v) => !v)}
-                      disabled={busy || rejecting}
-                    >
-                      <X className="w-4 h-4 mr-1" /> Reprovar
-                    </Button>
+          <div className="rounded-xl border bg-card p-2">
+            <RequestDetailModal
+              requestId={request.id}
+              open
+              onClose={() => navigate("/crm/requests")}
+              canEdit={false}
+              extraContent={
+                canAct && showRejectBox ? (
+                  <div className="space-y-2 border-t pt-3">
+                    <p className="text-sm font-medium">Motivo da reprovação</p>
+                    <Textarea
+                      placeholder="Descreva o motivo"
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      rows={3}
+                    />
                   </div>
-                  {showRejectBox && (
-                    <div className="space-y-2">
-                      <Textarea
-                        placeholder="Motivo da reprovação"
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
-                          {rejecting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-                          Confirmar Reprovação
-                        </Button>
-                        <Button variant="outline" onClick={() => { setShowRejectBox(false); setRejectReason(""); }}>
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </>
+                ) : null
+              }
+              footerExtras={
+                canAct ? (
+                  showRejectBox ? (
+                    <>
+                      <Button variant="outline" onClick={() => { setShowRejectBox(false); setRejectReason(""); }} disabled={rejecting}>
+                        Cancelar
+                      </Button>
+                      <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
+                        {rejecting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <X className="w-4 h-4 mr-1" />}
+                        Confirmar Reprovação
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="destructive" onClick={() => setShowRejectBox(true)} disabled={busy}>
+                        <X className="w-4 h-4 mr-1" /> Reprovar
+                      </Button>
+                      <Button onClick={handleApprove} disabled={busy} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                        {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                        Aprovar
+                      </Button>
+                    </>
+                  )
+                ) : null
+              }
+            />
+          </div>
         )}
       </div>
     </HexaLayout>
