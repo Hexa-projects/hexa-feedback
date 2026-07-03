@@ -194,6 +194,9 @@ export default function KanbanFunnel() {
         setRequestsById(map);
       }
     });
+    supabase.from("profiles").select("id, nome").order("nome", { ascending: true }).then(({ data }) => {
+      setProfiles((data || []).map((p: any) => ({ id: p.id, name: p.nome || "Sem nome" })));
+    });
   }, [user]);
 
   const handleDrop = async (newStatus: string) => {
