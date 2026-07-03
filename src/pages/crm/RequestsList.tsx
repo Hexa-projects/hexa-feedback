@@ -772,9 +772,27 @@ export default function RequestsList() {
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Kpi label="Total" value={kpis.total} />
-          <Kpi label="Pendentes" value={kpis.pendentes} tone="amber" />
-          <Kpi label="Aprovadas" value={kpis.aprovadas} tone="emerald" />
-          <Kpi label="Reprovadas" value={kpis.reprovadas} tone="rose" />
+          <Kpi
+            label="Pendentes"
+            value={kpis.pendentes}
+            tone="amber"
+            active={filterStatus === "pendente"}
+            onClick={() => setFilterStatus(filterStatus === "pendente" ? "all" : "pendente")}
+          />
+          <Kpi
+            label="Aprovadas"
+            value={kpis.aprovadas}
+            tone="emerald"
+            active={filterStatus === "aprovada"}
+            onClick={() => setFilterStatus(filterStatus === "aprovada" ? "all" : "aprovada")}
+          />
+          <Kpi
+            label="Reprovadas"
+            value={kpis.reprovadas}
+            tone="rose"
+            active={filterStatus === "reprovada"}
+            onClick={() => setFilterStatus(filterStatus === "reprovada" ? "all" : "reprovada")}
+          />
           <Kpi
             label="Valor total"
             value={kpis.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
