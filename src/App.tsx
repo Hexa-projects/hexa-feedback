@@ -53,7 +53,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const ExecutiveDashboard = lazy(() => import("./pages/ExecutiveDashboard"));
-const AutomationsPage = lazy(() => import("./pages/AutomationsPage"));
+
 const GargalosMap = lazy(() => import("./pages/GargalosMap"));
 const DataCollection = lazy(() => import("./pages/DataCollection"));
 const PublicApiDocs = lazy(() => import("./pages/PublicApiDocs"));
