@@ -844,9 +844,9 @@ export default function ContactsList() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreate} disabled={saving}>
+            <Button onClick={handleSubmit} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Criar Contato
+              {editingId ? "Salvar alterações" : "Criar Contato"}
             </Button>
           </DialogFooter>
         </DialogContent>
