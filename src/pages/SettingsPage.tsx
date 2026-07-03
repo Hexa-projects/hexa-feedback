@@ -992,6 +992,13 @@ function IntegrationsTab() {
                         <Badge key={c} variant="outline" className="text-xs font-normal">{c}</Badge>
                       ))}
                     </div>
+                    {"extra" in int && (int as any).extra?.length ? (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                        {(int as any).extra.map((line: string) => (
+                          <div key={line}>{line}</div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <Button
@@ -1002,6 +1009,8 @@ function IntegrationsTab() {
                       setActiveIntegration("whatsapp");
                     } else if (int.key === "calendar") {
                       setActiveIntegration("calendar");
+                    } else if (int.key === "rd_station") {
+                      navigate("/settings/integrations/rd-station");
                     } else if (getStatus(int.key) === "ativo") {
                       toast.info("Configuração avançada será habilitada em breve");
                     } else {
