@@ -802,6 +802,7 @@ export default function RequestsList() {
                 <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="pendente">Pendente(s)</SelectItem>
                 <SelectItem value="aprovada">Aprovada(s)</SelectItem>
+                <SelectItem value="reprovada">Reprovada(s)</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
