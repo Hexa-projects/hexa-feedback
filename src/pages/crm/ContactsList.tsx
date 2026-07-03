@@ -468,6 +468,58 @@ export default function ContactsList() {
         </div>
       </div>
 
+      {/* Barra de ações em massa */}
+      {selectedCount > 0 && (
+        <div className="rounded-lg overflow-hidden border">
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 text-slate-100 flex-wrap">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="font-medium">{selectedCount} selecionado{selectedCount > 1 ? "s" : ""}</span>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-slate-300 hover:text-white underline-offset-2 hover:underline"
+              >
+                Limpar seleção
+              </button>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <button
+                type="button"
+                className="text-sky-400 hover:text-sky-300 font-medium"
+                onClick={() => toast.info("Adicionar ou Alterar em breve")}
+              >
+                Adicionar ou Alterar
+              </button>
+              <button
+                type="button"
+                className="text-sky-400 hover:text-sky-300 font-medium"
+                onClick={() => toast.info("Criar Negociação em breve")}
+              >
+                Criar Negociação
+              </button>
+              <button
+                type="button"
+                className="text-red-400 hover:text-red-300 font-medium"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+          {!allFilteredSelected && sorted.length > pageRows.length && (
+            <div className="px-4 py-2 bg-muted/60 text-sm text-muted-foreground flex items-center justify-center">
+              <button
+                type="button"
+                className="text-primary hover:underline"
+                onClick={selectAllFiltered}
+              >
+                Selecionar todos os {sorted.length} itens deste filtro
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabela */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="overflow-x-auto">
