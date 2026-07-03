@@ -270,7 +270,7 @@ export default function ContactsList() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [{ data: cts }, { data: orgs }, { data: deals }] = await Promise.all([
+      const [{ data: cts }, { data: orgs }, { data: deals }, { data: cfields }] = await Promise.all([
         supabase
           .from("rd_contacts")
           .select("id, rd_id, name, email, phone, organization_rd_id, raw_payload")
@@ -284,18 +284,46 @@ export default function ContactsList() {
           .limit(5000),
         supabase
           .from("rd_deals")
-          .select("contact_rd_id")
+          .select("contact_rd_id, rd_updated_at, raw_payload")
           .is("deleted_at", null)
           .not("contact_rd_id", "is", null)
           .limit(20000),
+        supabase
+          .from("rd_custom_fields")
+          .select("rd_id, label, for_entity")
+          .is("deleted_at", null)
+          .limit(500),
       ]);
       const orgMap = new Map<string, string>();
       (orgs || []).forEach((o: any) => o.rd_id && orgMap.set(o.rd_id, o.name || ""));
       setCompanies(((orgs || []) as any).map((o: any) => ({ id: o.id, name: o.name })).filter((o: any) => o.name));
+      // Descobre o(s) custom field(s) que representam cargo/função no deal
+      const cargoFieldIds = new Set<string>(
+        (cfields || [])
+          .filter((f: any) => /fun[cç][aã]o|cargo|posi[cç][aã]o|position|job/i.test(f.label || ""))
+          .map((f: any) => String(f.rd_id)),
+      );
+      // Para cada contato, guarda o cargo do deal mais recente
+      const cargoByContact = new Map<string, string>();
       const dealCount = new Map<string, number>();
-      (deals || []).forEach((d: any) => {
+      const dealsSorted = [...(deals || [])].sort((a: any, b: any) =>
+        String(b.rd_updated_at || "").localeCompare(String(a.rd_updated_at || "")),
+      );
+      dealsSorted.forEach((d: any) => {
         if (!d.contact_rd_id) return;
         dealCount.set(d.contact_rd_id, (dealCount.get(d.contact_rd_id) || 0) + 1);
+        if (cargoByContact.has(d.contact_rd_id)) return;
+        const dcf = (d.raw_payload && Array.isArray(d.raw_payload.deal_custom_fields))
+          ? d.raw_payload.deal_custom_fields
+          : [];
+        for (const f of dcf) {
+          const fid = String(f?.custom_field_id ?? f?._id ?? "");
+          const val = typeof f?.value === "string" ? f.value.trim() : "";
+          if (val && cargoFieldIds.has(fid)) {
+            cargoByContact.set(d.contact_rd_id, val);
+            break;
+          }
+        }
       });
       const mapped: Contact[] = (cts || []).map((c: any) => {
         const raw = c.raw_payload || {};
