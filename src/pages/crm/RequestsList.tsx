@@ -573,13 +573,13 @@ export default function RequestsList() {
     const q = form.cliente_nome.trim();
     if (docType !== "cpf" || q.length < 2) { setContactSugs([]); return; }
     const t = setTimeout(async () => {
-      // CPF path armazena o nome do cliente em "empresa" no commercial_requests
+      // No fluxo CPF, o nome do cliente é armazenado em "empresa" e o CPF em "cnpj"
+      // dentro de commercial_requests. rd_contacts não tem CPF cadastrado.
       const [{ data: reqs }, { data: cts }] = await Promise.all([
         (supabase as any)
           .from("commercial_requests")
           .select("empresa, contato, telefone, email_1, cnpj")
           .ilike("empresa", `%${q}%`)
-          .or("cnpj.is.null,cnpj.eq.")
           .order("created_at", { ascending: false })
           .limit(15),
         (supabase as any)
@@ -592,7 +592,10 @@ export default function RequestsList() {
       (reqs || []).forEach((r: any) => {
         const key = (r.empresa || "").toLowerCase().trim();
         if (!key || map.has(key)) return;
-        map.set(key, { nome: r.empresa, telefone: r.telefone, email: r.email_1 });
+        // Se o valor em "cnpj" tem 11 dígitos, é um CPF armazenado no fluxo pessoa-física
+        const digits = String(r.cnpj || "").replace(/\D/g, "");
+        const cpfVal = digits.length === 11 ? digits : undefined;
+        map.set(key, { nome: r.empresa, cpf: cpfVal, telefone: r.telefone, email: r.email_1 });
       });
       (cts || []).forEach((c: any) => {
         const key = (c.name || "").toLowerCase().trim();
@@ -1298,6 +1301,7 @@ export default function RequestsList() {
                                         setForm((f) => ({
                                           ...f,
                                           cliente_nome: s.nome,
+                                          contato: s.nome || f.contato,
                                           cpf: s.cpf ? maskCPF(s.cpf) : f.cpf,
                                           telefone: s.telefone || f.telefone,
                                           email_1: s.email || f.email_1,
@@ -1332,64 +1336,7 @@ export default function RequestsList() {
             {form.cnpj.trim() && (
               <Section title="Dados da Empresa">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Field label="Nome da empresa *">
-                      <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
-                        <PopoverTrigger asChild>
-                          <Input
-                            value={form.empresa}
-                            onFocus={() => setCompanyOpen(true)}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setCompanyOpen(true);
-                              if (v.trim() === "") {
-                                // Limpa campos autopreenchidos
-                                setForm((f) => ({ ...f, empresa: "", cnpj: "", telefone: "", email_1: "", contato: "" }));
-                              } else {
-                                setForm({ ...form, empresa: v });
-                              }
-                            }}
-                          />
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
-                          <Command shouldFilter={false}>
-                            <CommandList>
-                              {form.empresa.trim().length < 2 ? (
-                                <CommandEmpty>Digite ao menos 2 caracteres</CommandEmpty>
-                              ) : companySugs.length === 0 ? (
-                                <CommandEmpty>Nenhum cadastro encontrado</CommandEmpty>
-                              ) : (
-                                <CommandGroup heading="Empresas cadastradas">
-                                  {companySugs.map((s, i) => (
-                                    <CommandItem
-                                      key={i}
-                                      value={s.empresa}
-                                      onSelect={() => {
-                                        setForm((f) => ({
-                                          ...f,
-                                          empresa: s.empresa,
-                                          cnpj: s.cnpj ? maskCNPJ(s.cnpj) : f.cnpj,
-                                          telefone: s.telefone || f.telefone,
-                                          email_1: s.email_1 || f.email_1,
-                                          contato: s.contato || f.contato,
-                                        }));
-                                        setCompanyOpen(false);
-                                      }}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span className="font-medium">{s.empresa}</span>
-                                        {s.cnpj && <span className="text-xs text-muted-foreground">{maskCNPJ(s.cnpj)}</span>}
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </Field>
-                  </div>
+
                   <Field label="CEP (fiscal)">
                     <Input
                       placeholder="00000-000"
