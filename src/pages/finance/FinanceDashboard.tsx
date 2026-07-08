@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import HexaLayout from "@/components/HexaLayout";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DollarSign, TrendingUp, TrendingDown, AlertTriangle,
-  Plus, Search, ArrowUpCircle, ArrowDownCircle
+  Plus, Search, ArrowUpCircle, ArrowDownCircle, RefreshCw, CheckCircle2, XCircle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +24,11 @@ export default function FinanceDashboard() {
   const { user } = useAuth();
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [omieLoading, setOmieLoading] = useState(true);
+  const [syncBusy, setSyncBusy] = useState<string | null>(null);
+  const [omieAccount, setOmieAccount] = useState<any>(null);
+  const [omieJobs, setOmieJobs] = useState<any[]>([]);
+  const [omieEvents, setOmieEvents] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -37,17 +42,35 @@ export default function FinanceDashboard() {
     status: "pendente",
   });
 
-  useEffect(() => {
+  const loadFinance = useCallback(async () => {
     if (!user) return;
-    supabase
+    setLoading(true);
+    const { data } = await supabase
       .from("financial_records")
       .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setRecords(data || []);
-        setLoading(false);
-      });
+      .order("created_at", { ascending: false });
+    setRecords(data || []);
+    setLoading(false);
   }, [user]);
+
+  const loadOmie = useCallback(async () => {
+    if (!user) return;
+    setOmieLoading(true);
+    const [accountRes, jobsRes, eventsRes] = await Promise.all([
+      (supabase as any).from("omie_accounts").select("*").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      (supabase as any).from("omie_sync_jobs").select("*").eq("module", "finance").order("started_at", { ascending: false }).limit(8),
+      (supabase as any).from("omie_sync_events").select("*").order("created_at", { ascending: false }).limit(12),
+    ]);
+    setOmieAccount(accountRes.data || null);
+    setOmieJobs(jobsRes.data || []);
+    setOmieEvents(eventsRes.data || []);
+    setOmieLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    loadFinance();
+    loadOmie();
+  }, [loadFinance, loadOmie]);
 
   const totals = records.reduce(
     (acc, r) => {
@@ -101,6 +124,45 @@ export default function FinanceDashboard() {
   );
 
   const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+  const activeJob = useMemo(
+    () => omieJobs.find((j) => ["queued", "running", "waiting_cooldown"].includes(j.status)),
+    [omieJobs]
+  );
+
+  const nextRetryText = activeJob?.next_retry_at
+    ? new Date(activeJob.next_retry_at).toLocaleString("pt-BR")
+    : null;
+
+  const invokeOmie = async (fn: string, body?: Record<string, unknown>) => {
+    if (activeJob && fn !== "omie-retry-sync-event") {
+      toast.warning(activeJob.status === "waiting_cooldown"
+        ? `Omie em cooldown. Tente novamente apos ${nextRetryText}.`
+        : "Ja existe uma sincronizacao Omie em andamento.");
+      return;
+    }
+    setSyncBusy(fn);
+    const { data, error } = await supabase.functions.invoke(fn, { body: body || {} });
+    setSyncBusy(null);
+    if (error) {
+      const msg = (data as any)?.message || (data as any)?.error || error.message;
+      toast.error(msg || "Erro na integracao Omie");
+    } else {
+      toast.success((data as any)?.already_running ? "Sincronizacao ja estava em andamento" : "Operacao Omie iniciada");
+    }
+    await loadOmie();
+  };
+
+  const retryJob = async (jobId: string) => {
+    await invokeOmie("omie-retry-sync-event", { job_id: jobId });
+  };
+
+  const statusBadgeClass = (status?: string) => {
+    if (status === "connected" || status === "completed") return "bg-hexa-green/10 text-hexa-green";
+    if (status === "running" || status === "queued") return "bg-primary/10 text-primary";
+    if (status === "waiting_cooldown" || status === "completed_with_errors") return "bg-hexa-amber/10 text-hexa-amber";
+    return "bg-destructive/10 text-destructive";
+  };
 
   return (
     <HexaLayout>
@@ -166,6 +228,145 @@ export default function FinanceDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  {omieAccount?.status === "connected" ? (
+                    <CheckCircle2 className="w-4 h-4 text-hexa-green" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-destructive" />
+                  )}
+                  Integracao Omie
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Controle de sincronizacao financeira com trava anti-duplicidade e cooldown automatico.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!!syncBusy || omieLoading}
+                  onClick={() => invokeOmie("omie-test-connection")}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-1.5 ${syncBusy === "omie-test-connection" ? "animate-spin" : ""}`} />
+                  Testar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!!syncBusy || !!activeJob || omieLoading}
+                  onClick={() => invokeOmie("omie-sync-finance-delta")}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-1.5 ${syncBusy === "omie-sync-finance-delta" ? "animate-spin" : ""}`} />
+                  Sync delta
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!!syncBusy || !!activeJob || omieLoading}
+                  onClick={() => invokeOmie("omie-sync-finance-full")}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-1.5 ${syncBusy === "omie-sync-finance-full" ? "animate-spin" : ""}`} />
+                  Sync completa
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-4">
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Status</p>
+                <Badge className={statusBadgeClass(omieAccount?.status)}>
+                  {omieAccount?.status || "nao configurado"}
+                </Badge>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Ultimo teste</p>
+                <p className="text-sm font-medium">
+                  {omieAccount?.last_test_at ? new Date(omieAccount.last_test_at).toLocaleString("pt-BR") : "-"}
+                </p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Job ativo</p>
+                <p className="text-sm font-medium">{activeJob ? activeJob.status : "nenhum"}</p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Proxima tentativa</p>
+                <p className="text-sm font-medium">{nextRetryText || "-"}</p>
+              </div>
+            </div>
+
+            {activeJob?.status === "waiting_cooldown" && (
+              <div className="rounded-md border border-hexa-amber/30 bg-hexa-amber/5 p-3 text-sm text-hexa-amber">
+                O Omie bloqueou ou o HexaOS evitou uma chamada redundante. Aguarde o cooldown antes de tentar novamente.
+              </div>
+            )}
+
+            <Tabs defaultValue="jobs">
+              <TabsList>
+                <TabsTrigger value="jobs">Jobs</TabsTrigger>
+                <TabsTrigger value="errors">Erros recentes</TabsTrigger>
+              </TabsList>
+              <TabsContent value="jobs" className="mt-3">
+                <div className="divide-y rounded-md border">
+                  {omieJobs.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">Nenhuma sincronizacao Omie registrada.</p>
+                  ) : omieJobs.map((job) => (
+                    <div key={job.id} className="flex flex-col gap-2 p-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={statusBadgeClass(job.status)}>{job.status}</Badge>
+                          <span className="text-sm font-medium">{job.type}</span>
+                          {job.method && <span className="text-xs text-muted-foreground">{job.method}</span>}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {new Date(job.started_at || job.created_at).toLocaleString("pt-BR")}
+                          {job.error_summary ? ` - ${job.error_summary}` : ""}
+                        </p>
+                      </div>
+                      {(job.status === "waiting_cooldown" || job.status === "failed") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!!syncBusy || (job.next_retry_at && new Date(job.next_retry_at).getTime() > Date.now())}
+                          onClick={() => retryJob(job.id)}
+                        >
+                          <RefreshCw className={`w-4 h-4 mr-1.5 ${syncBusy === "omie-retry-sync-event" ? "animate-spin" : ""}`} />
+                          Tentar novamente
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="errors" className="mt-3">
+                <div className="divide-y rounded-md border">
+                  {omieEvents.filter((e) => e.status !== "success").length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">Sem erros recentes.</p>
+                  ) : omieEvents.filter((e) => e.status !== "success").map((event) => (
+                    <div key={event.id} className="p-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className={statusBadgeClass(event.status)}>{event.faultcode || event.status}</Badge>
+                        <span className="text-xs text-muted-foreground">{event.method}</span>
+                      </div>
+                      <p className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                        {event.faultstring || "Erro sem detalhe tecnico."}
+                      </p>
+                      {event.next_retry_at && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Retry liberado em {new Date(event.next_retry_at).toLocaleString("pt-BR")}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
         {/* Form */}
         {showForm && (
