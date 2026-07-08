@@ -54,6 +54,7 @@ const ProjectsList = lazy(() => import("./pages/projects/ProjectsList"));
 const ProjectForm = lazy(() => import("./pages/projects/ProjectForm"));
 const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
+const FocusAI = lazy(() => import("./pages/focus/FocusAI"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -161,7 +162,7 @@ const AppRoutes = () => (
       <Route path="/finance" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
 
       {/* Legacy AI routes → home */}
-      <Route path="/focus-ai" element={<Navigate to="/home" replace />} />
+      <Route path="/focus-ai" element={<PrivateRoute><FocusAI /></PrivateRoute>} />
       <Route path="/automations" element={<Navigate to="/home" replace />} />
 
       {/* AUDITORIA OPERACIONAL */}

@@ -7,7 +7,7 @@ import {
   DollarSign, BarChart3, Settings, LogOut, Menu, X, Search, User,
   ChevronDown, ClipboardList, Repeat, AlertTriangle, Lightbulb, History,
   MessageCircle, Bot, Hash, BookOpen, FileText, Target,
-  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2, Trash2, PlugZap, Building2
+  Package, Calendar, TrendingDown, Wallet, LayoutDashboard, ArrowDownToLine, Boxes, ShieldCheck, FilePlus2, Trash2, PlugZap, Building2, BrainCircuit
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -130,6 +130,14 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    id: "focus",
+    to: "/focus-ai",
+    label: "Focus AI",
+    icon: BrainCircuit,
+    roles: ["admin", "gestor"],
+    highlight: true,
+  },
+  {
     id: "auditoria",
     label: "Auditoria Operacional",
     icon: ClipboardList,
@@ -151,8 +159,8 @@ const NAV_ITEMS: NavItem[] = [
 
 // Role-based group visibility mapping
 const ROLE_GROUPS: Record<string, string[]> = {
-  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria", "settings"],
-  gestor: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
+  admin: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "focus", "auditoria", "settings"],
+  gestor: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "focus", "auditoria"],
   colaborador: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "auditoria"],
 };
 
@@ -163,8 +171,8 @@ const SETOR_GROUPS: Record<string, string[]> = {
   "Laboratório": ["dashboard", "qualidade", "laboratorio", "estoque", "auditoria"],
   Financeiro: ["dashboard", "financeiro", "auditoria"],
   "Logística": ["dashboard", "operacoes", "qualidade", "estoque", "auditoria"],
-  Administrativo: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria"],
-  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "auditoria", "settings"],
+  Administrativo: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "focus", "auditoria"],
+  Diretoria: ["dashboard", "comercial", "operacoes", "qualidade", "laboratorio", "estoque", "financeiro", "focus", "auditoria", "settings"],
 };
 
 export default function HexaLayout({ children }: { children: React.ReactNode }) {
