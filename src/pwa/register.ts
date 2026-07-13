@@ -6,6 +6,8 @@
 // - Unregisters stale SWs in refused contexts
 // - Exposes a tiny pub/sub store the UI can subscribe to
 
+import { supabase } from "@/integrations/supabase/client";
+
 const SW_PATH = "/sw.js";
 const LEGACY_PUSH_SW_PATH = "/push-sw.js";
 const REFRESHING_KEY = "hexaos.sw.refreshing";
@@ -46,6 +48,15 @@ export function subscribePwaUpdate(l: Listener): () => void {
 
 export function getPwaUpdateState(): PwaUpdateState {
   return { ...state };
+}
+
+export async function announceCurrentBuild(): Promise<void> {
+  if (isRefusedContext() || APP_VERSION === "dev") return;
+
+  const { error } = await supabase.functions.invoke("announce-app-release", {
+    body: { build_id: APP_VERSION },
+  });
+  if (error) console.warn("[pwa] release notification failed", error.message);
 }
 
 export async function updateApp(): Promise<void> {

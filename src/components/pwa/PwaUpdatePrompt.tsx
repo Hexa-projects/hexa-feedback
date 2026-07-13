@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { RefreshCw, Sparkles } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -16,6 +17,7 @@ import {
   subscribePwaUpdate,
   updateApp,
   dismissUpdate,
+  announceCurrentBuild,
   type PwaUpdateState,
 } from "@/pwa/register";
 
@@ -30,6 +32,7 @@ const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 
  * - Warns about unsaved forms (any element with [data-dirty-form="true"]).
  */
 export default function PwaUpdatePrompt() {
+  const { user } = useAuth();
   const [state, setState] = useState<PwaUpdateState>({
     needRefresh: false,
     offlineReady: false,
@@ -50,6 +53,12 @@ export default function PwaUpdatePrompt() {
       unsub();
     };
   }, [postponed]);
+
+  // The first authenticated client on a new build fans the release out to
+  // the in-app notification center and to all active push subscriptions.
+  useEffect(() => {
+    if (user) void announceCurrentBuild();
+  }, [user]);
 
   const handleUpdate = useCallback(async () => {
     const hasDirty =
