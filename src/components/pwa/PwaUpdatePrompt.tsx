@@ -34,6 +34,7 @@ export default function PwaUpdatePrompt() {
     needRefresh: false,
     offlineReady: false,
     updateAvailableAt: null,
+    availableVersion: null,
     updating: false,
   });
   const [open, setOpen] = useState(false);
@@ -100,6 +101,12 @@ export default function PwaUpdatePrompt() {
               recentes.
               <span className="block mt-2 text-xs text-muted-foreground">
                 Versão atual: <span className="font-mono">{APP_VERSION}</span>
+                {state.availableVersion && (
+                  <>
+                    <br />
+                    Nova build: <span className="font-mono">{state.availableVersion}</span>
+                  </>
+                )}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>

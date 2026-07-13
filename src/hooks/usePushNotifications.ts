@@ -7,6 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 // in `public.push_subscriptions`.
 
 const SW_PATH = "/push-sw.js";
+const SW_SCOPE = "/push/";
+
+function pushServiceWorkerScope(): string {
+  return new URL(SW_SCOPE, window.location.origin).href;
+}
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -73,7 +78,7 @@ export function usePushNotifications() {
   const refreshSubscription = useCallback(async () => {
     if (!isSupported) return;
     try {
-      const reg = await navigator.serviceWorker.getRegistration(SW_PATH);
+      const reg = await navigator.serviceWorker.getRegistration(pushServiceWorkerScope());
       const sub = await reg?.pushManager.getSubscription();
       setIsSubscribed(!!sub);
     } catch {
@@ -124,9 +129,9 @@ export function usePushNotifications() {
       if (perm !== "granted") throw new Error("Permissão de notificação negada");
 
       const reg =
-        (await navigator.serviceWorker.getRegistration(SW_PATH)) ||
-        (await navigator.serviceWorker.register(SW_PATH, { scope: "/" }));
-      await navigator.serviceWorker.ready;
+        (await navigator.serviceWorker.getRegistration(pushServiceWorkerScope())) ||
+        (await navigator.serviceWorker.register(SW_PATH, { scope: SW_SCOPE }));
+      await reg.update().catch(() => {});
 
       const publicKey = await getVapidPublicKey();
       let sub = await reg.pushManager.getSubscription();
@@ -166,7 +171,7 @@ export function usePushNotifications() {
     if (!isSupported) return;
     setLoading(true);
     try {
-      const reg = await navigator.serviceWorker.getRegistration(SW_PATH);
+      const reg = await navigator.serviceWorker.getRegistration(pushServiceWorkerScope());
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
         const endpoint = sub.endpoint;

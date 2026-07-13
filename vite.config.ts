@@ -8,13 +8,34 @@ import { readFileSync } from "fs";
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
 const APP_VERSION = pkg.version || "0.0.0";
 const BUILD_TIME = new Date().toISOString();
+const BUILD_ID =
+  process.env.VITE_BUILD_ID ||
+  process.env.GITHUB_SHA ||
+  `${APP_VERSION}-${BUILD_TIME.replace(/[^0-9]/g, "").slice(0, 14)}`;
+
+function buildVersionPlugin() {
+  return {
+    name: "hexaos-build-version",
+    apply: "build" as const,
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "version.json",
+        source: JSON.stringify(
+          { app: "HexaOS", version: BUILD_ID, buildId: BUILD_ID, buildTime: BUILD_TIME },
+          null,
+        ),
+      });
+    },
+  };
+}
 
 
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
-    "import.meta.env.VITE_APP_VERSION": JSON.stringify(APP_VERSION),
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(BUILD_ID),
     "import.meta.env.VITE_BUILD_TIME": JSON.stringify(BUILD_TIME),
   },
   server: {
@@ -27,6 +48,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    buildVersionPlugin(),
     VitePWA({
       registerType: "prompt",
       injectRegister: null,
@@ -72,9 +94,11 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff,woff2}"],
+        globIgnores: ["**/version.json"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: true,
+        // registerType:"prompt" requires a waiting worker until the user confirms.
+        skipWaiting: false,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [
           /^\/~oauth/,

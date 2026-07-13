@@ -7,12 +7,15 @@
 // - Exposes a tiny pub/sub store the UI can subscribe to
 
 const SW_PATH = "/sw.js";
+const LEGACY_PUSH_SW_PATH = "/push-sw.js";
 const REFRESHING_KEY = "hexaos.sw.refreshing";
+const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? "dev";
 
 export type PwaUpdateState = {
   needRefresh: boolean;
   offlineReady: boolean;
   updateAvailableAt: number | null;
+  availableVersion: string | null;
   updating: boolean;
 };
 
@@ -22,12 +25,14 @@ const state: PwaUpdateState = {
   needRefresh: false,
   offlineReady: false,
   updateAvailableAt: null,
+  availableVersion: null,
   updating: false,
 };
 
 const listeners = new Set<Listener>();
 let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | null = null;
 let registered = false;
+let updateRequested = false;
 
 function emit() {
   for (const l of listeners) l({ ...state });
@@ -44,6 +49,10 @@ export function getPwaUpdateState(): PwaUpdateState {
 }
 
 export async function updateApp(): Promise<void> {
+  // A controllerchange can happen without user interaction when a browser or
+  // an older worker activates an update. Only a click on the update action is
+  // allowed to turn that event into a page reload.
+  updateRequested = true;
   state.updating = true;
   emit();
   console.info("[pwa] applying update…");
@@ -58,6 +67,7 @@ export async function updateApp(): Promise<void> {
         const scriptURL =
           r.active?.scriptURL || r.waiting?.scriptURL || r.installing?.scriptURL || "";
         if (!scriptURL.endsWith(SW_PATH)) continue;
+        await r.update().catch(() => {});
         r.waiting?.postMessage({ type: "SKIP_WAITING" });
       }
     }
@@ -79,6 +89,7 @@ export async function updateApp(): Promise<void> {
 
 export function dismissUpdate(): void {
   state.needRefresh = false;
+  state.availableVersion = null;
   emit();
 }
 
@@ -99,10 +110,55 @@ function isRefusedContext(): boolean {
   return false;
 }
 
-function flagUpdateAvailable(): void {
+function flagUpdateAvailable(availableVersion?: string): void {
   state.needRefresh = true;
   state.updateAvailableAt = Date.now();
+  state.availableVersion = availableVersion || state.availableVersion;
   emit();
+}
+
+async function checkPublishedVersion(): Promise<void> {
+  if (isRefusedContext() || !navigator.onLine) return;
+
+  try {
+    // This file is excluded from the Workbox precache. The query string and
+    // no-store policy prevent an old PWA cache from hiding a new publish.
+    const response = await fetch(`/version.json?ts=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
+    if (!response.ok) return;
+    const payload = (await response.json()) as { buildId?: string; version?: string };
+    const remoteVersion = payload.buildId || payload.version;
+    if (remoteVersion && remoteVersion !== APP_VERSION) {
+      console.info("[pwa] nova build publicada:", remoteVersion);
+      flagUpdateAvailable(remoteVersion);
+    }
+  } catch {
+    // Version polling is auxiliary and must never block the application.
+  }
+}
+
+async function removeLegacyRootPushWorker(): Promise<void> {
+  if (!("serviceWorker" in navigator)) return;
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(
+      registrations
+        .filter((registration) => {
+          const scriptURL =
+            registration.active?.scriptURL ||
+            registration.waiting?.scriptURL ||
+            registration.installing?.scriptURL ||
+            "";
+          return registration.scope === `${window.location.origin}/` && scriptURL.endsWith(LEGACY_PUSH_SW_PATH);
+        })
+        .map((registration) => registration.unregister()),
+    );
+  } catch {
+    /* noop */
+  }
 }
 
 async function unregisterMatching(): Promise<void> {
@@ -136,10 +192,19 @@ export async function registerPwa(): Promise<void> {
   }
   if (!("serviceWorker" in navigator)) return;
 
+  // Older builds registered push-sw.js with scope "/", which can replace the
+  // app-shell worker. Remove that conflicting registration before registering
+  // the real app-shell worker again.
+  await removeLegacyRootPushWorker();
+
   // Guard against reload loops after controllerchange
   if ("serviceWorker" in navigator) {
     let refreshing = sessionStorage.getItem(REFRESHING_KEY) === "1";
     navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!updateRequested) {
+        console.info("[pwa] service worker assumiu o controle sem recarregar a página");
+        return;
+      }
       if (refreshing) return;
       refreshing = true;
       sessionStorage.setItem(REFRESHING_KEY, "1");
@@ -198,16 +263,28 @@ export async function registerPwa(): Promise<void> {
           registration.update().catch(() => {});
         };
         setInterval(tick, INTERVAL_MS);
+        setInterval(() => {
+          void checkPublishedVersion();
+        }, INTERVAL_MS);
 
         // Re-check when tab gains focus / becomes visible again.
         window.addEventListener("focus", tick);
+        window.addEventListener("focus", () => {
+          void checkPublishedVersion();
+        });
         document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") tick();
+          if (document.visibilityState === "visible") {
+            tick();
+            void checkPublishedVersion();
+          }
         });
 
         // Kick a check right after registration so freshly-published
         // versions are picked up on the current session.
         setTimeout(tick, 3000);
+        setTimeout(() => {
+          void checkPublishedVersion();
+        }, 1000);
       },
       onRegisterError(err) {
         console.warn("[pwa] registration error", err);
