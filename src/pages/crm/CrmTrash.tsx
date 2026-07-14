@@ -75,11 +75,12 @@ export default function CrmTrash() {
   const [orgsById, setOrgsById] = useState<Record<string, string>>({});
   const [requests, setRequests] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
+  const [profilesById, setProfilesById] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: orgData }, { data: contactData }, reqRes, leadRes] = await Promise.all([
+    const [{ data: orgData }, { data: contactData }, reqRes, leadRes, profileRes] = await Promise.all([
       (supabase as any)
         .from("rd_organizations")
         .select("id, rd_id, name, cnpj, raw_payload, deleted_at")
@@ -100,11 +101,15 @@ export default function CrmTrash() {
         .select("*")
         .eq("status", "lixeira")
         .order("updated_at", { ascending: false }),
+      supabase.from("profiles").select("id, nome"),
     ]);
     setOrgs((orgData as Org[]) || []);
     setContacts((contactData as Contact[]) || []);
     setRequests(reqRes.data || []);
     setLeads(leadRes.data || []);
+    const profileMap: Record<string, string> = {};
+    (profileRes.data || []).forEach((p: any) => { profileMap[p.id] = p.nome || p.id; });
+    setProfilesById(profileMap);
 
     const orgIds = Array.from(new Set(((contactData as any[]) || []).map(c => c.organization_rd_id).filter(Boolean)));
     if (orgIds.length) {
@@ -271,6 +276,7 @@ export default function CrmTrash() {
                         <TableHead>CNPJ</TableHead>
                         <TableHead>Segmento</TableHead>
                         <TableHead>Data de exclusão</TableHead>
+                        <TableHead>Excluído por</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -398,6 +404,7 @@ export default function CrmTrash() {
                             <TableCell className="text-xs text-muted-foreground">
                               {deletedAt ? format(new Date(deletedAt), "dd/MM/yyyy HH:mm") : "—"}
                             </TableCell>
+                            <TableCell className="text-xs">{profilesById[r.deleted_by] || "Registro anterior à auditoria"}</TableCell>
                             <TableCell className="text-right space-x-2">
                               <Button variant="outline" size="sm" onClick={() => restoreRequest(r)} disabled={busyId === r.id}>
                                 <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restaurar
@@ -439,6 +446,7 @@ export default function CrmTrash() {
                         <TableHead>Coluna / Etapa</TableHead>
                         <TableHead>Valor</TableHead>
                         <TableHead>Data de exclusão</TableHead>
+                        <TableHead>Excluído por</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -466,6 +474,7 @@ export default function CrmTrash() {
                             <TableCell className="text-xs text-muted-foreground">
                               {deletedAt ? format(new Date(deletedAt), "dd/MM/yyyy HH:mm") : "—"}
                             </TableCell>
+                            <TableCell className="text-xs">{profilesById[l.deleted_by] || "Registro anterior à auditoria"}</TableCell>
                             <TableCell className="text-right space-x-2">
                               <Button variant="outline" size="sm" onClick={() => restoreLead(l)} disabled={busyId === l.id}>
                                 <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restaurar

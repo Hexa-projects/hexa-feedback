@@ -17,6 +17,7 @@ import { toast } from "sonner";
 export default function StockEquipment() {
   const { user } = useAuth();
   const [equipment, setEquipment] = useState<any[]>([]);
+  const [proposalCounts, setProposalCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -26,8 +27,14 @@ export default function StockEquipment() {
   });
 
   const loadData = async () => {
-    const { data } = await supabase.from("installed_equipment").select("*").order("created_at", { ascending: false });
+    const [{ data }, { data: proposalRows }] = await Promise.all([
+      supabase.from("installed_equipment").select("*").order("created_at", { ascending: false }),
+      (supabase as any).from("proposals").select("equipment").not("equipment", "is", null),
+    ]);
     setEquipment(data || []);
+    const counts: Record<string, number> = {};
+    (proposalRows || []).forEach((row: any) => { const key = String(row.equipment || "").trim().toLowerCase(); if (key) counts[key] = (counts[key] || 0) + 1; });
+    setProposalCounts(counts);
     setLoading(false);
   };
 
@@ -101,6 +108,7 @@ export default function StockEquipment() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>S/N</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Orçamentos</TableHead>
                 <TableHead>Próx. Manutenção</TableHead>
               </TableRow>
             </TableHeader>
@@ -116,6 +124,7 @@ export default function StockEquipment() {
                     <TableCell className="text-sm">{e.cliente}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{e.serial_number || "—"}</TableCell>
                     <TableCell><Badge variant={e.status === "Ativo" ? "default" : "secondary"}>{e.status}</Badge></TableCell>
+                    <TableCell>{proposalCounts[String(e.nome || e.modelo || "").trim().toLowerCase()] || 0}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <span className="text-sm text-muted-foreground">

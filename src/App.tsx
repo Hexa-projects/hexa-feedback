@@ -28,6 +28,8 @@ const RequestsTrash = lazy(() => import("./pages/crm/RequestsTrash"));
 const CrmTrash = lazy(() => import("./pages/crm/CrmTrash"));
 const RdStationIntegration = lazy(() => import("./pages/crm/integrations/RdStationIntegration"));
 const CompaniesList = lazy(() => import("./pages/crm/CompaniesList"));
+const CommercialDashboard = lazy(() => import("./pages/crm/CommercialDashboard"));
+const CommercialFinancialStatus = lazy(() => import("./pages/crm/CommercialFinancialStatus"));
 const WorkOrdersList = lazy(() => import("./pages/os/WorkOrdersList"));
 const WorkOrderForm = lazy(() => import("./pages/os/WorkOrderForm"));
 const WorkOrderDetail = lazy(() => import("./pages/os/WorkOrderDetail"));
@@ -56,6 +58,7 @@ const ProjectDetail = lazy(() => import("./pages/projects/ProjectDetail"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
 const FocusAI = lazy(() => import("./pages/focus/FocusAI"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const EquipmentLibrary = lazy(() => import("./pages/EquipmentLibrary"));
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -108,6 +111,7 @@ const AppRoutes = () => (
       <Route path="/executive" element={<PrivateRoute><ExecutiveDashboard /></PrivateRoute>} />
 
       {/* CRM */}
+      <Route path="/crm/dashboard" element={<PrivateRoute><CommercialDashboard /></PrivateRoute>} />
       <Route path="/crm" element={<PrivateRoute><ContactsList /></PrivateRoute>} />
       <Route path="/crm/leads" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
       <Route path="/crm/new" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
@@ -121,6 +125,7 @@ const AppRoutes = () => (
       <Route path="/settings/integrations/rd-station" element={<PrivateRoute><RdStationIntegration /></PrivateRoute>} />
       <Route path="/crm/integrations/rd-station" element={<Navigate to="/settings/integrations/rd-station" replace />} />
       <Route path="/crm/empresas" element={<PrivateRoute><CompaniesList /></PrivateRoute>} />
+      <Route path="/crm/financial-status" element={<PrivateRoute><CommercialFinancialStatus /></PrivateRoute>} />
       <Route path="/crm/:id" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
 
       {/* Projetos & Implantação */}
@@ -149,6 +154,7 @@ const AppRoutes = () => (
       <Route path="/lab/new" element={<PrivateRoute><LabPartForm /></PrivateRoute>} />
       <Route path="/lab/import" element={<PrivateRoute><DataImporter /></PrivateRoute>} />
       <Route path="/lab/knowledge" element={<PrivateRoute><KnowledgeBase /></PrivateRoute>} />
+      <Route path="/equipment-library" element={<PrivateRoute><EquipmentLibrary /></PrivateRoute>} />
 
       {/* Estoque Inteligente */}
       <Route path="/stock" element={<PrivateRoute><StockDashboard /></PrivateRoute>} />

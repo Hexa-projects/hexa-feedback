@@ -92,6 +92,7 @@ export default function WorkOrdersList() {
                     <TableHead>Nº OS</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Equipamento</TableHead>
+                    <TableHead>Proposta / Contrato</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>SLA</TableHead>
                     <TableHead>Data</TableHead>
@@ -109,6 +110,7 @@ export default function WorkOrdersList() {
                       </TableCell>
                       <TableCell className="font-medium">{os.cliente}</TableCell>
                       <TableCell>{os.equipamento}</TableCell>
+                      <TableCell className="text-xs"><p className="font-mono">{os.proposal_number || "—"}</p>{os.contract_number && <p className="font-mono text-muted-foreground">{os.contract_number}</p>}</TableCell>
                       <TableCell>
                         <span className={`status-badge ${STATUS_COLORS[os.status] || "bg-muted"}`}>{os.status}</span>
                       </TableCell>

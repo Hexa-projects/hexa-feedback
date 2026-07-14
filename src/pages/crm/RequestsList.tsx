@@ -174,6 +174,11 @@ const emptyForm = {
   comissao: "",
   origem: "",
   origem_outro: "",
+  business_line: "",
+  requester_name: "",
+  piece_source: "",
+  supplier_name: "",
+  supplier_cost: "",
   status: "pendente",
   observacoes: "",
 };
@@ -723,7 +728,7 @@ export default function RequestsList() {
       const orgIds = Array.from(
         new Set((cts || []).map((c: any) => c.organization_rd_id).filter(Boolean))
       );
-      let orgMap = new Map<string, string>();
+      const orgMap = new Map<string, string>();
       if (orgIds.length) {
         const { data: orgs } = await (supabase as any)
           .from("rd_organizations")
@@ -780,7 +785,7 @@ export default function RequestsList() {
     const nextObs = r.observacoes ? `${marker}\n${r.observacoes}` : marker;
     const { error } = await (supabase as any)
       .from("commercial_requests")
-      .update({ status: "lixeira", observacoes: nextObs })
+      .update({ status: "lixeira", observacoes: nextObs, deleted_at: new Date().toISOString(), deleted_by: user?.id })
       .eq("id", r.id);
     if (error) return toast.error("Erro ao excluir: " + error.message);
     setItems((prev) => prev.filter((x) => x.id !== r.id));
@@ -940,6 +945,7 @@ export default function RequestsList() {
       ["frete", "Frete"],
       ["comissao", "Comissão"],
       ["origem", "Origem"],
+      ["business_line", "Linha de negócio"],
       
       ["status", "Status"],
       ["observacoes", "Observações"],
@@ -977,6 +983,9 @@ export default function RequestsList() {
       preco: parseCurrency(form.preco),
       comissao: parsePercent(form.comissao),
       origem: form.origem === "Outro" ? form.origem_outro : form.origem,
+      customer_state: form.uf,
+      status_detail: "pendente_gestao",
+      supplier_cost: form.supplier_cost ? parseCurrency(form.supplier_cost) : null,
       user_id: user!.id,
     };
     // Remove campos auxiliares que não existem na tabela
@@ -1077,7 +1086,7 @@ export default function RequestsList() {
             onClick={() => setFilterStatus("all")}
           />
           <Kpi
-            label="Pendentes"
+            label="Pendentes da gestão"
             value={kpis.pendentes}
             tone="amber"
             active={filterStatus === "pendente"}
@@ -1124,7 +1133,7 @@ export default function RequestsList() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pendente">Pendente(s)</SelectItem>
+                <SelectItem value="pendente">Pendente(s) da gestão</SelectItem>
                 <SelectItem value="aprovada">Aprovada(s)</SelectItem>
                 <SelectItem value="reprovada">Reprovada(s)</SelectItem>
               </SelectContent>
@@ -1907,6 +1916,23 @@ export default function RequestsList() {
                     </Field>
                   )}
                 </div>
+                <Field label="Linha de negócio *">
+                  <Select value={form.business_line} onValueChange={(business_line) => setForm({ ...form, business_line })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent><SelectItem value="equipamento_novo">Equipamento novo</SelectItem><SelectItem value="equipamento_usado">Equipamento usado</SelectItem><SelectItem value="servico">Serviço</SelectItem><SelectItem value="reparo">Reparo</SelectItem><SelectItem value="peca">Peça</SelectItem></SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Quem solicitou o orçamento">
+                  <Input value={form.requester_name} onChange={(e) => setForm({ ...form, requester_name: e.target.value })} placeholder="Colaborador ou parceiro" />
+                </Field>
+                {(form.business_line === "peca" || form.business_line === "reparo") && <>
+                  <Field label="Origem da peça">
+                    <Select value={form.piece_source} onValueChange={(piece_source) => setForm({ ...form, piece_source, supplier_name: piece_source === "estoque_proprio" ? "" : form.supplier_name, supplier_cost: piece_source === "estoque_proprio" ? "" : form.supplier_cost })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="estoque_proprio">Estoque próprio</SelectItem><SelectItem value="terceiro">Fornecedor terceiro</SelectItem></SelectContent>
+                    </Select>
+                  </Field>
+                  {form.piece_source === "terceiro" && <><Field label="Fornecedor"><Input value={form.supplier_name} onChange={(e) => setForm({ ...form, supplier_name: e.target.value })} /></Field><Field label="Custo de aquisição"><Input value={form.supplier_cost} onChange={(e) => setForm({ ...form, supplier_cost: maskCurrency(e.target.value) })} /></Field></>}
+                </>}
               </div>
             </Section>
 

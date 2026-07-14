@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, ChevronDown, Filter, Plus, Search, X } from "lucide-react";
+import { Building2, ChevronDown, Download, Filter, Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CreateCompanySheet from "@/components/crm/CreateCompanySheet";
 
@@ -163,6 +163,7 @@ export default function CompaniesList() {
   const { user } = useAuth();
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [users, setUsers] = useState<RdUser[]>([]);
+  const [proposalHistory, setProposalHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableSearch, setTableSearch] = useState("");
 
@@ -190,7 +191,7 @@ export default function CompaniesList() {
   useEffect(() => {
     (async () => {
 
-      const [{ data: orgData }, { data: userData }] = await Promise.all([
+      const [{ data: orgData }, { data: userData }, { data: historyData }] = await Promise.all([
         supabase
           .from("rd_organizations")
           .select("id, rd_id, name, email, phone, cnpj, raw_payload, rd_updated_at")
@@ -201,9 +202,11 @@ export default function CompaniesList() {
           .select("rd_id, name, email")
           .is("deleted_at", null)
           .order("name", { ascending: true }),
+        (supabase as any).from("company_proposal_history").select("*"),
       ]);
       setOrgs((orgData as any) || []);
       setUsers((userData as any) || []);
+      setProposalHistory(historyData || []);
       setLoading(false);
     })();
   }, []);
@@ -328,9 +331,11 @@ export default function CompaniesList() {
               Empresas sincronizadas do RD Station CRM
             </p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" /> Criar Empresa
-          </Button>
+          <div className="flex gap-2"><Button variant="outline" onClick={() => {
+            const rows = proposalHistory.map(p => [p.proposal_number, p.sent_at || p.created_at, p.status, p.company_name, p.equipment, p.business_line, p.valor, p.requester_name]);
+            const csv = [["Numero","Data","Status","Empresa","Equipamento","Tipo","Valor","Solicitante"], ...rows].map(row => row.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+            const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" })); const a = document.createElement("a"); a.href = url; a.download = "historico-empresas-propostas.csv"; a.click(); URL.revokeObjectURL(url);
+          }}><Download className="w-4 h-4 mr-2" /> Histórico em Excel</Button><Button onClick={() => setCreateOpen(true)} className="gap-2"><Plus className="w-4 h-4" /> Criar Empresa</Button></div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -602,6 +607,7 @@ export default function CompaniesList() {
                     <TableHead>E-mail</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>CNPJ</TableHead>
+                    <TableHead>Orçamentos</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -617,6 +623,7 @@ export default function CompaniesList() {
                         <TableCell className="text-sm">{o.email || "—"}</TableCell>
                         <TableCell className="text-sm">{o.phone || "—"}</TableCell>
                         <TableCell className="text-sm">{o.cnpj || "—"}</TableCell>
+                        <TableCell className="text-sm">{proposalHistory.filter(p => String(p.company_name || "").toLowerCase() === String(o.name || "").toLowerCase()).length}</TableCell>
                       </TableRow>
                     );
                   })}

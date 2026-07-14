@@ -8,7 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DollarSign, TrendingUp, Users, Target, Bot, Zap, Settings2, ArrowUp, ArrowDown, Filter, X, LayoutGrid, List, Pause, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AISmartBadge from "@/components/AISmartBadge";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +24,7 @@ const extractRequestId = (notas: string | null | undefined): string | null => {
   const m = String(notas).match(/ID solicita[cç][aã]o:\s*([0-9a-f-]{8,})/i);
   return m ? m[1] : null;
 };
+const normalizeStage = (value: string | null | undefined) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 const DEFAULT_COLUMNS = ["Qualificação", "Contato Inicial", "Reunião", "Proposta Enviada", "Negociação", "Ganho", "Perdido"];
 
@@ -137,7 +141,9 @@ export default function KanbanFunnel() {
           parsed.filter((p) => !DEFAULT_FUNNELS.find((d) => d.id === p.id)),
         );
       }
-    } catch {}
+    } catch (error) {
+      console.warn("[Kanban] Configuracao local de funis invalida", error);
+    }
     return DEFAULT_FUNNELS;
   });
   const [selectedFunnel, setSelectedFunnel] = useState<string>("vendas");
@@ -146,21 +152,43 @@ export default function KanbanFunnel() {
   const [selectedOwners, setSelectedOwners] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("em_andamento");
   const [filterSort, setFilterSort] = useState<string>("recentes");
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [contractRequired, setContractRequired] = useState(false);
+  const [signerName, setSignerName] = useState("");
+  const [signerCpf, setSignerCpf] = useState("");
+  const [configuredStages, setConfiguredStages] = useState<Record<string, string[]>>({});
 
   const COLUMNS = useMemo(() => {
+    if (configuredStages[selectedFunnel]?.length) return configuredStages[selectedFunnel];
     if (selectedFunnel === "prospeccao") return PROSPECCAO_COLUMNS;
     if (selectedFunnel === "vendas") return VENDAS_COLUMNS;
     if (selectedFunnel === "servicos") return SERVICOS_COLUMNS;
     if (selectedFunnel === "hexa_ai") return HEXA_AI_COLUMNS;
     if (selectedFunnel === "pos_vendas") return POS_VENDAS_COLUMNS;
     return DEFAULT_COLUMNS;
-  }, [selectedFunnel]);
+  }, [selectedFunnel, configuredStages]);
 
 
 
   useEffect(() => {
     localStorage.setItem(FUNNELS_STORAGE_KEY, JSON.stringify(funnels));
   }, [funnels]);
+
+  useEffect(() => {
+    (async () => {
+      const db = supabase as any;
+      const [{ data: funnelRows }, { data: stageRows }] = await Promise.all([
+        db.from("crm_funnels").select("id, code, name, active, sort_order").order("sort_order"),
+        db.from("crm_funnel_stages").select("funnel_id, name, sort_order, active").eq("active", true).order("sort_order"),
+      ]);
+      if (!funnelRows?.length) return;
+      const byId = new Map(funnelRows.map((row: any) => [row.id, row.code]));
+      const stages: Record<string, string[]> = {};
+      (stageRows || []).forEach((row: any) => { const code = byId.get(row.funnel_id) as string | undefined; if (code) (stages[code] ||= []).push(row.name); });
+      setFunnels(funnelRows.map((row: any) => ({ id: row.code, label: row.name, enabled: row.active })));
+      setConfiguredStages(stages);
+    })();
+  }, []);
 
   const activeFunnels = useMemo(() => funnels.filter((f) => f.enabled), [funnels]);
 
@@ -204,11 +232,11 @@ export default function KanbanFunnel() {
     const lead = leads.find(l => l.id === draggedId);
 
     // If moving to "Ganho", show the AI modal
-    if (newStatus === "Ganho" && lead?.status !== "Ganho") {
+    if (["ganho", "negocio ganho", "fechamento"].includes(normalizeStage(newStatus)) && !["ganho", "negocio ganho", "fechamento"].includes(normalizeStage(lead?.status))) {
       setWinModalLead(lead);
       // Update locally first
-      setLeads(prev => prev.map(l => l.id === draggedId ? { ...l, status: "Ganho" } : l));
-      await supabase.from("leads").update({ status: "Ganho" } as any).eq("id", draggedId);
+      setLeads(prev => prev.map(l => l.id === draggedId ? { ...l, status: newStatus } : l));
+      await supabase.from("leads").update({ status: newStatus } as any).eq("id", draggedId);
       setDraggedId(null);
       return;
     }
@@ -223,6 +251,18 @@ export default function KanbanFunnel() {
 
   const handleAutoGenerate = async () => {
     if (!winModalLead || !user) return;
+    if (contractRequired && (!signerName.trim() || !signerCpf.trim())) {
+      toast.error("Nome completo e CPF do signatário são obrigatórios quando há contrato.");
+      return;
+    }
+    await (supabase as any).from("leads").update({ contract_required: contractRequired, signer_name: signerName || null, signer_cpf: signerCpf || null }).eq("id", winModalLead.id);
+    if (contractRequired) {
+      await (supabase as any).from("contracts").insert({
+        lead_id: winModalLead.id, titulo: `Contrato - ${winModalLead.empresa || winModalLead.nome}`,
+        valor_total: Number(winModalLead.valor_estimado || 0), stage: "pendente_aprovacao_gestao",
+        signer_name: signerName, signer_cpf: signerCpf, status: "pendente", user_id: user.id,
+      });
+    }
     // Insert an ai_action_request for Hunter to generate OS + notify
     await supabase.from("ai_action_requests").insert({
       action_type: "generate_os_from_deal",
@@ -237,13 +277,14 @@ export default function KanbanFunnel() {
     } as any);
     toast.success("Hunter notificado! OS de instalação e notificação no Teams serão gerados automaticamente.");
     setWinModalLead(null);
+    setContractRequired(false); setSignerName(""); setSignerCpf("");
   };
 
   // Filter leads by selected funnel. Leads without `funil` field default to "vendas".
   // Also hide leads that were soft-deleted (status = "lixeira").
   const filteredLeads = useMemo(() => {
     let list = leads.filter(
-      (l) => (l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
+      (l) => (l.funnel_id ?? l.funil ?? "vendas") === selectedFunnel && l.status !== "lixeira",
     );
     if (ownerQuick === "mine" && user?.id) {
       list = list.filter((l) => l.user_id === user.id);
@@ -262,7 +303,7 @@ export default function KanbanFunnel() {
     const newNotas = `${marker}\n${lead.notas || ""}`;
     const { error } = await supabase
       .from("leads")
-      .update({ status: "lixeira", notas: newNotas } as any)
+      .update({ status: "lixeira", notas: newNotas, deleted_at: new Date().toISOString(), deleted_by: user?.id } as any)
       .eq("id", lead.id);
     if (error) {
       toast.error("Erro ao mover para a Lixeira");
@@ -272,12 +313,27 @@ export default function KanbanFunnel() {
     toast.success("Card movido para a Lixeira");
   };
 
+  const pauseLead = async (lead: any) => {
+    const pausedAt = lead.paused_at ? null : new Date().toISOString();
+    const { error } = await (supabase as any).from("leads").update({ paused_at: pausedAt }).eq("id", lead.id);
+    if (error) return toast.error(error.message);
+    setLeads(prev => prev.map(item => item.id === lead.id ? { ...item, paused_at: pausedAt } : item));
+    toast.success(pausedAt ? "Negociação pausada." : "Negociação retomada.");
+  };
+
+  const duplicateLead = async (lead: any) => {
+    if (!user) return;
+    const { id: _id, created_at: _created, updated_at: _updated, deleted_at: _deleted, deleted_by: _deletedBy, ...copy } = lead;
+    const { error } = await (supabase as any).from("leads").insert({ ...copy, nome: `${lead.nome} (cópia)`, user_id: user.id, paused_at: null });
+    if (error) toast.error(error.message); else { toast.success("Negociação duplicada."); window.location.reload(); }
+  };
+
 
   // KPIs
   const totalLeads = filteredLeads.length;
   const totalValue = filteredLeads.reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
-  const wonValue = filteredLeads.filter(l => l.status === "Ganho").reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
-  const conversionRate = totalLeads > 0 ? Math.round((filteredLeads.filter(l => l.status === "Ganho").length / totalLeads) * 100) : 0;
+  const wonValue = filteredLeads.filter(l => ["ganho", "negocio ganho", "fechamento"].includes(normalizeStage(l.status))).reduce((sum, l) => sum + (Number(l.valor_estimado) || 0), 0);
+  const conversionRate = totalLeads > 0 ? Math.round((filteredLeads.filter(l => ["ganho", "negocio ganho", "fechamento"].includes(normalizeStage(l.status))).length / totalLeads) * 100) : 0;
 
   const moveFunnel = (idx: number, dir: -1 | 1) => {
     setFunnels((prev) => {
@@ -287,6 +343,19 @@ export default function KanbanFunnel() {
       [next[idx], next[target]] = [next[target], next[idx]];
       return next;
     });
+  };
+
+  const saveFunnelConfiguration = async () => {
+    const db = supabase as any;
+    for (let index = 0; index < funnels.length; index += 1) {
+      const funnel = funnels[index];
+      const { data, error } = await db.from("crm_funnels").upsert({ code: funnel.id, name: funnel.label, active: funnel.enabled, sort_order: (index + 1) * 10 }, { onConflict: "code" }).select("id").single();
+      if (error) return toast.error("Não foi possível salvar o funil", { description: error.message });
+      await db.from("crm_funnel_stages").delete().eq("funnel_id", data.id);
+      const rows = (configuredStages[funnel.id] || []).map((name, stageIndex) => ({ funnel_id: data.id, name, sort_order: (stageIndex + 1) * 10, stage_type: /ganho|fechamento/i.test(name) ? "won" : /perdido/i.test(name) ? "lost" : "open" }));
+      if (rows.length) await db.from("crm_funnel_stages").insert(rows);
+    }
+    setConfigOpen(false); toast.success("Funis e etapas atualizados para toda a equipe.");
   };
 
   return (
@@ -309,12 +378,15 @@ export default function KanbanFunnel() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="sm" className="gap-1" onClick={() => setConfigOpen(true)}>
+              {role === "admin" && <Button variant="ghost" size="sm" className="gap-1" onClick={() => setConfigOpen(true)}>
                 <Settings2 className="w-4 h-4" /> Configurar funis
-              </Button>
+              </Button>}
             </div>
           </div>
-          <Link to="/crm"><Button variant="outline" size="sm" className="gap-1"><ArrowLeft className="w-4 h-4" /> Lista</Button></Link>
+          <div className="flex border rounded-md p-0.5" aria-label="Modo de visualização">
+            <Button variant={viewMode === "kanban" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("kanban")}><LayoutGrid className="w-4 h-4 mr-1" /> Kanban</Button>
+            <Button variant={viewMode === "list" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("list")}><List className="w-4 h-4 mr-1" /> Lista</Button>
+          </div>
         </div>
 
         {selectedFunnel === "prospeccao" && (
@@ -417,9 +489,9 @@ export default function KanbanFunnel() {
         </div>
 
         {/* Kanban */}
-        <div className="flex gap-3 overflow-x-auto pb-4">
+        {viewMode === "kanban" ? <div className="flex gap-3 overflow-x-auto pb-4">
           {COLUMNS.map(col => {
-            const colLeads = filteredLeads.filter(l => l.status === col);
+            const colLeads = filteredLeads.filter(l => normalizeStage(l.status) === normalizeStage(col));
             const colValue = colLeads.reduce((s, l) => s + (Number(l.valor_estimado) || 0), 0);
             return (
               <div
@@ -514,7 +586,7 @@ export default function KanbanFunnel() {
               </div>
             );
           })}
-        </div>
+        </div> : <Card><CardContent className="p-0 overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Negociação</TableHead><TableHead>Responsável</TableHead><TableHead>Etapa</TableHead><TableHead>Valor</TableHead><TableHead>Situação</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>{filteredLeads.map(lead => <TableRow key={lead.id}><TableCell><Link className="font-medium hover:underline" to={`/crm/${lead.id}`}>{lead.nome || lead.empresa}</Link><p className="text-xs text-muted-foreground">{lead.empresa}</p></TableCell><TableCell>{profiles.find(p => p.id === (lead.responsavel_id || lead.user_id))?.name || "—"}</TableCell><TableCell>{lead.status}</TableCell><TableCell>{Number(lead.valor_estimado || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell><TableCell>{lead.paused_at ? <Badge variant="secondary">Pausada</Badge> : <Badge>Em andamento</Badge>}</TableCell><TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" title={lead.paused_at ? "Retomar" : "Pausar"} onClick={() => pauseLead(lead)}><Pause className="w-4 h-4" /></Button><Button variant="ghost" size="icon" title="Duplicar" onClick={() => duplicateLead(lead)}><Copy className="w-4 h-4" /></Button>{canEditRequest && <Button variant="ghost" size="icon" title="Mover para lixeira" onClick={() => handleDeleteLead(lead)}><Trash2 className="w-4 h-4" /></Button>}</div></TableCell></TableRow>)}</TableBody></Table></CardContent></Card>}
 
         {/* Win Modal — Hunter auto-generate */}
         <Dialog open={!!winModalLead} onOpenChange={(open) => { if (!open) setWinModalLead(null); }}>
@@ -531,6 +603,11 @@ export default function KanbanFunnel() {
               <p className="text-sm">
                 Deseja que a IA (Hunter) gere a <strong>Ordem de Serviço de Instalação</strong> e notifique a equipe técnica e financeira no <strong>MS Teams</strong>?
               </p>
+              <div className="flex items-center justify-between border p-3">
+                <div><Label htmlFor="contract-required">Este negócio exige contrato?</Label><p className="text-xs text-muted-foreground">Quando ativado, o contrato segue para aprovação da gestão.</p></div>
+                <Switch id="contract-required" checked={contractRequired} onCheckedChange={setContractRequired} />
+              </div>
+              {contractRequired && <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label htmlFor="signer-name">Nome completo do signatário *</Label><Input id="signer-name" value={signerName} onChange={e => setSignerName(e.target.value)} /></div><div className="space-y-1"><Label htmlFor="signer-cpf">CPF do signatário *</Label><Input id="signer-cpf" value={signerCpf} onChange={e => setSignerCpf(e.target.value)} /></div></div>}
             </div>
             <DialogFooter className="flex gap-2 sm:gap-2">
               <Button variant="outline" onClick={() => setWinModalLead(null)}>
@@ -553,17 +630,16 @@ export default function KanbanFunnel() {
             </DialogHeader>
             <div className="space-y-2">
               {funnels.map((f, idx) => (
-                <div key={f.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-card">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div key={f.id} className="space-y-2 p-3 rounded-md border bg-card">
+                  <div className="flex items-center gap-2">
                     <Switch
                       checked={f.enabled}
                       onCheckedChange={(v) =>
                         setFunnels((prev) => prev.map((x) => (x.id === f.id ? { ...x, enabled: v } : x)))
                       }
                     />
-                    <span className="text-sm truncate">{f.label}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
+                    <Input aria-label="Nome do funil" value={f.label} onChange={e => setFunnels(prev => prev.map(item => item.id === f.id ? { ...item, label: e.target.value } : item))} className="h-8" />
+                    <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveFunnel(idx, -1)} disabled={idx === 0}>
                       <ArrowUp className="w-4 h-4" />
                     </Button>
@@ -571,11 +647,13 @@ export default function KanbanFunnel() {
                       <ArrowDown className="w-4 h-4" />
                     </Button>
                   </div>
+                  </div>
+                  <div className="space-y-1"><Label htmlFor={`stages-${f.id}`} className="text-xs">Etapas, separadas por vírgula</Label><Input id={`stages-${f.id}`} value={(configuredStages[f.id] || []).join(", ")} onChange={e => setConfiguredStages(prev => ({ ...prev, [f.id]: e.target.value.split(",").map(value => value.trim()).filter(Boolean) }))} /></div>
                 </div>
               ))}
             </div>
             <DialogFooter>
-              <Button onClick={() => { setConfigOpen(false); toast.success("Funis atualizados"); }}>Concluir</Button>
+              <Button onClick={saveFunnelConfiguration}>Salvar para a equipe</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -61,12 +61,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Target,
     roles: ["admin", "gestor", "colaborador"],
     children: [
+      { to: "/crm/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/crm/requests", label: "Solicitações", icon: FileText },
       { to: "/crm", label: "Contatos", icon: Users },
       { to: "/crm/empresas", label: "Empresas", icon: Building2 },
       { to: "/crm/kanban", label: "Negociações", icon: BarChart3 },
       { to: "/crm/proposals", label: "Propostas", icon: FileText },
       { to: "/crm/contracts", label: "Contratos", icon: Briefcase },
+      { to: "/crm/financial-status", label: "Situação Financeira", icon: Wallet },
       
       { to: "/crm/trash", label: "Lixeira", icon: Trash2, ceoOrAdmin: true },
     ],
@@ -80,6 +82,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/calendar", label: "Calendário", icon: Calendar },
       { to: "/projects", label: "Projetos & Implantação", icon: Briefcase },
       { to: "/lab/knowledge", label: "Base de Conhecimento", icon: BookOpen, roles: ["admin", "gestor"], setores: ["Técnico", "Laboratório"] },
+      { to: "/equipment-library", label: "Biblioteca de Equipamentos", icon: BookOpen },
     ],
   },
   {

@@ -70,6 +70,9 @@ export default function LeadDetail() {
       nome: lead.nome, empresa: lead.empresa, email: lead.email,
       telefone: lead.telefone, status: lead.status,
       valor_estimado: lead.valor_estimado, notas: lead.notas,
+      warranty_months: lead.warranty_months || null,
+      warranty_start: lead.warranty_start || null,
+      warranty_end: lead.warranty_end || null,
       ultimo_contato: new Date().toISOString(),
     } as any).eq("id", lead.id);
     if (error) toast.error(error.message);
@@ -85,7 +88,7 @@ export default function LeadDetail() {
     const marker = `[TRASH_LEAD_PREV:${prevStatus}|${new Date().toISOString()}]`;
     const { error } = await supabase
       .from("leads")
-      .update({ status: "lixeira", notas: `${marker}\n${lead.notas || ""}` } as any)
+      .update({ status: "lixeira", notas: `${marker}\n${lead.notas || ""}`, deleted_at: new Date().toISOString(), deleted_by: user?.id } as any)
       .eq("id", lead.id);
     setDeleting(false);
     if (error) {
@@ -172,6 +175,7 @@ export default function LeadDetail() {
             <TabsTrigger value="historico">Histórico ({interactions.length})</TabsTrigger>
             <TabsTrigger value="propostas">Propostas ({proposals.length})</TabsTrigger>
             <TabsTrigger value="contratos">Contratos ({contracts.length})</TabsTrigger>
+            <TabsTrigger value="garantia">Garantia</TabsTrigger>
           </TabsList>
 
           {/* Dados Tab */}
@@ -222,6 +226,10 @@ export default function LeadDetail() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="garantia">
+            <Card><CardContent className="pt-6 space-y-4"><div className="grid gap-4 sm:grid-cols-3"><div className="space-y-2"><Label>Início da garantia</Label><Input type="date" value={lead.warranty_start || ""} onChange={e => setLead({ ...lead, warranty_start: e.target.value })} /></div><div className="space-y-2"><Label>Prazo em meses</Label><Input type="number" min={0} value={lead.warranty_months || ""} onChange={e => { const months = Number(e.target.value); let end = lead.warranty_end; if (lead.warranty_start && months) { const date = new Date(`${lead.warranty_start}T12:00:00`); date.setMonth(date.getMonth() + months); end = date.toISOString().slice(0, 10); } setLead({ ...lead, warranty_months: months, warranty_end: end }); }} /></div><div className="space-y-2"><Label>Fim calculado</Label><Input type="date" value={lead.warranty_end || ""} onChange={e => setLead({ ...lead, warranty_end: e.target.value })} /></div></div><p className="text-xs text-muted-foreground">Garantias com vencimento nos próximos 30 dias aparecem no Dashboard Comercial.</p><Button onClick={handleUpdate} disabled={saving}><Save className="w-4 h-4 mr-2" /> Salvar garantia</Button></CardContent></Card>
           </TabsContent>
 
           {/* Histórico Tab */}

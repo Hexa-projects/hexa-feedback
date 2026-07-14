@@ -28,12 +28,13 @@ export function useCommercialKpis(filters: DashboardFilters): CommercialResult {
     try {
       const { range } = filters;
       const prev = getPreviousRange(range);
-      const [leadsRes, leadsPrevRes, dealsRes, proposalsRes, requestsRes] = await Promise.all([
+      const [leadsRes, leadsPrevRes, dealsRes, proposalsRes, requestsRes, settingRes] = await Promise.all([
         supabase.from("leads").select("id, status, valor_estimado, created_at, ultimo_contato, origem, responsavel_id, nome, empresa").gte("created_at", range.start).lte("created_at", range.end),
         supabase.from("leads").select("id", { count: "exact", head: true }).gte("created_at", prev.start).lte("created_at", prev.end),
         supabase.from("deals").select("id, stage_id, value, won_at, lost_at, title, company, owner_name, priority, created_at"),
         supabase.from("proposals").select("id, status, valor, validade_dias, created_at, titulo"),
         supabase.from("commercial_requests").select("id, status, preco, empresa, created_at"),
+        (supabase as any).from("commercial_settings").select("value").eq("key", "stale_lead_hours").maybeSingle(),
       ]);
 
       const leads = leadsRes.data || [];
@@ -48,6 +49,7 @@ export function useCommercialKpis(filters: DashboardFilters): CommercialResult {
       const dealsF = deals.filter(d => clienteFilter(d.company) || clienteFilter(d.title));
 
       const now = new Date();
+      const staleHours = Math.max(1, Number(settingRes.data?.value) || 72);
 
       // Pipeline: deals that are not won/lost
       const activeDeals = dealsF.filter(d => !d.won_at && !d.lost_at);
@@ -134,10 +136,10 @@ export function useCommercialKpis(filters: DashboardFilters): CommercialResult {
           drilldownRoute: "/crm/proposals",
         },
         {
-          key: "leads_sem_contato_48h", label: "Leads parados > 48h", format: "number",
-          domain: "commercial", sourceTables: ["leads"], value: stale(48).length,
-          status: statusFromThreshold(stale(48).length, { warn: 5, critical: 12 }),
-          drilldownRecords: stale(48).map(l => ({ nome: l.nome, empresa: l.empresa, ultimo_contato: l.ultimo_contato, status: l.status })),
+          key: "leads_sem_contato", label: `Leads parados > ${staleHours}h`, description: "Prazo configurável no Dashboard Comercial", format: "number",
+          domain: "commercial", sourceTables: ["leads", "commercial_settings"], value: stale(staleHours).length,
+          status: statusFromThreshold(stale(staleHours).length, { warn: 5, critical: 12 }),
+          drilldownRecords: stale(staleHours).map(l => ({ nome: l.nome, empresa: l.empresa, ultimo_contato: l.ultimo_contato, status: l.status })),
           drilldownRoute: "/crm",
         },
       ];
